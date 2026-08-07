@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>田徑紀錄系統 - 快捷登入</title>
-    <!-- 正確引入 Supabase JS SDK CDN -->
+    <!-- 引入 Supabase JS SDK CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
@@ -22,57 +22,48 @@
         <h2>歡迎使用田徑紀錄系統</h2>
         <p class="subtitle">請使用 Google 帳戶快捷註冊或登入</p>
 
-        <!-- 只保留 Google 登入按鈕 -->
-        <button id="btn-google-login" class="btn-oauth btn-google">
+        <!-- 直接在 HTML 綁定 onclick 函式 -->
+        <button onclick="handleLogin()" class="btn-oauth btn-google">
             <span>使用 Google 帳戶登入</span>
         </button>
     </div>
 
     <script>
-        // ==========================================
         // 初始化 Supabase
-        // ==========================================
         const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_QuBGykWcj3D-SOmzuRCHaQ_ta4blPUN';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 自動檢查機制：如果已經登入，直接跳轉到第二頁
-        async function checkExistingSession() {
+        // 自動檢查：若已登入直接跳轉
+        async function checkSession() {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 window.location.href = 'athletes.html';
             }
         }
-        checkExistingSession();
+        checkSession();
 
-        // 處理 Google 快捷登入（手動取得網址並強制跳轉）
-                document.getElementById('btn-google-login').addEventListener('click', async () => {
-            try {
-                alert("開始嘗試登入..."); // 測試按鈕有沒有被點擊到
-                
-                const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        redirectTo: window.location.origin + '/athletes.html',
-                        skipBrowserRedirect: true // 強制取得網址而不是自動跳轉
-                    }
-                });
-
-                if (error) {
-                    alert("登入失敗錯誤訊息: " + error.message);
-                } else if (data && data.url) {
-                    alert("成功取得 Google 網址，準備跳轉！");
-                    window.location.href = data.url; // 手動跳轉
-                } else {
-                    alert("未知的錯誤，沒有回傳網址");
+        // 獨立的登入觸發函式
+        async function handleLogin() {
+            alert("按鈕點擊成功！準備向 Supabase 發起請求...");
+            
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/athletes.html',
+                    skipBrowserRedirect: true
                 }
-            } catch (err) {
-                alert("發生例外狀況: " + err.message);
+            });
+
+            if (error) {
+                alert("登入失敗錯誤： " + error.message);
+            } else if (data && data.url) {
+                alert("成功取得網址，即將跳轉到 Google！");
+                window.location.href = data.url;
+            } else {
+                alert("發生未知狀況，未回傳網址");
             }
-        });
-
-
-
+        }
     </script>
 </body>
 </html>
