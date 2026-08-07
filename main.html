@@ -16,17 +16,16 @@
     <header class="relative overflow-hidden bg-gradient-to-r from-blue-700 to-blue-900 p-6 rounded-2xl shadow-md text-white flex items-center justify-between">
       <div class="flex items-center gap-5">
         <!-- 頭像 -->
-        <div class="relative w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/85 shadow-inner bg-blue-950 flex-shrink-0 cursor-pointer group" onclick="document.getElementById('avatar-input').click()" title="點擊更換頭像">
+        <div class="relative w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/85 shadow-inner bg-blue-950 flex-shrink-0 flex items-center justify-center">
           <img id="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="w-full h-full object-cover">
-          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs">更換</div>
         </div>
-        <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="handleAvatarChange(event)">
 
-        <!-- 名字 -->
+        <!-- 名字與詳細資訊 -->
         <div class="space-y-1">
           <div class="flex items-center gap-2">
             <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">載入中...</h1>
           </div>
+          <p id="athlete-info" class="text-sm text-white/80">性別與生日載入中...</p>
         </div>
       </div>
 
@@ -229,14 +228,19 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzZ3h4Zm1ocWxvdWt1dXd1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNzk4NDMsImV4cCI6MjEwMTY1NTg0M30.9LdpqaZqX51Ht1LMNQ_gf3SQjSTPBkykxxx5tA-CNdU";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // 取得通行證（從 localStorage 讀取）
+    // 取得通行證與運動員詳細資料（從 localStorage 讀取）
     let currentAthleteId = localStorage.getItem('current_athlete_id');
     let currentAthleteName = localStorage.getItem('current_athlete_name');
+    let currentAthleteDob = localStorage.getItem('current_athlete_dob');
+    let currentAthleteGender = localStorage.getItem('current_athlete_gender');
+    let currentAthleteAvatar = localStorage.getItem('current_athlete_avatar');
 
-    // 運動員資料 (僅保留頭像與名稱)
+    // 運動員資料
     let athleteProfile = {
       name: currentAthleteName || '運動員',
-      avatar: ''
+      dob: currentAthleteDob || '',
+      gender: currentAthleteGender || '',
+      avatar: currentAthleteAvatar || ''
     };
 
     let isHistoryEditMode = false;
@@ -247,7 +251,6 @@
     // 2. 頁面啟動與驗證
     // ==========================================
     async function initMainPage() {
-      // 檢查登入狀態與通行證
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         alert('偵測到未登入，請先進行登入！');
@@ -281,7 +284,6 @@
 
       filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
       
-      // 從 Supabase 讀取該運動員的成績
       await fetchRecordsFromSupabase();
       initChart();
 
@@ -292,22 +294,17 @@
       window.location.href = 'athletes.html';
     }
 
+    // 初始化頂部運動員介面
     function initProfileUI() {
       document.getElementById('athlete-name').textContent = athleteProfile.name;
+      
+      let infoText = [];
+      if (athleteProfile.gender) infoText.push(`性別: ${athleteProfile.gender}`);
+      if (athleteProfile.dob) infoText.push(`生日: ${athleteProfile.dob}`);
+      document.getElementById('athlete-info').textContent = infoText.length > 0 ? infoText.join(' | ') : '';
+
       if (athleteProfile.avatar) {
         document.getElementById('avatar-img').src = athleteProfile.avatar;
-      }
-    }
-
-    function handleAvatarChange(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          athleteProfile.avatar = e.target.result;
-          document.getElementById('avatar-img').src = athleteProfile.avatar;
-        };
-        reader.readAsDataURL(file);
       }
     }
 
@@ -410,6 +407,7 @@
     async function saveRecordToSupabase(record, editId) {
       const dbPayload = {
         athlete_id: currentAthleteId,
+        user_id: (await supabase.auth.getSession()).data.session.user.id,
         event_id: record.eventId,
         event_name: record.eventName,
         competition: record.competition,
@@ -450,8 +448,8 @@
     async function deleteRecordFromSupabase(id) {
       const { error } = await supabase
         .from('records')
-        .eq('id', id)
-        .delete();
+        .delete()
+        .eq('id', id);
 
       if (error) {
         alert('刪除失敗：' + error.message);

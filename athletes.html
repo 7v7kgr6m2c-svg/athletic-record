@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>選擇運動員</title>
-        <script>
+    <title>選擇與新增運動員</title>
+    <!-- 引入 Supabase JS SDK CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
         // ==========================================
-        // 1. 初始化 Supabase (請確保與第一頁的憑證完全相同)
+        // 1. 初始化 Supabase
         // ==========================================
         const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzZ3h4Zm1ocWxvdWt1dXd1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNzk4NDMsImV4cCI6MjEwMTY1NTg0M30.9LdpqaZqX51Ht1LMNQ_gf3SQjSTPBkykxxx5tA-CNdU';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // 取得 HTML 元素
         const athleteContainer = document.getElementById('athlete-container');
@@ -22,23 +24,22 @@
         // 宣告全域變數儲存目前登入的用戶資訊
         let currentUser = null;
 
+        // 暫存讀取的頭像 Base64 字串
+        let selectedAvatarBase64 = '';
+
         // ==========================================
         // 2. 核心啟動檢查 (防護機制)
         // ==========================================
         async function initPage() {
-            // 檢查用戶是否有有效的登入 Session
             const { data: { session }, error } = await supabase.auth.getSession();
             
             if (error || !session) {
                 alert('偵測到未登入，請先進行登入！');
-                window.location.href = 'index.html'; // 踢回登入頁
+                window.location.href = 'index.html';
                 return;
             }
 
-            // 成功取得用戶資料
             currentUser = session.user;
-            
-            // 開始載入該用戶的運動員列表
             await fetchAthletes();
         }
 
@@ -46,7 +47,6 @@
         // 3. 讀取運動員列表與「最多3人」判定邏輯
         // ==========================================
         async function fetchAthletes() {
-            // 欄位過濾：因為啟用了 RLS，此處只會抓到 user_id 等於目前登入者的資料
             const { data: athletes, error } = await supabase
                 .from('athletes')
                 .select('*')
@@ -57,116 +57,140 @@
                 return;
             }
 
-            // 清空載入中提示
             athleteContainer.innerHTML = '';
 
             if (athletes.length === 0) {
                 athleteContainer.innerHTML = '<p>目前沒有任何運動員，請在下方新增。</p>';
             } else {
-                // 逐一建立運動員點擊按鈕
                 athletes.forEach(athlete => {
                     const button = document.createElement('button');
                     button.className = 'athlete-btn';
-                    button.textContent = athlete.name;
                     
-                    // 點擊事件：將該運動員的唯一 ID 存入快取並進到第三頁
+                    // 顯示名字與簡單資訊
+                    button.innerHTML = `<span>${athlete.name}</span> <span style="font-size: 12px; opacity: 0.8;">(${athlete.gender || '未填寫'})</span>`;
+                    
+                    // 點擊事件：將該運動員的資訊存入 localStorage 並進到主頁
                     button.addEventListener('click', () => {
                         localStorage.setItem('current_athlete_id', athlete.id);
                         localStorage.setItem('current_athlete_name', athlete.name);
-                        window.location.href = 'main.html'; // 跳轉到你的田徑記錄主頁
+                        localStorage.setItem('current_athlete_dob', athlete.dob || '');
+                        localStorage.setItem('current_athlete_gender', athlete.gender || '');
+                        localStorage.setItem('current_athlete_avatar', athlete.avatar || '');
+                        window.location.href = 'main.html';
                     });
                     
                     athleteContainer.appendChild(button);
                 });
             }
 
-            // 🔥 關鍵邏輯：限制最多只能有 3 個運動員
+            // 限制最多只能有 3 個運動員
             if (athletes.length >= 3) {
-                addAthleteSection.classList.add('hidden'); // 隱藏新增表單
-                limitMessage.classList.remove('hidden');   // 顯示滿額提示
+                addAthleteSection.classList.add('hidden');
+                limitMessage.classList.remove('hidden');
             } else {
                 addAthleteSection.classList.remove('hidden');
                 limitMessage.classList.add('hidden');
             }
         }
 
+        // 處理頭像上傳轉 Base64
+        function handleAvatarPreview(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedAvatarBase64 = e.target.result;
+                    document.getElementById('avatar-preview').src = selectedAvatarBase64;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         // ==========================================
         // 4. 處理「新增運動員」表單提交
         // ==========================================
-        addAthleteForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const nameInput = document.getElementById('athlete-name');
-            const athleteName = nameInput.value.trim();
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('add-athlete-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById('athlete-name').value.trim();
+                const dob = document.getElementById('athlete-dob').value;
+                const gender = document.getElementById('athlete-gender').value;
 
-            if (!athleteName) return;
+                if (!name || !dob || !gender) {
+                    alert('請填寫所有必填欄位（姓名、出生日期、性別）！');
+                    return;
+                }
 
-            // 將新運動員寫入 Supabase，同時強烈綁定目前登入者的 user_id
-            const { data, error } = await supabase
-                .from('athletes')
-                .insert([
-                    { 
-                        name: athleteName, 
-                        user_id: currentUser.id 
-                    }
-                ]);
+                // 將新運動員寫入 Supabase（請確保 Supabase 的 athletes 資料表包含 name, dob, gender, avatar, user_id 欄位）
+                const { error } = await supabase
+                    .from('athletes')
+                    .insert([
+                        { 
+                            name: name,
+                            dob: dob,
+                            gender: gender,
+                            avatar: selectedAvatarBase64,
+                            user_id: currentUser.id 
+                        }
+                    ]);
 
-            if (error) {
-                alert('新增失敗：' + error.message);
-            } else {
-                alert('成功新增運動員：' + athleteName);
-                nameInput.value = ''; // 清空輸入框
-                await fetchAthletes(); // 重新整理列表，更新數量判斷
-            }
+                if (error) {
+                    alert('新增失敗：' + error.message);
+                } else {
+                    alert('成功新增運動員：' + name);
+                    document.getElementById('add-athlete-form').reset();
+                    selectedAvatarBase64 = '';
+                    document.getElementById('avatar-preview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+                    await fetchAthletes();
+                }
+            });
+
+            document.getElementById('btn-logout').addEventListener('click', async () => {
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    alert('登出失敗：' + error.message);
+                } else {
+                    localStorage.clear();
+                    alert('已成功登出！');
+                    window.location.href = 'index.html';
+                }
+            });
+
+            initPage();
         });
-
-        // ==========================================
-        // 5. 處理「登出帳戶」
-        // ==========================================
-        btnLogout.addEventListener('click', async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                alert('登出失敗：' + error.message);
-            } else {
-                // 清除本地儲存的所有暂存快取
-                localStorage.clear();
-                alert('已成功登出！');
-                window.location.href = 'index.html';
-            }
-        });
-
-        // 執行頁面初始化
-        initPage();
     </script>
 
     <style>
-        .container { max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; text-align: center; }
+        body { background-color: #f1f5f9; font-family: sans-serif; margin: 0; padding: 20px; }
+        .container { max-width: 500px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; }
         .athlete-list { margin: 20px 0; display: flex; flex-direction: column; gap: 10px; }
-        .athlete-btn { padding: 12px; font-size: 16px; background-color: #28a745; color: white; border: none; cursor: pointer; border-radius: 4px; }
-        .add-section { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-        .input-group { margin-bottom: 10px; }
-        .input-group input { padding: 8px; width: 80%; }
+        .athlete-btn { padding: 14px; font-size: 16px; background-color: #2563eb; color: white; border: none; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .athlete-btn:hover { background-color: #1d4ed8; }
+        .add-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: left; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #334155; }
+        .input-group input, .input-group select { padding: 10px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         .hidden { display: none; }
-        .logout-btn { background-color: #dc3545; margin-top: 20px; padding: 5px 10px; color: white; border: none; cursor: pointer; }
+        .logout-btn { background-color: #ef4444; margin-top: 20px; padding: 8px 16px; color: white; border: none; cursor: pointer; border-radius: 6px; font-weight: bold; }
+        .logout-btn:hover { background-color: dc2626; }
+        .avatar-upload-container { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
+        .avatar-preview { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #cbd5e1; border: 1px solid #94a3b8; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>請選擇運動員</h2>
-        <p>點擊下方運動員進入田徑運動記錄主頁</p>
+        <p style="color: #64748b; font-size: 14px;">點擊下方運動員進入田徑運動記錄主頁</p>
 
-        <!-- 運動員列表（由 JavaScript 動態抓取 Supabase 後生成按鈕放入此處） -->
+        <!-- 運動員列表 -->
         <div class="athlete-list" id="athlete-container">
             <p id="loading-msg">正在載入運動員資料...</p>
-            <!-- 範例結構（實際會由 JS 產生）：
-            <button class="athlete-btn">陳大文</button>
-            <button class="athlete-btn">張小明</button>
-            -->
         </div>
 
         <!-- 提示字句：當滿 3 人時顯示 -->
-        <p id="limit-message" class="hidden" style="color: red; font-weight: bold;">
+        <p id="limit-message" class="hidden" style="color: #dc2626; font-weight: bold;">
             ⚠️ 已達到上限 3 名運動員，無法再新增。
         </p>
 
@@ -175,20 +199,38 @@
             <h3>新增運動員資料</h3>
             <form id="add-athlete-form">
                 <div class="input-group">
-                    <input type="text" id="athlete-name" required placeholder="輸入運動員姓名（例如：陳大文）">
+                    <label>運動員姓名 <span style="color: red;">*</span></label>
+                    <input type="text" id="athlete-name" required placeholder="例如：陳大文">
                 </div>
-                <button type="submit" style="background-color: #007bff; width: auto; padding: 8px 20px;">確認新增</button>
+                
+                <div class="input-group">
+                    <label>出生日期 <span style="color: red;">*</span></label>
+                    <input type="date" id="athlete-dob" required>
+                </div>
+
+                <div class="input-group">
+                    <label>性別 <span style="color: red;">*</span></label>
+                    <select id="athlete-gender" required>
+                        <option value="">請選擇性別</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label>頭像相片（可選）</label>
+                    <div class="avatar-upload-container">
+                        <img id="avatar-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="avatar-preview">
+                        <input type="file" id="athlete-avatar" accept="image/*" onchange="handleAvatarPreview(event)">
+                    </div>
+                </div>
+
+                <button type="submit" style="background-color: #2563eb; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">確認新增</button>
             </form>
         </div>
 
         <button class="logout-btn" id="btn-logout">登出帳戶</button>
     </div>
 
-    <script>
-        // 這裡稍後填入：
-        // 1. 檢查用戶是否登入，未登入踢回 index.html
-        // 2. 撈取 Supabase 運動員數據，若大於等於3個，隱藏 #add-athlete-section 並顯示 #limit-message
-        // 3. 點擊運動員按鈕時，將運動員 ID 存入 localStorage 並跳轉到 main.html
-    </script>
 </body>
 </html>
