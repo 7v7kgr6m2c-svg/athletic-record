@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>田徑紀錄系統 - 快捷登入</title>
-    <!-- 正確引入 Supabase JS SDK CDN -->
+    <!-- 引入 Supabase JS SDK CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
@@ -22,22 +22,29 @@
         <h2>歡迎使用田徑紀錄系統</h2>
         <p class="subtitle">請使用 Google 帳戶快捷註冊或登入</p>
 
-        <!-- 只保留 Google 登入按鈕 -->
-        <button id="btn-google-login" class="btn-oauth btn-google">
+        <!-- 綁定點擊事件 -->
+        <button onclick="handleGoogleLogin()" class="btn-oauth btn-google">
             <span>使用 Google 帳戶登入</span>
         </button>
     </div>
 
     <script>
         // ==========================================
-        // 初始化 Supabase
+        // 初始化 Supabase (使用更新後的正確金鑰)
         // ==========================================
-        const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzZ3h4Zm1ocWxvdWt1dXd1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNzk4NDMsImV4cCI6MjEwMTY1NTg0M30.9LdpqaZqX51Ht1LMNQ_gf3SQjSTPBkykxxx5tA-CNdU';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_URL = "https://csgxxfmhqloukuuwuhhd.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzZ3h4Zm1ocWxvdWt1dXd1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNzk4NDMsImV4cCI6MjEwMTY1NTg0M30.9LdpqaZqX51Ht1LMNQ_gf3SQjSTPBkykxxx5tA-CNdU";
+        
+        let supabase = null;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (err) {
+            alert("Supabase 初始化失敗: " + err.message);
+        }
 
         // 自動檢查機制：如果已經登入，直接跳轉到第二頁
         async function checkExistingSession() {
+            if (!supabase) return;
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 window.location.href = 'athletes.html';
@@ -45,23 +52,34 @@
         }
         checkExistingSession();
 
-        // 處理 Google 快捷登入
-        document.getElementById('btn-google-login').addEventListener('click', async () => {
+        // 處理 Google 登入
+        async function handleGoogleLogin() {
+            if (!supabase) {
+                alert("錯誤：Supabase 尚未初始化！");
+                return;
+            }
+
             try {
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.origin + '/athletes.html'
+                        redirectTo: window.location.origin + '/athletes.html',
+                        skipBrowserRedirect: true // 手動取得導向網址，避免行動裝置阻擋
                     }
                 });
+
                 if (error) {
-                    alert('登入錯誤: ' + error.message);
+                    alert('Google 登入失敗：' + error.message);
+                } else if (data && data.url) {
+                    // 強制導向至 Google 授權頁面
+                    window.location.href = data.url;
+                } else {
+                    alert('未成功取得授權網址');
                 }
             } catch (err) {
-                alert('發生例外狀況: ' + err.message);
+                alert('發生例外錯誤：' + err.message);
             }
-        });
-
+        }
     </script>
 </body>
 </html>
