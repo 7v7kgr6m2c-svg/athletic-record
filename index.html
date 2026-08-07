@@ -52,7 +52,7 @@
         }
         checkExistingSession();
 
-        // 處理 Google 登入
+                // 處理 Google 登入
         async function handleGoogleLogin() {
             if (!supabase) {
                 alert("錯誤：Supabase 尚未初始化！");
@@ -60,26 +60,21 @@
             }
 
             try {
-                const { data, error } = await supabase.auth.signInWithOAuth({
+                const { error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: 'https://7v7kgr6m2c-svg.github.io/athletic-record',
-                        skipBrowserRedirect: true // 手動取得導向網址，避免行動裝置阻擋
+                        redirectTo: 'https://7v7kgr6m2c-svg.github.io/athletic-record/' // 記得最後面加返斜線 /
                     }
                 });
 
                 if (error) {
                     alert('Google 登入失敗：' + error.message);
-                } else if (data && data.url) {
-                    // 強制導向至 Google 授權頁面
-                    window.location.href = data.url;
-                } else {
-                    alert('未成功取得授權網址');
                 }
             } catch (err) {
                 alert('發生例外錯誤：' + err.message);
             }
         }
+
     </script>
 </body>
 </html>
