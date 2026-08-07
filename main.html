@@ -6,6 +6,8 @@
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 引入 Supabase JS SDK CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
 
@@ -20,20 +22,16 @@
         </div>
         <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="handleAvatarChange(event)">
 
-        <!-- 名字與詳細資料 -->
+        <!-- 名字 -->
         <div class="space-y-1">
           <div class="flex items-center gap-2">
-            <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">謝宸希</h1>
-            <button onclick="openEditModal()" class="text-white/70 hover:text-white text-xs bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded transition">編輯</button>
+            <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">載入中...</h1>
           </div>
-          <p class="text-blue-100 text-sm md:text-base font-medium opacity-90">
-            出生日期：<span id="athlete-dob">2015/12/08</span> <span id="athlete-gender">男</span>
-          </p>
         </div>
       </div>
 
       <!-- 切換按鈕 -->
-      <button onclick="openEditModal()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition border border-white/10 shadow-sm">
+      <button onclick="switchAthlete()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition border border-white/10 shadow-sm">
         <span>切換</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
       </button>
@@ -223,72 +221,82 @@
     </div>
   </div>
 
-  <!-- 編輯運動員資料 Modal -->
-  <div id="edit-profile-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
-      <h3 class="text-lg font-bold text-slate-900 border-b pb-2">編輯運動員資料</h3>
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">姓名</label>
-          <input type="text" id="edit-name" class="w-full border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">出生日期</label>
-          <input type="text" id="edit-dob" placeholder="YYYY/MM/DD" class="w-full border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs font-medium text-slate-700 mb-1">性別</label>
-          <select id="edit-gender" class="w-full border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
-            <option value="男">男</option>
-            <option value="女">女</option>
-          </select>
-        </div>
-      </div>
-      <div class="flex justify-end gap-2 pt-2 border-t">
-        <button onclick="closeEditModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium rounded-lg transition h-10 flex items-center">取消</button>
-        <button onclick="saveProfile()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition h-10 flex items-center">儲存</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // 運動員資料初始與載入
-    let athleteProfile = JSON.parse(localStorage.getItem('athlete_profile_v1')) || {
-      name: '謝宸希',
-      dob: '2015/12/08',
-      gender: '男',
+    // ==========================================
+    // 1. 初始化 Supabase
+    // ==========================================
+    const SUPABASE_URL = "https://csgxxfmhqloukuuwuhhd.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_QuBGykWcj3D-SOmzuRCHaQ_ta4blPUN";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 取得通行證（從 localStorage 讀取）
+    let currentAthleteId = localStorage.getItem('current_athlete_id');
+    let currentAthleteName = localStorage.getItem('current_athlete_name');
+
+    // 運動員資料 (僅保留頭像與名稱)
+    let athleteProfile = {
+      name: currentAthleteName || '運動員',
       avatar: ''
     };
 
     let isHistoryEditMode = false;
+    let records = [];
+    let chartInstance = null;
+
+    // ==========================================
+    // 2. 頁面啟動與驗證
+    // ==========================================
+    async function initMainPage() {
+      // 檢查登入狀態與通行證
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        alert('偵測到未登入，請先進行登入！');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      if (!currentAthleteId) {
+        alert('尚未選擇運動員，請先選擇！');
+        window.location.href = 'athletes.html';
+        return;
+      }
+
+      initProfileUI();
+
+      const dateInput = document.getElementById('date');
+      const today = getTodayString();
+      dateInput.max = today;
+      dateInput.value = today;
+
+      const validateDateInput = () => {
+        if (dateInput.value && dateInput.value > getTodayString()) {
+          alert('比賽日期不能選擇未來的日子！');
+          dateInput.value = getTodayString();
+        }
+        validateForm();
+      };
+
+      dateInput.addEventListener('change', validateDateInput);
+      dateInput.addEventListener('input', validateDateInput);
+
+      filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+      
+      // 從 Supabase 讀取該運動員的成績
+      await fetchRecordsFromSupabase();
+      initChart();
+
+      document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
+    }
+
+    function switchAthlete() {
+      window.location.href = 'athletes.html';
+    }
 
     function initProfileUI() {
       document.getElementById('athlete-name').textContent = athleteProfile.name;
-      document.getElementById('athlete-dob').textContent = athleteProfile.dob;
-      document.getElementById('athlete-gender').textContent = athleteProfile.gender;
       if (athleteProfile.avatar) {
         document.getElementById('avatar-img').src = athleteProfile.avatar;
       }
-    }
-
-    function openEditModal() {
-      document.getElementById('edit-name').value = athleteProfile.name;
-      document.getElementById('edit-dob').value = athleteProfile.dob;
-      document.getElementById('edit-gender').value = athleteProfile.gender;
-      document.getElementById('edit-profile-modal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-      document.getElementById('edit-profile-modal').classList.add('hidden');
-    }
-
-    function saveProfile() {
-      athleteProfile.name = document.getElementById('edit-name').value.trim() || '未命名';
-      athleteProfile.dob = document.getElementById('edit-dob').value.trim() || '2015/12/08';
-      athleteProfile.gender = document.getElementById('edit-gender').value;
-      localStorage.setItem('athlete_profile_v1', JSON.stringify(athleteProfile));
-      initProfileUI();
-      closeEditModal();
     }
 
     function handleAvatarChange(event) {
@@ -297,7 +305,6 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           athleteProfile.avatar = e.target.result;
-          localStorage.setItem('athlete_profile_v1', JSON.stringify(athleteProfile));
           document.getElementById('avatar-img').src = athleteProfile.avatar;
         };
         reader.readAsDataURL(file);
@@ -357,9 +364,6 @@
       }
     ];
 
-    let records = JSON.parse(localStorage.getItem('track_records_v7')) || [];
-    let chartInstance = null;
-
     function getTodayString() {
       const now = new Date();
       const year = now.getFullYear();
@@ -368,33 +372,97 @@
       return `${year}-${month}-${day}`;
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initProfileUI();
+    // ==========================================
+    // 3. Supabase 資料同步與互動函數
+    // ==========================================
+    async function fetchRecordsFromSupabase() {
+      const { data, error } = await supabase
+        .from('records')
+        .select('*')
+        .eq('athlete_id', currentAthleteId)
+        .order('date', { ascending: false });
 
-      const dateInput = document.getElementById('date');
-      const today = getTodayString();
-      
-      dateInput.max = today;
-      dateInput.value = today;
+      if (error) {
+        alert('載入成績紀錄失敗：' + error.message);
+        return;
+      }
 
-      const validateDateInput = () => {
-        if (dateInput.value && dateInput.value > getTodayString()) {
-          alert('比賽日期不能選擇未來的日子！');
-          dateInput.value = getTodayString();
-        }
-        validateForm();
+      records = (data || []).map(row => ({
+        id: row.id,
+        eventId: row.event_id,
+        eventName: row.event_name,
+        competition: row.competition,
+        date: row.date,
+        status: row.status,
+        stage: row.stage,
+        rank: row.rank,
+        isCombined: row.is_combined,
+        type: row.type,
+        result: row.result,
+        wind: row.wind,
+        subDetails: row.sub_details
+      }));
+
+      renderList();
+      updateChart();
+    }
+
+    async function saveRecordToSupabase(record, editId) {
+      const dbPayload = {
+        athlete_id: currentAthleteId,
+        event_id: record.eventId,
+        event_name: record.eventName,
+        competition: record.competition,
+        date: record.date,
+        status: record.status,
+        stage: record.stage,
+        rank: record.rank,
+        is_combined: record.isCombined,
+        type: record.type,
+        result: record.result,
+        wind: record.wind,
+        sub_details: record.subDetails
       };
 
-      dateInput.addEventListener('change', validateDateInput);
-      dateInput.addEventListener('input', validateDateInput);
+      if (editId && !isNaN(editId)) {
+        const { error } = await supabase
+          .from('records')
+          .update(dbPayload)
+          .eq('id', editId);
 
-      filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
-      renderList();
-      initChart();
+        if (error) {
+          alert('更新失敗：' + error.message);
+          return false;
+        }
+      } else {
+        const { error } = await supabase
+          .from('records')
+          .insert([dbPayload]);
 
-      document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
-    });
+        if (error) {
+          alert('儲存失敗：' + error.message);
+          return false;
+        }
+      }
+      return true;
+    }
 
+    async function deleteRecordFromSupabase(id) {
+      const { error } = await supabase
+        .from('records')
+        .eq('id', id)
+        .delete();
+
+      if (error) {
+        alert('刪除失敗：' + error.message);
+        return false;
+      }
+      return true;
+    }
+
+    // ==========================================
+    // 4. 表單驗證與介面互動邏輯
+    // ==========================================
     function validateForm() {
       const btn = document.getElementById('submit-btn');
       const comp = document.getElementById('competition').value.trim();
@@ -687,7 +755,6 @@
       const statusSelect = document.getElementById('status-select');
 
       container.innerHTML = '';
-
       statusSelect.innerHTML = '';
       
       const optNormal = new Option('正常', 'NORMAL');
@@ -826,7 +893,7 @@
       return `${mNum}.${cmStr}`;
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
       e.preventDefault();
 
       const selectedDate = document.getElementById('date').value;
@@ -851,7 +918,6 @@
       }
 
       let record = {
-        id: editId ? editId : Date.now().toString(),
         eventId: selectedId,
         eventName: itemObj.name,
         competition: document.getElementById('competition').value,
@@ -921,51 +987,28 @@
         }
       }
 
-      if (editId) {
-        const index = records.findIndex(r => r.id === editId);
-        if (index !== -1) {
-          records[index] = record;
-        }
+      const success = await saveRecordToSupabase(record, editId);
+      if (success) {
+        alert('儲存成功！');
         cancelEditMode();
-      } else {
-        records.push(record);
-      }
-
-      localStorage.setItem('track_records_v7', JSON.stringify(records));
-
-      renderList();
-      updateChart();
-
-      if (!editId) {
-        document.getElementById('status-select').value = 'NORMAL';
-        document.getElementById('stage-select').value = '初賽';
-        document.getElementById('rank-select').value = '';
-        document.getElementById('combined-rank-select').value = '';
-        document.getElementById('time-min').value = '';
-        document.getElementById('time-sec').value = '';
-        document.getElementById('time-ms').value = '';
-        document.getElementById('dist-m').value = '';
-        document.getElementById('dist-cm').value = '';
-        document.getElementById('wind').value = '';
-        document.getElementById('competition').value = '';
-        onEventSelectChange();
+        await fetchRecordsFromSupabase();
       }
     }
 
-    function deleteRecord(id) {
+    async function deleteRecord(id) {
       if (confirm('確定要刪除這筆紀錄嗎？')) {
-        records = records.filter(r => r.id !== id);
-        localStorage.setItem('track_records_v7', JSON.stringify(records));
-        renderList();
-        updateChart();
-        if (document.getElementById('edit-record-id').value === id) {
-          cancelEditMode();
+        const success = await deleteRecordFromSupabase(id);
+        if (success) {
+          await fetchRecordsFromSupabase();
+          if (document.getElementById('edit-record-id').value === id) {
+            cancelEditMode();
+          }
         }
       }
     }
 
     function editRecord(id) {
-      const r = records.find(item => item.id === id);
+      const r = records.find(item => item.id == id);
       if (!r) return;
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1250,6 +1293,9 @@
       }];
       chartInstance.update();
     }
+
+    // 啟動頁面
+    initMainPage();
   </script>
 </body>
 </html>
