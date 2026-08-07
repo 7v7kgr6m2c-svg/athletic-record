@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>個人田徑成績記錄網</title>
   <script src="https://tailwindcss.com"></script>
-  <script src="https://jsdelivr.net"></script>
-  <script src="https://jsdelivr.net"></script>
+  <script src="https://jsdelivr.net" defer></script>
+  <script src="https://jsdelivr.net" defer></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
 
@@ -14,8 +14,8 @@
   <div id="page-auth" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm space-y-4 my-12">
     <h2 id="auth-title" class="text-xl font-bold text-center text-slate-900">用戶登入</h2>
     <div class="space-y-3">
-      <input type="email" id="auth-email" placeholder="電子郵件" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none">
-      <input type="password" id="auth-password" placeholder="密碼" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none">
+      <input type="email" id="auth-email" placeholder="電子郵件" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input type="password" id="auth-password" placeholder="密碼" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
       <button onclick="handleAuth()" id="auth-btn" class="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition">登入</button>
       <p class="text-xs text-center text-slate-500">
         <span id="auth-toggle-text">沒有帳戶？</span>
@@ -24,33 +24,30 @@
     </div>
   </div>
 
-  <!-- 頁面 2：選擇運動員主頁 (登入後、進入主頁前) -->
+  <!-- 頁面 2：選擇運動員畫面 (登入後、進入主頁前) -->
   <div id="page-select-athlete" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm space-y-6 my-12 hidden">
     <div class="text-center">
       <h2 class="text-xl font-bold text-slate-900">👥 選擇運動員進入主頁</h2>
       <p class="text-xs text-slate-400 mt-1">每個帳戶最多可建立 3 名運動員</p>
     </div>
     
-    <!-- 運動員列表 -->
     <div id="athlete-select-list" class="space-y-2"></div>
 
-    <!-- 新增運動員控制區 (少於3人才顯示) -->
     <div id="add-athlete-form" class="border-t pt-4 space-y-3 hidden">
       <p class="text-sm font-medium text-slate-700">➕ 新增運動員資料</p>
-      <input type="text" id="new-athlete-name" placeholder="請輸入運動員姓名" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none">
-      <select id="new-athlete-gender" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none">
+      <input type="text" id="new-athlete-name" placeholder="請輸入運動員姓名" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <select id="new-athlete-gender" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
         <option value="M">男子組</option>
         <option value="F">女子組</option>
       </select>
       <button onclick="addAthlete()" class="w-full bg-emerald-600 text-white font-medium py-2 rounded-lg text-sm hover:bg-emerald-700 transition">確認新增</button>
     </div>
   </div>
-
-  <!-- 頁面 3：你原本的田徑記錄主頁 (預設隱藏，選擇運動員後才完全展開) -->
+  <!-- 頁面 3：個人田徑記錄主頁 (預設隱藏，選完人才顯示) -->
   <div id="page-main-dashboard" class="max-w-3xl mx-auto space-y-6 hidden">
     <header class="flex justify-between items-center bg-white p-6 rounded-xl shadow-sm">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">跑🏃‍♂️ 個人田徑成績記錄網</h1>
+        <h1 class="text-2xl font-bold text-slate-900">🏃‍♂️ 個人田徑成績記錄網</h1>
         <p class="text-slate-500 text-sm mt-1">目前運動員：<span id="current-athlete-name" class="font-bold text-blue-600 text-base"></span></p>
       </div>
       <div class="flex gap-2">
@@ -58,25 +55,22 @@
         <button onclick="logout()" class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100">登出</button>
       </div>
     </header>
+
     <div class="space-y-6">
-      <!-- 1. 新增成績紀錄 -->
       <section class="bg-white p-6 rounded-xl shadow-sm">
         <h2 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績紀錄</h2>
         <form id="record-form" class="space-y-3" oninput="validateForm()">
           
-          <!-- 賽事名稱 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">賽事名稱 <span class="text-red-500">*</span></label>
             <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
-          <!-- 比賽日期 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
             <input type="date" id="date" class="flex-1 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
-          <!-- 分類選擇按鈕 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
             <div class="grid grid-cols-5 gap-0.5 p-1 bg-slate-100 rounded-lg text-xs font-medium text-center flex-1">
@@ -88,26 +82,21 @@
             </div>
           </div>
 
-          <!-- 項目與狀態 -->
           <div class="flex items-center gap-2">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
             <div class="flex-1 flex items-center gap-2 min-w-0">
-              <select id="event-select" onchange="onEventSelectChange()" class="flex-[3] w-0 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <select id="event-select" onchange="onEventSelectChange()" class="flex- w-0 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
               </select>
-              
               <label class="text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
               <select id="status-select" onchange="onStatusChange()" class="flex-[2.5] w-0 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
               </select>
             </div>
           </div>
-
           <!-- 一般項目成績與風速 -->
           <div id="single-event-inputs">
             <div class="flex items-center gap-3">
               <label id="result-label" class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
-              
               <div class="flex items-center gap-2 flex-wrap">
-                <!-- 時間格式 -->
                 <div id="time-input-group" class="flex items-center gap-1">
                   <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="w-12 border rounded-lg p-1 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">:</span>
@@ -115,15 +104,11 @@
                   <span class="font-bold text-slate-500">.</span>
                   <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="w-12 border rounded-lg p-1 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                 </div>
-
-                <!-- 距離格式 -->
                 <div id="distance-input-group" class="hidden flex items-center gap-1">
                   <input type="number" id="dist-m" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg p-1 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">.</span>
                   <input type="number" id="dist-cm" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg p-1 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                 </div>
-
-                <!-- 風速 -->
                 <div id="wind-container" class="flex items-center gap-1 pl-2 border-l">
                   <label class="text-xs font-medium text-slate-500 whitespace-nowrap">風速</label>
                   <input type="number" id="wind" step="0.1" placeholder="+1.2" oninput="validateForm()" class="w-16 border rounded-lg p-1 text-center text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -138,8 +123,7 @@
               <label class="block text-sm font-bold text-blue-600">全能單項細項 <span class="text-red-500">*</span></label>
               <span class="text-xs text-slate-400">依順序填寫，分數自動加總</span>
             </div>
-            <div id="sub-events-container" class="space-y-2 text-xs">
-            </div>
+            <div id="sub-events-container" class="space-y-2 text-xs"></div>
             <div class="flex items-center gap-3 pt-2 border-t mt-2">
               <label class="w-16 text-sm font-bold text-slate-700">總分</label>
               <input type="number" id="total-score" placeholder="總分" class="w-28 border rounded-lg p-1 text-center bg-blue-50 font-bold text-blue-800" readonly>
@@ -151,6 +135,7 @@
           </button>
         </form>
       </section>
+
       <!-- 2. 成績進步趨勢 -->
       <section class="bg-white p-6 rounded-xl shadow-sm">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -178,15 +163,12 @@
                 <th class="p-2">風速</th>
               </tr>
             </thead>
-            <tbody id="record-table-body" class="divide-y text-slate-700">
-              <!-- 資料由資料庫動態載入 -->
-            </tbody>
+            <tbody id="record-table-body" class="divide-y text-slate-700"></tbody>
           </table>
         </div>
       </section>
     </div>
   </div>
-
   <script>
     // ⚙️ 專屬雲端資料庫連線設定
     const SUPABASE_URL = "https://7v7kgrnvqizyllyzfyen.supabase.co";
@@ -196,16 +178,20 @@
 
     let isLoginMode = true;
     let currentAthleteId = null;
-    let progressChart = null; // 用於存放 Chart.js 實例
+    let globalRecords = []; // 儲存目前運動員的所有紀錄，用於圖表與表格
+    let progressChart = null;
 
-    // 網頁開啟時，自動偵測是否已經登入過
+    // 網頁開啟自動偵測登入狀態
     window.onload = async function() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        showSelectAthletePage();
-      } else {
-        showAuthPage();
-      }
+      // 確保 Supabase 套件加載完成後執行
+      setTimeout(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          showSelectAthletePage();
+        } else {
+          showAuthPage();
+        }
+      }, 500);
     };
 
     function showAuthPage() {
@@ -233,11 +219,10 @@
       document.getElementById('auth-btn').innerText = isLoginMode ? '登入' : '註冊';
       document.getElementById('auth-toggle-text').innerText = isLoginMode ? '沒有帳戶？' : '已有帳戶？';
     }
-    // 處理註冊與登入
+
     async function handleAuth() {
       const email = document.getElementById('auth-email').value;
       const password = document.getElementById('auth-password').value;
-
       if(!email || !password) return alert('請完整填寫帳密');
 
       if (isLoginMode) {
@@ -247,7 +232,7 @@
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) return alert('註冊失敗: ' + error.message);
-        alert('註冊成功！系統已發送驗證信（若有開啟），現在請直接嘗試登入。');
+        alert('註冊成功！請直接嘗試登入。');
         toggleAuthMode();
       }
     }
@@ -260,7 +245,6 @@
     function backToSelect() {
       showSelectAthletePage();
     }
-
     // 讀取該用戶名下的所有運動員 (最多3人)
     async function loadAthletes() {
       const { data: athletes, error } = await supabase.from('athletes').select('*');
@@ -275,14 +259,13 @@
 
       athletes.forEach(ath => {
         listDiv.innerHTML += `
-          <button onclick="selectAthlete(${ath.id}, '${ath.name}')" class="w-full flex items-center justify-between p-3 border rounded-xl hover:bg-slate-50 transition text-left font-medium">
+          <button onclick="selectAthlete(${ath.id}, '${ath.name}')" class="w-full flex items-center justify-between p-3 border rounded-xl hover:bg-slate-50 transition text-left font-medium bg-white shadow-sm">
             <span>🏃 ${ath.name} (${ath.gender === 'M' ? '男' : '女'})</span>
-            <span class="text-xs text-blue-600">點擊進入主頁 ➔</span>
+            <span class="text-xs text-blue-600 font-bold">進入主頁 ➔</span>
           </button>
         `;
       });
 
-      // 人數小於 3 人才顯示新增表單
       const addBox = document.getElementById('add-athlete-form');
       if (athletes.length < 3) {
         addBox.classList.remove('hidden');
@@ -311,40 +294,224 @@
       }
     }
 
+    // 點擊運動員按鈕進入主頁
     function selectAthlete(id, name) {
       currentAthleteId = id;
       document.getElementById('current-athlete-name').innerText = name;
       showDashboardPage();
-      loadRecords();  // 載入該運動員的專屬成績
+      loadRecords(); 
     }
-    // 讀取該運動員的歷史成績並更新表格與圖表
+
+    // 讀取該運動員的歷史成績
     async function loadRecords() {
-      // (程式碼實作：取得 Supabase 資料、渲染表格、更新圖表篩選器)
-      // ...
-    }
+      if (!currentAthleteId) return;
 
-    // 更新 Chart.js 圖表函數
-    function updateChart() {
-      // (程式碼實作：過濾資料、轉換成 Chart.js 格式、銷毀/重建圖表)
-      // ...
-    }
+      const { data: records, error } = await supabase
+        .from('records')
+        .select('*')
+        .eq('athlete_id', currentAthleteId)
+        .order('date', { ascending: false });
 
-    // 處理表單提交，將成績寫入 Supabase
+      if (error) return console.error(error);
+      
+      globalRecords = records; // 存入全域變數供圖表過濾
+
+      // 1. 渲染歷史紀錄表格
+      const tbody = document.getElementById('record-table-body');
+      tbody.innerHTML = '';
+
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">目前尚無成績紀錄</td></tr>`;
+      }
+
+      records.forEach(r => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50 border-b">
+            <td class="p-2 whitespace-nowrap">${r.date}</td>
+            <td class="p-2">${r.competition}</td>
+            <td class="p-2">${r.event}</td>
+            <td class="p-2">${r.status}</td>
+            <td class="p-2 font-bold text-blue-600">${r.result}</td>
+            <td class="p-2 text-slate-500">${r.wind || '-'}</td>
+          </tr>
+        `;
+      });
+
+      // 2. 更新圖表的篩選下拉選單 (蒐集所有不重複的項目)
+      const chartFilter = document.getElementById('chart-filter');
+      const uniqueEvents = [...new Set(records.map(r => r.event))];
+      chartFilter.innerHTML = '';
+      
+      uniqueEvents.forEach(evt => {
+        chartFilter.innerHTML += `<option value="${evt}">${evt}</option>`;
+      });
+
+      // 3. 觸發更新趨勢圖表
+      updateChart();
+    }
+    // 處理表單提交：整合你的成績格式並寫入資料庫
     document.getElementById('record-form').onsubmit = async function(e) {
-      // (程式碼實作：組合資料、發送至 Supabase、重置表單)
-      // ...
+      e.preventDefault();
+      if (!currentAthleteId) return alert('請先選擇或新增一位運動員');
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 計算與組合成績格式
+      let resultStr = "";
+      const isTimeHidden = document.getElementById('time-input-group').classList.contains('hidden');
+      if (!isTimeHidden) {
+        const min = document.getElementById('time-min').value || "0";
+        const sec = document.getElementById('time-sec').value || "0";
+        const ms = document.getElementById('time-ms').value || "0";
+        resultStr = `${min}:${sec}.${ms}`;
+      } else {
+        const m = document.getElementById('dist-m').value || "0";
+        const cm = document.getElementById('dist-cm').value || "0";
+        resultStr = `${m}.${cm}m`;
+      }
+
+      const { error } = await supabase.from('records').insert([
+        {
+          user_id: user.id,
+          athlete_id: currentAthleteId,
+          competition: document.getElementById('competition').value,
+          date: document.getElementById('date').value,
+          category: isTimeHidden ? 'field' : 'track', 
+          event: document.getElementById('event-select').value,
+          status: document.getElementById('status-select').value,
+          result: resultStr,
+          wind: document.getElementById('wind').value
+        }
+      ]);
+
+      if (error) {
+        alert('儲存失敗: ' + error.message);
+      } else {
+        alert('成績儲存成功！');
+        // 重設表單輸入值
+        document.getElementById('competition').value = '';
+        document.getElementById('time-min').value = '';
+        document.getElementById('time-sec').value = '';
+        document.getElementById('time-ms').value = '';
+        document.getElementById('dist-m').value = '';
+        document.getElementById('dist-cm').value = '';
+        document.getElementById('wind').value = '';
+        loadRecords(); // 重新讀取，刷新表格與圖表
+      }
     };
 
-    // ========================================================
-    // 🔄 以下為前端按鈕切換與初始化邏輯
-    // ========================================================
-    
-    // 初始化下拉選單、類別切換、欄位驗證等功能
-    // (包含 eventDatabase, filterCategory, onEventSelectChange 等函數)
-    // ...
+    // 更新圖表：自動將時間或距離轉換成數值繪製折線圖
+    function updateChart() {
+      const selectedEvent = document.getElementById('chart-filter').value;
+      if (!selectedEvent) return;
 
-    // 啟動初始化
-    initSelectors();
+      // 篩選當前項目的紀錄，並依日期正序排列（舊到新）
+      const filtered = globalRecords
+        .filter(r => r.event === selectedEvent)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const labels = filtered.map(r => r.date);
+      const dataValues = filtered.map(r => {
+        // 將成績字串轉為數字 (秒數或米數) 供圖表繪製
+        if (r.result.includes('m') && !r.result.includes(':')) {
+          return parseFloat(r.result.replace('m', '')) || 0;
+        } else {
+          const parts = r.result.split(/[:.]/);
+          if (parts.length === 3) {
+            return (parseInt(parts[0]) * 60) + parseInt(parts[1]) + (parseInt(parts[2]) / 100);
+          }
+          return parseFloat(r.result) || 0;
+        }
+      });
+
+      const ctx = document.getElementById('progressChart').getContext('2d');
+      
+      // 若圖表已存在則先銷毀，避免重複疊加錯誤
+      if (progressChart) { progressChart.destroy(); }
+
+      progressChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: `${selectedEvent} 成績走勢`,
+            data: dataValues,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            tension: 0.2,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: false } }
+        }
+      });
+    }
+
+    // ========================================================
+    // 🔄 回歸你最初原汁原味的前端動態控制函數
+    // ========================================================
+    const eventDatabase = {
+      track: ['100m', '200m', '400m', '800m', '1500m'],
+      field: ['跳高', '跳遠', '三級跳遠', '撐竿跳高', '鉛球', '鐵餅', '標槍'],
+      relay: ['4x100m接力', '4x400m接力'],
+      combined: ['十項全能', '七項全能'],
+      all: ['100m', '200m', '400m', '800m', '1500m', '跳高', '跳遠', '三級跳遠', '撐竿跳高', '鉛球', '鐵餅', '標槍']
+    };
+
+    function filterCategory(cat, btn) {
+      const select = document.getElementById('event-select');
+      select.innerHTML = '';
+      eventDatabase[cat].forEach(evt => {
+        select.innerHTML += `<option value="${evt}">${evt}</option>`;
+      });
+
+      if (cat === 'field') {
+        document.getElementById('time-input-group').classList.add('hidden');
+        document.getElementById('distance-input-group').classList.remove('hidden');
+      } else {
+        document.getElementById('time-input-group').classList.remove('hidden');
+        document.getElementById('distance-input-group').classList.add('hidden');
+      }
+
+      document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+        b.classList.add('text-slate-600');
+      });
+      btn.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+      onEventSelectChange();
+    }
+
+    function onEventSelectChange() {
+      validateForm();
+    }
+    function onStatusChange() {}
+    function sanitizeDigit(input) { input.value = input.value.replace(/[^0-9]/g, ''); }
+
+    function validateForm() {
+      // 簡單控制儲存按鈕的啟用狀態
+      const comp = document.getElementById('competition').value;
+      const dt = document.getElementById('date').value;
+      const btn = document.getElementById('submit-btn');
+      if (comp && dt) {
+        btn.disabled = false;
+        btn.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+        btn.classList.add('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+      } else {
+        btn.disabled = true;
+        btn.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+        btn.classList.remove('bg-blue-600', 'text-white', 'hover:bg-blue-700');
+      }
+    }
+
+    // 網頁初始化選單
+    filterCategory('all', document.querySelector('.cat-btn'));
+    
+    // 初始化狀態欄位
+    const statusSelect = document.getElementById('status-select');
+    statusSelect.innerHTML = `<option value="決賽">決賽</option><option value="初賽">初賽</option><option value="準決賽">準決賽</option><option value="訓練">訓練</option>`;
   </script>
 </body>
 </html>
