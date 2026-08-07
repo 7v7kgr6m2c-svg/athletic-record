@@ -12,6 +12,7 @@
         .btn-oauth { width: 100%; padding: 12px; margin-bottom: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity 0.2s; }
         .btn-oauth:hover { opacity: 0.9; }
         .btn-google { background-color: #4285F4; }
+        .btn-oauth:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -20,7 +21,7 @@
         <h2>歡迎使用田徑紀錄系統</h2>
         <p class="subtitle">請使用 Google 帳戶快捷註冊或登入</p>
 
-        <button onclick="handleGoogleLogin()" class="btn-oauth btn-google">
+        <button id="login-btn" onclick="handleGoogleLogin()" class="btn-oauth btn-google">
             <span>使用 Google 帳戶登入</span>
         </button>
     </div>
@@ -30,7 +31,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // TODO: 請填入你的 Firebase 專案設定 (可在 Firebase Console 取得)
         const firebaseConfig = {
             apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
             authDomain: "athletes-record.firebaseapp.com",
@@ -54,11 +54,31 @@
 
         // 綁定到全域讓按鈕呼叫
         window.handleGoogleLogin = async function() {
+            const btn = document.getElementById('login-btn');
+            btn.disabled = true;
+
+            // 設定 8 秒超時提示（防止 Safari/iOS 阻擋 popup 卻沒有觸發 error 的情況）
+            const timeoutId = setTimeout(() => {
+                alert('登入回應時間較長。如果沒有跳出登入視窗，請檢查瀏覽器是否開啟了「阻擋彈出式視窗 / 快顯視窗」功能！');
+                btn.disabled = false;
+            }, 8000);
+
             try {
                 const result = await signInWithPopup(auth, provider);
+                clearTimeout(timeoutId); // 成功登入後清除超時提示
                 window.location.href = 'athletes.html';
             } catch (error) {
-                alert('Google 登入失敗：' + error.message);
+                clearTimeout(timeoutId); // 發生錯誤時清除超時提示
+                btn.disabled = false;
+                
+                // 針對常見的 Popup 阻擋錯誤碼做明確提示
+                if (error.code === 'auth/popup-blocked') {
+                    alert('登入失敗：你的瀏覽器阻擋了彈出式視窗！\n請喺 Safari 或 Chrome 設定中允許「彈出式視窗 (Popup)」，然後再試一次。');
+                } else if (error.code === 'auth/popup-closed-by-user') {
+                    // 用戶自己按交叉關閉，不需特別提示
+                } else {
+                    alert('Google 登入失敗：' + error.message + '\n（如無法跳轉，請檢查瀏覽器是否阻擋了彈出式視窗）');
+                }
             }
         };
     </script>
