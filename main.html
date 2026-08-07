@@ -6,8 +6,6 @@
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- 引入 Supabase JS SDK CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
 
@@ -56,7 +54,7 @@
             <input type="date" id="date" class="flex-1 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
-          <!-- 分類選擇按鈕 (統一高度與對齊) -->
+          <!-- 分類選擇按鈕 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
             <div class="grid grid-cols-5 p-1 bg-slate-100 rounded-lg text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
@@ -77,7 +75,6 @@
               
               <label class="text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
               <select id="status-select" onchange="onStatusChange()" class="flex-[2.5] w-0 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <!-- 動態建構選項 -->
               </select>
             </div>
           </div>
@@ -88,7 +85,6 @@
               <label id="result-label" class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
               
               <div class="flex items-center gap-2 flex-wrap flex-1">
-                <!-- 時間格式 -->
                 <div id="time-input-group" class="flex items-center gap-1">
                   <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">:</span>
@@ -97,7 +93,6 @@
                   <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <!-- 距離格式 -->
                 <div id="distance-input-group" class="hidden flex items-center gap-1">
                   <input type="number" id="dist-m" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">.</span>
@@ -106,13 +101,11 @@
               </div>
             </div>
 
-            <!-- 風速 -->
             <div id="wind-container" class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">風速</label>
               <input type="number" id="wind" step="0.1" placeholder="+1.2" oninput="validateForm()" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
-            <!-- 階段選擇 -->
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
               <select id="stage-select" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -121,7 +114,6 @@
               </select>
             </div>
 
-            <!-- 名次選擇 -->
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
               <select id="rank-select" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -151,7 +143,6 @@
               <input type="number" id="total-score" placeholder="總分" class="w-28 border rounded-lg h-10 text-center bg-blue-50 font-bold text-blue-800" readonly>
             </div>
 
-            <!-- 全能名次選擇 -->
             <div class="flex items-center gap-3 pt-2">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
               <select id="combined-rank-select" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -220,22 +211,32 @@
     </div>
   </div>
 
-  <script>
-    // ==========================================
-    // 1. 初始化 Supabase
-    // ==========================================
-    const SUPABASE_URL = "https://csgxxfmhqloukuuwuhhd.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzZ3h4Zm1ocWxvdWt1dXd1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNzk4NDMsImV4cCI6MjEwMTY1NTg0M30.9LdpqaZqX51Ht1LMNQ_gf3SQjSTPBkykxxx5tA-CNdU";
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  <!-- Firebase 與主邏輯 Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // 取得通行證與運動員詳細資料（從 localStorage 讀取）
+    // TODO: 請填入你的 Firebase 專案設定
+    const firebaseConfig = {
+        apiKey: "你的_API_KEY",
+        authDomain: "你的專案.firebaseapp.com",
+        projectId: "你的專案ID",
+        storageBucket: "你的專案.appspot.com",
+        messagingSenderId: "你的SenderID",
+        appId: "你的AppID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
     let currentAthleteId = localStorage.getItem('current_athlete_id');
     let currentAthleteName = localStorage.getItem('current_athlete_name');
     let currentAthleteDob = localStorage.getItem('current_athlete_dob');
     let currentAthleteGender = localStorage.getItem('current_athlete_gender');
     let currentAthleteAvatar = localStorage.getItem('current_athlete_avatar');
 
-    // 運動員資料
     let athleteProfile = {
       name: currentAthleteName || '運動員',
       dob: currentAthleteDob || '',
@@ -246,58 +247,52 @@
     let isHistoryEditMode = false;
     let records = [];
     let chartInstance = null;
+    let currentUser = null;
 
-    // ==========================================
-    // 2. 頁面啟動與驗證
-    // ==========================================
     async function initMainPage() {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
-        alert('偵測到未登入，請先進行登入！');
-        window.location.href = 'index.html';
-        return;
-      }
-
-      if (!currentAthleteId) {
-        alert('尚未選擇運動員，請先選擇！');
-        window.location.href = 'athletes.html';
-        return;
-      }
-
-      initProfileUI();
-
-      const dateInput = document.getElementById('date');
-      const today = getTodayString();
-      dateInput.max = today;
-      dateInput.value = today;
-
-      const validateDateInput = () => {
-        if (dateInput.value && dateInput.value > getTodayString()) {
-          alert('比賽日期不能選擇未來的日子！');
-          dateInput.value = getTodayString();
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          alert('偵測到未登入，請先進行登入！');
+          window.location.href = 'index.html';
+          return;
         }
-        validateForm();
-      };
+        currentUser = user;
 
-      dateInput.addEventListener('change', validateDateInput);
-      dateInput.addEventListener('input', validateDateInput);
+        if (!currentAthleteId) {
+          alert('尚未選擇運動員，請先選擇！');
+          window.location.href = 'athletes.html';
+          return;
+        }
 
-      filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
-      
-      await fetchRecordsFromSupabase();
-      initChart();
+        initProfileUI();
 
-      document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
+        const dateInput = document.getElementById('date');
+        const today = getTodayString();
+        dateInput.max = today;
+        dateInput.value = today;
+
+        dateInput.addEventListener('change', () => {
+          if (dateInput.value > getTodayString()) {
+            alert('比賽日期不能選擇未來的日子！');
+            dateInput.value = getTodayString();
+          }
+          validateForm();
+        });
+
+        filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+        await fetchRecordsFromFirestore();
+        initChart();
+
+        document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
+      });
     }
 
-    function switchAthlete() {
+    window.switchAthlete = function() {
       window.location.href = 'athletes.html';
     }
 
-    // 初始化頂部運動員介面
     function initProfileUI() {
       document.getElementById('athlete-name').textContent = athleteProfile.name;
-      
       let infoText = [];
       if (athleteProfile.gender) infoText.push(`性別: ${athleteProfile.gender}`);
       if (athleteProfile.dob) infoText.push(`生日: ${athleteProfile.dob}`);
@@ -308,7 +303,7 @@
       }
     }
 
-    function sanitizeDigit(el) {
+    window.sanitizeDigit = function(el) {
       el.value = el.value.replace(/[^0-9]/g, '');
     }
 
@@ -363,51 +358,46 @@
 
     function getTodayString() {
       const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
-    // ==========================================
-    // 3. Supabase 資料同步與互動函數
-    // ==========================================
-    async function fetchRecordsFromSupabase() {
-      const { data, error } = await supabase
-        .from('records')
-        .select('*')
-        .eq('athlete_id', currentAthleteId)
-        .order('date', { ascending: false });
+    async function fetchRecordsFromFirestore() {
+      try {
+        const q = query(collection(db, "records"), where("athlete_id", "==", currentAthleteId));
+        const querySnapshot = await getDocs(q);
+        
+        records = [];
+        querySnapshot.forEach((docSnap) => {
+          const row = docSnap.data();
+          records.push({
+            id: docSnap.id,
+            eventId: row.event_id,
+            eventName: row.event_name,
+            competition: row.competition,
+            date: row.date,
+            status: row.status,
+            stage: row.stage,
+            rank: row.rank,
+            isCombined: row.is_combined,
+            type: row.type,
+            result: row.result,
+            wind: row.wind,
+            subDetails: row.sub_details
+          });
+        });
 
-      if (error) {
-        alert('載入成績紀錄失敗：' + error.message);
-        return;
+        records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        renderList();
+        updateChart();
+      } catch (err) {
+        alert('載入成績紀錄失敗：' + err.message);
       }
-
-      records = (data || []).map(row => ({
-        id: row.id,
-        eventId: row.event_id,
-        eventName: row.event_name,
-        competition: row.competition,
-        date: row.date,
-        status: row.status,
-        stage: row.stage,
-        rank: row.rank,
-        isCombined: row.is_combined,
-        type: row.type,
-        result: row.result,
-        wind: row.wind,
-        subDetails: row.sub_details
-      }));
-
-      renderList();
-      updateChart();
     }
 
-    async function saveRecordToSupabase(record, editId) {
+    async function saveRecordToFirestore(record, editId) {
       const dbPayload = {
         athlete_id: currentAthleteId,
-        user_id: (await supabase.auth.getSession()).data.session.user.id,
+        user_id: currentUser.uid,
         event_id: record.eventId,
         event_name: record.eventName,
         competition: record.competition,
@@ -419,138 +409,65 @@
         type: record.type,
         result: record.result,
         wind: record.wind,
-        sub_details: record.subDetails
+        sub_details: record.subDetails,
+        updated_at: serverTimestamp()
       };
 
-      if (editId && !isNaN(editId)) {
-        const { error } = await supabase
-          .from('records')
-          .update(dbPayload)
-          .eq('id', editId);
-
-        if (error) {
-          alert('更新失敗：' + error.message);
-          return false;
+      try {
+        if (editId) {
+          const docRef = doc(db, "records", editId);
+          await updateDoc(docRef, dbPayload);
+        } else {
+          dbPayload.created_at = serverTimestamp();
+          await addDoc(collection(db, "records"), dbPayload);
         }
-      } else {
-        const { error } = await supabase
-          .from('records')
-          .insert([dbPayload]);
-
-        if (error) {
-          alert('儲存失敗：' + error.message);
-          return false;
-        }
-      }
-      return true;
-    }
-
-    async function deleteRecordFromSupabase(id) {
-      const { error } = await supabase
-        .from('records')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        alert('刪除失敗：' + error.message);
+        return true;
+      } catch (err) {
+        alert('儲存失敗：' + err.message);
         return false;
       }
-      return true;
     }
 
-    // ==========================================
-    // 4. 表單驗證與介面互動邏輯
-    // ==========================================
-    function validateForm() {
+    async function deleteRecordFromFirestore(id) {
+      try {
+        await deleteDoc(doc(db, "records", id));
+        return true;
+      } catch (err) {
+        alert('刪除失敗：' + err.message);
+        return false;
+      }
+    }
+
+    window.validateForm = function() {
       const btn = document.getElementById('submit-btn');
       const comp = document.getElementById('competition').value.trim();
       const date = document.getElementById('date').value;
 
-      if (!comp || !date) {
-        disableBtn(btn);
-        return;
-      }
+      if (!comp || !date) { disableBtn(btn); return; }
 
       const selectedId = document.getElementById('event-select').value;
       const status = document.getElementById('status-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
-      if (!itemObj) {
-        disableBtn(btn);
-        return;
-      }
+      if (!itemObj) { disableBtn(btn); return; }
 
       if (itemObj.subs) {
-        if (status === 'DQ' || status === 'DNS') {
-          enableBtn(btn);
-          return;
-        }
-
+        if (status === 'DQ' || status === 'DNS') { enableBtn(btn); return; }
         const container = document.getElementById('sub-events-container');
         const rows = Array.from(container.children);
-        
-        let subStates = rows.map(div => {
-          const st = div.querySelector('.sub-status').value;
-          const pts = div.querySelector('.sub-pts').value.trim();
-          const subType = div.querySelector('[data-subtype]').dataset.subtype;
-          
-          let hasVal = false;
-          if (st && st !== 'NORMAL') {
-            hasVal = true;
-          } else if (subType === 'time') {
-            if (div.querySelector('.sub-sec').value.trim() !== '' && div.querySelector('.sub-ms').value.trim() !== '') hasVal = true;
-          } else {
-            if (div.querySelector('.sub-m').value.trim() !== '' && div.querySelector('.sub-cm').value.trim() !== '') hasVal = true;
-          }
-
-          let isComplete = false;
-          if (st && st !== 'NORMAL') {
-            isComplete = (pts !== '');
-          } else {
-            isComplete = (hasVal && pts !== '');
-          }
-
-          return { hasVal, pts: pts !== '', isComplete };
-        });
-
-        let filledCount = 0;
-        let validContinuous = true;
-
-        for (let i = 0; i < subStates.length; i++) {
-          const item = subStates[i];
-          if (item.hasVal || item.pts) {
-            if (i !== filledCount) {
-              validContinuous = false;
-              break;
-            }
-            if (!item.isComplete) {
-              validContinuous = false;
-              break;
-            }
-            filledCount++;
-          }
-        }
-
-        if (validContinuous && filledCount > 0) {
-          enableBtn(btn);
-        } else {
-          disableBtn(btn);
-        }
-
+        let valid = rows.length > 0 && rows.every(div => div.querySelector('.sub-pts').value.trim() !== '');
+        if (valid) enableBtn(btn); else disableBtn(btn);
       } else {
-        if (status !== 'NORMAL') {
-          enableBtn(btn);
-        } else {
+        if (status !== 'NORMAL') { enableBtn(btn); } 
+        else {
           if (itemObj.type === 'time') {
             const sec = document.getElementById('time-sec').value.trim();
             const ms = document.getElementById('time-ms').value.trim();
-            if (sec !== '' && ms !== '') enableBtn(btn);
-            else disableBtn(btn);
+            if (sec !== '' && ms !== '') enableBtn(btn); else disableBtn(btn);
           } else {
             const m = document.getElementById('dist-m').value.trim();
             const cm = document.getElementById('dist-cm').value.trim();
-            if (m !== '' && cm !== '') enableBtn(btn);
-            else disableBtn(btn);
+            if (m !== '' && cm !== '') enableBtn(btn); else disableBtn(btn);
           }
         }
       }
@@ -566,147 +483,44 @@
       btn.className = "flex-1 bg-slate-300 text-slate-500 cursor-not-allowed font-medium h-10 rounded-lg transition duration-200 shadow";
     }
 
-    function onStatusChange() {
-      const statusSelect = document.getElementById('status-select');
-      const status = statusSelect.value;
+    window.onStatusChange = function() {
+      const status = document.getElementById('status-select').value;
       const selectedId = document.getElementById('event-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
-      const isCombined = itemObj && itemObj.subs;
-
-      if (isCombined) {
+      if (itemObj && itemObj.subs) {
         const container = document.getElementById('sub-events-container');
-        const rows = container.children;
-
-        if (status === 'DQ' || status === 'DNS') {
-          for (let div of rows) {
-            const subSelect = div.querySelector('.sub-status');
-            const subInputs = div.querySelectorAll('input');
-            
+        for (let div of container.children) {
+          const subSelect = div.querySelector('.sub-status');
+          const subInputs = div.querySelectorAll('input');
+          if (status === 'DQ' || status === 'DNS') {
             subSelect.value = '';
             subSelect.disabled = true;
-            subSelect.classList.add('bg-slate-200', 'cursor-not-allowed');
-
-            subInputs.forEach(i => {
-              i.value = '';
-              i.disabled = true;
-              i.classList.add('bg-slate-200', 'cursor-not-allowed');
-            });
-          }
-          document.getElementById('total-score').value = '';
-        } else if (status === 'NORMAL') {
-          for (let div of rows) {
-            const subSelect = div.querySelector('.sub-status');
+            subInputs.forEach(i => { i.value = ''; i.disabled = true; });
+          } else {
             subSelect.disabled = false;
-            subSelect.classList.remove('bg-slate-200', 'cursor-not-allowed');
-            onSubStatusChange(subSelect);
+            subInputs.forEach(i => i.disabled = false);
           }
-        }
-      } else {
-        const inputs = document.querySelectorAll('#single-event-inputs input');
-        if (status !== 'NORMAL') {
-          inputs.forEach(i => {
-            i.value = '';
-            i.disabled = true;
-            i.classList.add('bg-slate-200', 'cursor-not-allowed');
-          });
-        } else {
-          inputs.forEach(i => {
-            i.disabled = false;
-            i.classList.remove('bg-slate-200', 'cursor-not-allowed');
-          });
         }
       }
       validateForm();
     }
 
-    function onSubStatusChange(selectEl) {
+    window.onSubStatusChange = function(selectEl) {
       const row = selectEl.closest('[data-subname]');
       const inputs = row.querySelectorAll('input');
       const val = selectEl.value;
-
-      if (!val) {
-        inputs.forEach(i => {
-          i.value = '';
-          i.disabled = true;
-          i.classList.add('bg-slate-200', 'cursor-not-allowed');
-        });
-      } else if (val !== 'NORMAL') {
-        inputs.forEach(i => {
-          if (!i.classList.contains('sub-pts')) {
-            i.value = '';
-            i.disabled = true;
-            i.classList.add('bg-slate-200', 'cursor-not-allowed');
-          } else {
-            i.disabled = false;
-            i.classList.remove('bg-slate-200', 'cursor-not-allowed');
-          }
-        });
-      } else {
-        inputs.forEach(i => {
-          i.disabled = false;
-          i.classList.remove('bg-slate-200', 'cursor-not-allowed');
-        });
-      }
-
-      checkCombinedStatusAuto();
+      inputs.forEach(i => {
+        if (!i.classList.contains('sub-pts')) {
+          i.disabled = (val !== 'NORMAL' && val !== '');
+          if (i.disabled) i.value = '';
+        }
+      });
+      calculateTotalScore();
       validateForm();
     }
 
-    function checkCombinedStatusAuto() {
-      const container = document.getElementById('sub-events-container');
-      if (!container) return;
-
-      const rows = Array.from(container.children);
-      if (rows.length === 0) return;
-
-      const subStates = rows.map(div => {
-        const status = div.querySelector('.sub-status').value;
-        const pts = div.querySelector('.sub-pts').value;
-        const subType = div.querySelector('[data-subtype]').dataset.subtype;
-
-        let hasData = false;
-        if (status && status !== '') {
-          hasData = true;
-        } else if (subType === 'time') {
-          const sec = div.querySelector('.sub-sec').value;
-          const ms = div.querySelector('.sub-ms').value;
-          if (sec !== '' && ms !== '') hasData = true;
-        } else {
-          const m = div.querySelector('.sub-m').value;
-          const cm = div.querySelector('.sub-cm').value;
-          if (m !== '' && cm !== '') hasData = true;
-        }
-        if (pts !== '') hasData = true;
-
-        return hasData;
-      });
-
-      const totalCount = subStates.length;
-      const filledCount = subStates.filter(Boolean).length;
-
-      const statusSelect = document.getElementById('status-select');
-      const dnfOpt = statusSelect.querySelector('option[value="DNF"]');
-
-      if (statusSelect.value === 'DQ' || statusSelect.value === 'DNS') {
-        if (dnfOpt) dnfOpt.disabled = true;
-        return;
-      }
-
-      if (filledCount > 0 && filledCount < totalCount) {
-        if (dnfOpt) dnfOpt.disabled = false;
-        statusSelect.value = 'DNF';
-      } else {
-        if (dnfOpt) dnfOpt.disabled = true;
-        if (statusSelect.value === 'DNF') {
-          statusSelect.value = 'NORMAL';
-        }
-      }
-
-      calculateTotalScore();
-    }
-
-    function filterCategory(cat, btnEl) {
+    window.filterCategory = function(cat, btnEl) {
       document.querySelectorAll('.cat-btn').forEach(b => {
         b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
         b.classList.add('text-slate-600');
@@ -723,14 +537,10 @@
 
       const filtered = cat === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === cat);
       filtered.forEach(item => {
-        const opt = document.createElement('option');
-        opt.value = item.id;
-        opt.textContent = item.name;
-        selectEl.appendChild(opt);
+        selectEl.appendChild(new Option(item.name, item.id));
       });
 
       chartSelect.innerHTML = selectEl.innerHTML;
-      
       if (filtered.some(e => e.id === currentSelectedVal)) {
         selectEl.value = currentSelectedVal;
         chartSelect.value = currentSelectedVal;
@@ -739,7 +549,7 @@
       }
     }
 
-    function onEventSelectChange() {
+    window.onEventSelectChange = function() {
       const selectedId = document.getElementById('event-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       if (!itemObj) return;
@@ -755,24 +565,11 @@
       container.innerHTML = '';
       statusSelect.innerHTML = '';
       
-      const optNormal = new Option('正常', 'NORMAL');
-      const optDQ = new Option('DQ (犯規)', 'DQ');
-      const optDNS = new Option('DNS (未起跑)', 'DNS');
-      const optDNF = new Option('DNF (未完賽)', 'DNF');
-      const optNM = new Option('NM (無成績)', 'NM');
-
-      statusSelect.appendChild(optNormal);
-      statusSelect.appendChild(optDQ);
-      statusSelect.appendChild(optDNS);
-
-      if (itemObj.cat === 'field') {
-        statusSelect.appendChild(optNM);
-      } else if (itemObj.cat === 'combined') {
-        optDNF.disabled = true;
-        statusSelect.appendChild(optDNF);
-      } else {
-        statusSelect.appendChild(optDNF);
-      }
+      statusSelect.appendChild(new Option('正常', 'NORMAL'));
+      statusSelect.appendChild(new Option('DQ (犯規)', 'DQ'));
+      statusSelect.appendChild(new Option('DNS (未起跑)', 'DNS'));
+      if (itemObj.cat === 'field') statusSelect.appendChild(new Option('NM (無成績)', 'NM'));
+      else statusSelect.appendChild(new Option('DNF (未完賽)', 'DNF'));
 
       statusSelect.value = 'NORMAL';
 
@@ -782,95 +579,46 @@
 
         itemObj.subs.forEach(subName => {
           const subType = SUB_EVENT_TYPES[subName] || 'time';
-          const isFieldSub = subType === 'distance';
           const div = document.createElement('div');
           div.className = 'bg-slate-50 p-2 rounded border flex items-center justify-between gap-1';
-
-          let inputHTML = '';
-          if (subType === 'time') {
-            inputHTML = `
-              <div class="flex items-center gap-0.5">
-                <input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this); checkCombinedStatusAuto(); validateForm();" class="sub-min w-10 border rounded h-9 text-center bg-white">
-                <span>:</span>
-                <input type="number" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); checkCombinedStatusAuto(); validateForm();" class="sub-sec w-10 border rounded h-9 text-center bg-white">
-                <span>.</span>
-                <input type="number" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); checkCombinedStatusAuto(); validateForm();" class="sub-ms w-10 border rounded h-9 text-center bg-white">
-              </div>`;
-          } else {
-            inputHTML = `
-              <div class="flex items-center gap-0.5">
-                <input type="number" min="0" placeholder="米" oninput="sanitizeDigit(this); checkCombinedStatusAuto(); validateForm();" class="sub-m w-12 border rounded h-9 text-center bg-white">
-                <span>.</span>
-                <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); checkCombinedStatusAuto(); validateForm();" class="sub-cm w-12 border rounded h-9 text-center bg-white">
-              </div>`;
-          }
-
-          const statusOptionsHTML = isFieldSub ? `
-            <option value="NORMAL">正常</option>
-            <option value="DQ">DQ</option>
-            <option value="DNS">DNS</option>
-            <option value="NM">NM</option>
-          ` : `
-            <option value="NORMAL">正常</option>
-            <option value="DQ">DQ</option>
-            <option value="DNS">DNS</option>
-            <option value="DNF">DNF</option>
-          `;
-
           div.innerHTML = `
             <span class="font-bold text-slate-700 whitespace-nowrap min-w-[56px]">${subName}</span>
             <div class="flex items-center justify-between flex-1 gap-1" data-subname="${subName}" data-subtype="${subType}">
-              <div class="flex items-center">
-                ${inputHTML}
+              <div class="flex items-center gap-0.5">
+                ${subType === 'time' ? 
+                  `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="sub-min w-10 border rounded h-9 text-center bg-white"><span>:</span>
+                   <input type="number" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); validateForm();" class="sub-sec w-10 border rounded h-9 text-center bg-white"><span>.</span>
+                   <input type="number" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="sub-ms w-10 border rounded h-9 text-center bg-white">` :
+                  `<input type="number" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="sub-m w-12 border rounded h-9 text-center bg-white"><span>.</span>
+                   <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); validateForm();" class="sub-cm w-12 border rounded h-9 text-center bg-white">`
+                }
               </div>
               <div class="flex items-center gap-1">
                 <select onchange="onSubStatusChange(this)" class="sub-status border rounded h-9 px-1 text-[11px] bg-white">
-                  <option value="">--</option>
-                  ${statusOptionsHTML}
+                  <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                 </select>
-                <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore(); checkCombinedStatusAuto(); validateForm();" class="sub-pts w-14 border rounded h-9 bg-white font-bold text-center">
+                <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore(); validateForm();" class="sub-pts w-14 border rounded h-9 bg-white font-bold text-center">
               </div>
-            </div>
-          `;
+            </div>`;
           container.appendChild(div);
-
-          const subSelect = div.querySelector('.sub-status');
-          onSubStatusChange(subSelect);
         });
-
         calculateTotalScore();
       } else {
         singleDiv.classList.remove('hidden');
         combinedDiv.classList.add('hidden');
-
-        if (itemObj.type === 'time') {
-          timeGroup.classList.remove('hidden');
-          distGroup.classList.add('hidden');
-        } else if (itemObj.type === 'distance') {
-          distGroup.classList.remove('hidden');
-          timeGroup.classList.add('hidden');
-        }
-
-        if (itemObj.hasWind) {
-          windContainer.classList.remove('hidden');
-          windContainer.classList.add('flex');
-        } else {
-          windContainer.classList.add('hidden');
-          windContainer.classList.remove('flex');
-          document.getElementById('wind').value = '';
-        }
+        if (itemObj.type === 'time') { timeGroup.classList.remove('hidden'); distGroup.classList.add('hidden'); }
+        else { distGroup.classList.remove('hidden'); timeGroup.classList.add('hidden'); }
+        if (itemObj.hasWind) windContainer.classList.remove('hidden'); else windContainer.classList.add('hidden');
       }
-
       onStatusChange();
       document.getElementById('chart-filter').value = selectedId;
       updateChart();
       validateForm();
     }
 
-    function calculateTotalScore() {
-      const ptsInputs = document.querySelectorAll('.sub-pts');
+    window.calculateTotalScore = function() {
       let total = 0;
-      ptsInputs.forEach(i => {
+      document.querySelectorAll('.sub-pts').forEach(i => {
         const v = parseFloat(i.value);
         if (!isNaN(v) && !i.disabled) total += v;
       });
@@ -880,85 +628,43 @@
     function formatTimeStr(min, sec, ms) {
       let s = parseInt(sec) || 0;
       let mStr = parseInt(min) ? `${parseInt(min)}:` : '';
-      let sStr = mStr ? String(s).padStart(2, '0') : String(s);
-      let msStr = String(parseInt(ms) || 0).padStart(2, '0');
-      return `${mStr}${sStr}.${msStr}`;
+      return `${mStr}${mStr ? String(s).padStart(2, '0') : s}.${String(parseInt(ms) || 0).padStart(2, '0')}`;
     }
 
     function formatDistStr(m, cm) {
-      let mNum = parseInt(m) || 0;
-      let cmStr = String(parseInt(cm) || 0).padStart(2, '0');
-      return `${mNum}.${cmStr}`;
+      return `${parseInt(m) || 0}.${String(parseInt(cm) || 0).padStart(2, '0')}`;
     }
 
     async function handleFormSubmit(e) {
       e.preventDefault();
-
-      const selectedDate = document.getElementById('date').value;
-      const today = getTodayString();
-      if (selectedDate > today) {
-        alert('比賽日期不能選擇未來的日子！');
-        document.getElementById('date').value = today;
-        return;
-      }
-
       const editId = document.getElementById('edit-record-id').value;
       const selectedId = document.getElementById('event-select').value;
       const status = document.getElementById('status-select').value;
-      const stage = document.getElementById('stage-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
-
-      let rank = '';
-      if (itemObj.subs) {
-        rank = document.getElementById('combined-rank-select').value;
-      } else {
-        rank = document.getElementById('rank-select').value;
-      }
 
       let record = {
         eventId: selectedId,
         eventName: itemObj.name,
         competition: document.getElementById('competition').value,
-        date: selectedDate,
+        date: document.getElementById('date').value,
         status: status,
-        stage: stage,
-        rank: rank,
+        stage: document.getElementById('stage-select').value,
+        rank: itemObj.subs ? document.getElementById('combined-rank-select').value : document.getElementById('rank-select').value,
         isCombined: !!itemObj.subs,
         type: itemObj.type
       };
 
       if (itemObj.subs) {
-        if (status === 'NORMAL' || status === 'DNF') {
-          const container = document.getElementById('sub-events-container');
-          const rows = Array.from(container.children);
-
+        if (status === 'NORMAL') {
           let details = [];
-          for (let div of rows) {
+          document.querySelectorAll('#sub-events-container > div').forEach(div => {
             const name = div.querySelector('span').textContent;
             const pts = parseFloat(div.querySelector('.sub-pts').value) || 0;
-            const inputWrap = div.querySelector('[data-subtype]');
-            const subType = inputWrap.dataset.subtype;
+            const subType = div.querySelector('[data-subtype]').dataset.subtype;
             const subStatus = div.querySelector('.sub-status').value;
-
-            let valStr = '-';
-            if (subStatus === 'NORMAL') {
-              if (subType === 'time') {
-                const min = inputWrap.querySelector('.sub-min').value;
-                const sec = inputWrap.querySelector('.sub-sec').value;
-                const ms = inputWrap.querySelector('.sub-ms').value;
-                valStr = formatTimeStr(min, sec, ms);
-              } else {
-                const m = inputWrap.querySelector('.sub-m').value;
-                const cm = inputWrap.querySelector('.sub-cm').value;
-                valStr = formatDistStr(m, cm);
-              }
-            } else if (subStatus) {
-              valStr = subStatus;
-            }
-
+            let valStr = subStatus === 'NORMAL' ? (subType === 'time' ? formatTimeStr(div.querySelector('.sub-min').value, div.querySelector('.sub-sec').value, div.querySelector('.sub-ms').value) : formatDistStr(div.querySelector('.sub-m').value, div.querySelector('.sub-cm').value)) : subStatus;
             details.push({ name, val: valStr, type: subType, pts, status: subStatus });
-          }
-
+          });
           record.result = parseFloat(document.getElementById('total-score').value) || 0;
           record.subDetails = details;
         } else {
@@ -967,17 +673,7 @@
         }
       } else {
         if (status === 'NORMAL') {
-          if (itemObj.type === 'time') {
-            const min = document.getElementById('time-min').value;
-            const sec = document.getElementById('time-sec').value;
-            const ms = document.getElementById('time-ms').value;
-            record.result = formatTimeStr(min, sec, ms);
-          } else {
-            const m = document.getElementById('dist-m').value;
-            const cm = document.getElementById('dist-cm').value;
-            record.result = formatDistStr(m, cm);
-          }
-
+          record.result = itemObj.type === 'time' ? formatTimeStr(document.getElementById('time-min').value, document.getElementById('time-sec').value, document.getElementById('time-ms').value) : formatDistStr(document.getElementById('dist-m').value, document.getElementById('dist-cm').value);
           record.wind = itemObj.hasWind && document.getElementById('wind').value ? parseFloat(document.getElementById('wind').value) : null;
         } else {
           record.result = status;
@@ -985,166 +681,39 @@
         }
       }
 
-      const success = await saveRecordToSupabase(record, editId);
-      if (success) {
+      if (await saveRecordToFirestore(record, editId)) {
         alert('儲存成功！');
         cancelEditMode();
-        await fetchRecordsFromSupabase();
+        await fetchRecordsFromFirestore();
       }
     }
 
-    async function deleteRecord(id) {
+    window.deleteRecord = async function(id) {
       if (confirm('確定要刪除這筆紀錄嗎？')) {
-        const success = await deleteRecordFromSupabase(id);
-        if (success) {
-          await fetchRecordsFromSupabase();
-          if (document.getElementById('edit-record-id').value === id) {
-            cancelEditMode();
-          }
+        if (await deleteRecordFromFirestore(id)) {
+          await fetchRecordsFromFirestore();
+          if (document.getElementById('edit-record-id').value === id) cancelEditMode();
         }
       }
     }
 
-    function editRecord(id) {
-      const r = records.find(item => item.id == id);
-      if (!r) return;
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      document.getElementById('edit-record-id').value = r.id;
-      document.getElementById('form-title').textContent = '修改成績紀錄';
-      document.getElementById('submit-btn').textContent = '更新紀錄';
-      document.getElementById('cancel-edit-btn').classList.remove('hidden');
-
-      document.getElementById('competition').value = r.competition || '';
-      document.getElementById('date').value = r.date || getTodayString();
-      document.getElementById('stage-select').value = r.stage || '初賽';
-
-      const itemObj = EVENTS_DB.find(e => e.id === r.eventId);
-      if (itemObj) {
-        const catBtns = document.querySelectorAll('.cat-btn');
-        let targetBtn = catBtns[0];
-        if (itemObj.cat === 'track') targetBtn = catBtns[1];
-        else if (itemObj.cat === 'field') targetBtn = catBtns[2];
-        else if (itemObj.cat === 'relay') targetBtn = catBtns[3];
-        else if (itemObj.cat === 'combined') targetBtn = catBtns[4];
-        
-        filterCategory(itemObj.cat, targetBtn);
-        document.getElementById('event-select').value = r.eventId;
-        onEventSelectChange();
-
-        if (itemObj.subs) {
-          document.getElementById('combined-rank-select').value = r.rank || '';
-        } else {
-          document.getElementById('rank-select').value = r.rank || '';
-        }
-      }
-
-      document.getElementById('status-select').value = r.status || 'NORMAL';
-      onStatusChange();
-
-      if (r.status === 'NORMAL' || !r.status) {
-        if (r.isCombined && r.subDetails) {
-          const container = document.getElementById('sub-events-container');
-          const rows = Array.from(container.children);
-          r.subDetails.forEach((s, idx) => {
-            if (rows[idx]) {
-              const row = rows[idx];
-              const subStatusSelect = row.querySelector('.sub-status');
-              subStatusSelect.value = s.status || 'NORMAL';
-              onSubStatusChange(subStatusSelect);
-
-              row.querySelector('.sub-pts').value = s.pts || '';
-
-              if (s.status === 'NORMAL') {
-                const inputWrap = row.querySelector('[data-subtype]');
-                const subType = inputWrap.dataset.subtype;
-                if (s.val && s.val !== '-') {
-                  if (subType === 'time') {
-                    if (s.val.includes(':')) {
-                      const parts = s.val.split(':');
-                      inputWrap.querySelector('.sub-min').value = parts[0];
-                      const secParts = parts[1].split('.');
-                      inputWrap.querySelector('.sub-sec').value = secParts[0];
-                      inputWrap.querySelector('.sub-ms').value = secParts[1] || '';
-                    } else {
-                      const secParts = s.val.split('.');
-                      inputWrap.querySelector('.sub-min').value = '';
-                      inputWrap.querySelector('.sub-sec').value = secParts[0];
-                      inputWrap.querySelector('.sub-ms').value = secParts[1] || '';
-                    }
-                  } else {
-                    const distParts = s.val.split('.');
-                    inputWrap.querySelector('.sub-m').value = distParts[0];
-                    inputWrap.querySelector('.sub-cm').value = distParts[1] || '';
-                  }
-                }
-              }
-            }
-          });
-          calculateTotalScore();
-        } else {
-          if (r.type === 'time' && typeof r.result === 'string') {
-            if (r.result.includes(':')) {
-              const parts = r.result.split(':');
-              document.getElementById('time-min').value = parts[0];
-              const secParts = parts[1].split('.');
-              document.getElementById('time-sec').value = secParts[0];
-              document.getElementById('time-ms').value = secParts[1] || '';
-            } else {
-              const secParts = r.result.split('.');
-              document.getElementById('time-min').value = '';
-              document.getElementById('time-sec').value = secParts[0];
-              document.getElementById('time-ms').value = secParts[1] || '';
-            }
-          } else if (r.type === 'distance' && typeof r.result === 'string') {
-            const distParts = r.result.split('.');
-            document.getElementById('dist-m').value = distParts[0];
-            document.getElementById('dist-cm').value = distParts[1] || '';
-          }
-
-          if (r.wind !== null && r.wind !== undefined) {
-            document.getElementById('wind').value = r.wind;
-          }
-        }
-      }
-      validateForm();
-    }
-
-    function cancelEditMode() {
+    window.cancelEditMode = function() {
       document.getElementById('edit-record-id').value = '';
       document.getElementById('form-title').textContent = '新增成績紀錄';
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
-      
-      document.getElementById('status-select').value = 'NORMAL';
-      document.getElementById('stage-select').value = '初賽';
-      document.getElementById('rank-select').value = '';
-      document.getElementById('combined-rank-select').value = '';
-      document.getElementById('time-min').value = '';
-      document.getElementById('time-sec').value = '';
-      document.getElementById('time-ms').value = '';
-      document.getElementById('dist-m').value = '';
-      document.getElementById('dist-cm').value = '';
-      document.getElementById('wind').value = '';
-      document.getElementById('competition').value = '';
+      document.getElementById('record-form').reset();
+      document.getElementById('date').value = getTodayString();
       onEventSelectChange();
     }
 
-    function toggleEditMode() {
+    window.toggleEditMode = function() {
       isHistoryEditMode = !isHistoryEditMode;
-      const btn = document.getElementById('toggle-edit-mode-btn');
-      if (isHistoryEditMode) {
-        btn.textContent = '完成編輯';
-        btn.className = "text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg transition font-medium";
-      } else {
-        btn.textContent = '編輯記錄';
-        btn.className = "text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition font-medium";
-      }
+      document.getElementById('toggle-edit-mode-btn').textContent = isHistoryEditMode ? '完成編輯' : '編輯記錄';
       renderList();
     }
 
-    function toggleSubDetails(id) {
+    window.toggleSubDetails = function(id) {
       const el = document.getElementById(`sub-${id}`);
       if (el) el.classList.toggle('hidden');
     }
@@ -1152,147 +721,51 @@
     function renderList() {
       const tbody = document.getElementById('records-list');
       tbody.innerHTML = '';
+      document.querySelectorAll('.action-col').forEach(col => col.classList.toggle('hidden', !isHistoryEditMode));
 
-      const actionCols = document.querySelectorAll('.action-col');
-      actionCols.forEach(col => {
-        if (isHistoryEditMode) {
-          col.classList.remove('hidden');
-        } else {
-          col.classList.add('hidden');
-        }
-      });
-
-      const sorted = [...records].sort((a,b) => new Date(b.date) - new Date(a.date));
-
-      if (sorted.length === 0) {
-        const colspan = isHistoryEditMode ? 8 : 7;
-        tbody.innerHTML = `<tr><td colspan="${colspan}" class="p-4 text-center text-slate-400">目前尚無紀錄</td></tr>`;
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${isHistoryEditMode ? 8 : 7}" class="p-4 text-center text-slate-400">目前尚無紀錄</td></tr>`;
         return;
       }
 
-      sorted.forEach(r => {
+      records.forEach(r => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-50 transition';
-
-        let extraCol = r.wind !== null && r.wind !== undefined ? (r.wind > 0 ? '+' + r.wind : r.wind) : '-';
-        
-        let unitDisplay = '';
-        if (r.type === 'distance') unitDisplay = ' 米';
-        else if (r.type === 'time') unitDisplay = ' 秒';
-
-        let resCol = '';
-        
-        if (r.status && r.status !== 'NORMAL') {
-          let badgeColor = 'bg-slate-100 text-slate-700';
-          if (r.status === 'DQ') badgeColor = 'bg-red-100 text-red-700';
-          else if (r.status === 'DNS' || r.status === 'DNF') badgeColor = 'bg-amber-100 text-amber-800';
-          else if (r.status === 'NM') badgeColor = 'bg-slate-200 text-slate-700';
-
-          const statusText = STATUS_MAP[r.status] || r.status;
-          resCol = `<span class="px-2 py-0.5 rounded font-bold text-xs ${badgeColor}">${statusText}</span>`;
-          if (r.isCombined && r.result && typeof r.result === 'number') {
-            resCol += ` <span class="text-xs text-slate-500">(${r.result}分)</span>`;
-          }
-        } else if (r.isCombined) {
-          resCol = `<span class="text-blue-700 font-bold">${r.result} 分</span>`;
-        } else {
-          resCol = `${r.result}${unitDisplay}`;
-        }
-
-        if (r.isCombined && r.subDetails && r.subDetails.length > 0) {
-          extraCol = `<button onclick="toggleSubDetails('${r.id}')" class="text-xs text-blue-600 underline">查看細項</button>`;
-        }
-
-        const stageBadge = r.stage ? `<span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600">${r.stage}</span>` : '-';
-        const rankBadge = r.rank ? `<span class="font-medium text-slate-700">${r.rank}</span>` : '-';
-
-        let actionTd = '';
-        if (isHistoryEditMode) {
-          actionTd = `
-            <td class="p-2 text-right space-x-1">
-              <button onclick="editRecord('${r.id}')" class="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 bg-blue-50 rounded">修改</button>
-              <button onclick="deleteRecord('${r.id}')" class="text-red-500 hover:text-red-700 text-xs px-2 py-1 bg-red-50 rounded">刪除</button>
-            </td>
-          `;
-        }
+        let extraCol = r.wind != null ? (r.wind > 0 ? '+' + r.wind : r.wind) : '-';
+        let resCol = r.status && r.status !== 'NORMAL' ? `<span class="px-2 py-0.5 rounded font-bold text-xs bg-red-100 text-red-700">${STATUS_MAP[r.status] || r.status}</span>` : (r.isCombined ? `<span class="text-blue-700 font-bold">${r.result} 分</span>` : `${r.result}${r.type === 'distance' ? ' 米' : ' 秒'}`);
+        if (r.isCombined && r.subDetails?.length > 0) extraCol = `<button onclick="toggleSubDetails('${r.id}')" class="text-xs text-blue-600 underline">查看細項</button>`;
 
         tr.innerHTML = `
           <td class="p-2 font-semibold text-blue-600">${r.eventName}</td>
           <td class="p-2 font-mono font-bold">${resCol}</td>
           <td class="p-2 text-slate-500">${extraCol}</td>
-          <td class="p-2">${stageBadge}</td>
-          <td class="p-2">${rankBadge}</td>
+          <td class="p-2"><span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600">${r.stage || '-'}</span></td>
+          <td class="p-2 font-medium text-slate-700">${r.rank || '-'}</td>
           <td class="p-2">${r.competition}</td>
           <td class="p-2 text-slate-500 text-xs">${r.date}</td>
-          ${actionTd}
+          ${isHistoryEditMode ? `<td class="p-2 text-right space-x-1"><button onclick="deleteRecord('${r.id}')" class="text-red-500 text-xs px-2 py-1 bg-red-50 rounded">刪除</button></td>` : ''}
         `;
         tbody.appendChild(tr);
-
-        if (r.isCombined && r.subDetails && r.subDetails.length > 0) {
-          const subTr = document.createElement('tr');
-          subTr.id = `sub-${r.id}`;
-          subTr.className = 'hidden bg-blue-50/50';
-          const subColspan = isHistoryEditMode ? 8 : 7;
-          let html = `<td colspan="${subColspan}" class="p-3 text-xs"><div class="grid grid-cols-2 md:grid-cols-4 gap-2">`;
-          r.subDetails.forEach(s => {
-            const uStr = s.type === 'distance' ? ' 米' : ' 秒';
-            let displayVal = '-';
-            if (s.status === 'NORMAL') displayVal = `${s.val}${uStr}`;
-            else if (s.status) displayVal = s.status;
-
-            html += `<div class="bg-white p-1.5 rounded border border-blue-100"><span class="text-slate-500">${s.name}:</span> <b>${displayVal}</b> (${s.pts}分)</div>`;
-          });
-          html += '</div></td>';
-          subTr.innerHTML = html;
-          tbody.appendChild(subTr);
-        }
       });
     }
 
     function initChart() {
-      const ctx = document.getElementById('progressChart').getContext('2d');
-      chartInstance = new Chart(ctx, {
+      chartInstance = new Chart(document.getElementById('progressChart').getContext('2d'), {
         type: 'line',
         data: { labels: [], datasets: [] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
       });
       updateChart();
     }
 
-    function parseToSeconds(val) {
-      if (typeof val === 'number') return val;
-      if (!val || val === '-' || ['DQ','DNS','DNF','NM'].includes(val)) return 0;
-      if (val.includes(':')) {
-        const parts = val.split(':');
-        return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
-      }
-      return parseFloat(val) || 0;
-    }
-
-    function updateChart() {
+    window.updateChart = function() {
       const selectedId = document.getElementById('chart-filter').value;
-      const filtered = records
-        .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
-        .sort((a,b) => new Date(a.date) - new Date(b.date));
-
-      chartInstance.data.labels = filtered.map(r => `${r.date} (${r.competition}${r.stage ? ' - ' + r.stage : ''})`);
-      chartInstance.data.datasets = [{
-        label: '成績',
-        data: filtered.map(r => parseToSeconds(r.result)),
-        borderColor: '#2563eb',
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.3
-      }];
+      const filtered = records.filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL')).sort((a,b) => new Date(a.date) - new Date(b.date));
+      chartInstance.data.labels = filtered.map(r => `${r.date} (${r.competition})`);
+      chartInstance.data.datasets = [{ data: filtered.map(r => parseFloat(r.result) || 0), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3 }];
       chartInstance.update();
     }
 
-    // 啟動頁面
     initMainPage();
   </script>
 </body>
