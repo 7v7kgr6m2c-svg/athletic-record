@@ -63,7 +63,7 @@
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.origin + '/athletes.html',
+                        redirectTo: 'http://localhost:5500/atheles.html',
                         skipBrowserRedirect: true // 手動取得導向網址，避免行動裝置阻擋
                     }
                 });
