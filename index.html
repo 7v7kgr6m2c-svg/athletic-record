@@ -3,165 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>田徑紀錄系統 - 登入/註冊</title>
+    <title>田徑紀錄系統 - 快捷登入</title>
     <!-- 引入 Supabase JS SDK CDN -->
-        <script>
-        // ==========================================
-        // 1. 初始化 Supabase (請替換成你的專案憑證)
-        // ==========================================
-        const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_QuBGykWcj3D-SOmzuRCHaQ_ta4blPUN';
-        
-        // 建立 Supabase 客戶端實例
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // ==========================================
-        // 2. 表單切換邏輯 (登入 ⇄ 註冊)
-        // ==========================================
-        const loginSection = document.getElementById('login-section');
-        const registerSection = document.getElementById('register-section');
-        
-        document.getElementById('go-to-register').addEventListener('click', () => {
-            loginSection.classList.add('hidden');
-            registerSection.classList.remove('hidden');
-        });
-
-        document.getElementById('go-to-login').addEventListener('click', () => {
-            registerSection.classList.add('hidden');
-            loginSection.classList.remove('hidden');
-        });
-
-        // ==========================================
-        // 3. 處理「帳戶註冊」邏輯
-        // ==========================================
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); // 阻止表單預設重新載入行為
-            
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-
-            // 呼叫 Supabase 註冊 API
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-            });
-
-            if (error) {
-                alert('註冊失敗：' + error.message);
-            } else {
-                // 檢查是否需要 Email 驗證
-                if (data.session) {
-                    alert('註冊成功並已自動登入！');
-                    window.location.href = 'athletes.html'; // 跳轉至管理運動員頁面
-                } else {
-                    alert('註冊成功！請檢查你的電子郵件信箱以激活帳戶，然後返回登入。');
-                    // 切換回登入介面
-                    registerSection.classList.add('hidden');
-                    loginSection.classList.remove('hidden');
-                }
-            }
-        });
-
-        // ==========================================
-        // 4. 處理「帳戶登入」邏輯
-        // ==========================================
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-
-            // 呼叫 Supabase 登入 API
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
-
-            if (error) {
-                alert('登入失敗：' + error.message);
-            } else {
-                alert('登入成功！');
-                // 成功後將用戶跳轉到運動員管理頁面
-                window.location.href = 'athletes.html';
-            }
-        });
-
-        // ==========================================
-        // 5. 自動檢查機制：如果已經登入，直接跳轉
-        // ==========================================
-        async function checkExistingSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                // 檢測到已有登入狀態，直接送去第二頁
-                window.location.href = 'athletes.html';
-            }
-        }
-        checkExistingSession();
-    </script>
-
+    <script src="https://jsdelivr.net"></script>
     <style>
-        /* 簡單的切換隱藏樣式 */
-        .hidden { display: none; }
-        .form-container { max-width: 400px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; }
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; margin-bottom: 5px; }
-        .input-group input { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; cursor: pointer; }
-        .toggle-link { text-align: center; margin-top: 15px; cursor: pointer; color: blue; text-decoration: underline; }
+        body { background-color: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        .login-container { width: 100%; max-width: 400px; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; box-sizing: border-box; }
+        h2 { color: #0f172a; margin-bottom: 8px; font-size: 24px; }
+        .subtitle { color: #64748b; font-size: 14px; margin-bottom: 30px; }
+        .btn-oauth { width: 100%; padding: 12px; margin-bottom: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity 0.2s; }
+        .btn-oauth:hover { opacity: 0.9; }
+        .btn-google { background-color: #4285F4; }
     </style>
 </head>
 <body>
 
-    <div class="form-container">
-        <!-- 登入區塊 -->
-        <div id="login-section">
-            <h2>帳戶登入</h2>
-            <form id="login-form">
-                <div class="input-group">
-                    <label for="login-email">電子郵件 (Email)</label>
-                    <input type="email" id="login-email" required placeholder="example@mail.com">
-                </div>
-                <div class="input-group">
-                    <label for="login-password">密碼 (Password)</label>
-                    <input type="password" id="login-password" required placeholder="請輸入密碼">
-                </div>
-                <button type="submit">登入</button>
-            </form>
-            <div class="toggle-link" id="go-to-register">沒有帳戶？立即註冊</div>
-        </div>
+    <div class="login-container">
+        <h2>歡迎使用田徑紀錄系統</h2>
+        <p class="subtitle">請使用 Google 帳戶快捷註冊或登入</p>
 
-        <!-- 註冊區塊 (預設隱藏) -->
-        <div id="register-section" class="hidden">
-            <h2>建立新帳戶</h2>
-            <form id="register-form">
-                <div class="input-group">
-                    <label for="register-email">電子郵件 (Email)</label>
-                    <input type="email" id="register-email" required placeholder="example@mail.com">
-                </div>
-                <div class="input-group">
-                    <label for="register-password">密碼 (Password)</label>
-                    <input type="password" id="register-password" required minlength="6" placeholder="至少 6 個字元">
-                </div>
-                <button type="submit">註冊</button>
-            </form>
-            <div class="toggle-link" id="go-to-login">已有帳戶？前往登入</div>
-        </div>
+        <!-- 只保留 Google 登入按鈕 -->
+        <button id="btn-google-login" class="btn-oauth btn-google">
+            <span>使用 Google 帳戶登入</span>
+        </button>
     </div>
 
-    <!-- 這裡留空，稍後填入 Supabase 初始化與登入邏輯的 JavaScript -->
     <script>
-        // 切換登入與註冊表單的簡單 JS
-        const loginSection = document.getElementById('login-section');
-        const registerSection = document.getElementById('register-section');
-        
-        document.getElementById('go-to-register').addEventListener('click', () => {
-            loginSection.classList.add('hidden');
-            registerSection.classList.remove('hidden');
-        });
+        // ==========================================
+        // 初始化 Supabase (請替換成你的專案憑證)
+        // ==========================================
+        const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_QuBGykWcj3D-SOmzuRCHaQ_ta4blPUN';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        document.getElementById('go-to-login').addEventListener('click', () => {
-            registerSection.classList.add('hidden');
-            loginSection.classList.remove('hidden');
+        // 自動檢查機制：如果已經登入，直接跳轉到第二頁
+        async function checkExistingSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                window.location.href = 'athletes.html';
+            }
+        }
+        checkExistingSession();
+
+        // 處理 Google 快捷登入
+        document.getElementById('btn-google-login').addEventListener('click', async () => {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/athletes.html'
+                }
+            });
+            if (error) alert('Google 登入失敗：' + error.message);
         });
     </script>
 </body>
