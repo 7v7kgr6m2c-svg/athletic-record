@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>田徑紀錄系統 - 快捷登入</title>
-    <!-- 引入 Supabase JS SDK CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .login-container { width: 100%; max-width: 400px; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; box-sizing: border-box; }
@@ -22,59 +20,46 @@
         <h2>歡迎使用田徑紀錄系統</h2>
         <p class="subtitle">請使用 Google 帳戶快捷註冊或登入</p>
 
-        <!-- 綁定點擊事件 -->
         <button onclick="handleGoogleLogin()" class="btn-oauth btn-google">
             <span>使用 Google 帳戶登入</span>
         </button>
     </div>
 
-    <script>
-        // ==========================================
-        // 初始化 Supabase (使用更新後的正確金鑰)
-        // ==========================================
-        const SUPABASE_URL = "https://csgxxfmhqloukuuwuhhd.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzZ3h4Zm1ocWxvdWt1dXd1aGhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNzk4NDMsImV4cCI6MjEwMTY1NTg0M30.9LdpqaZqX51Ht1LMNQ_gf3SQjSTPBkykxxx5tA-CNdU";
-        
-        let supabase = null;
-        try {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } catch (err) {
-            alert("Supabase 初始化失敗: " + err.message);
-        }
+    <!-- 引入 Firebase SDK (使用 ES Modules) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // 自動檢查機制：如果已經登入，直接跳轉到第二頁
-        async function checkExistingSession() {
-            if (!supabase) return;
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
+        // TODO: 請填入你的 Firebase 專案設定 (可在 Firebase Console 取得)
+        const firebaseConfig = {
+            apiKey: "你的_API_KEY",
+            authDomain: "你的專案.firebaseapp.com",
+            projectId: "你的專案ID",
+            storageBucket: "你的專案.appspot.com",
+            messagingSenderId: "你的SenderID",
+            appId: "你的AppID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // 自動檢查登入狀態
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
                 window.location.href = 'athletes.html';
             }
-        }
-        checkExistingSession();
+        });
 
-                // 處理 Google 登入
-        async function handleGoogleLogin() {
-            if (!supabase) {
-                alert("錯誤：Supabase 尚未初始化！");
-                return;
-            }
-
+        // 綁定到全域讓按鈕呼叫
+        window.handleGoogleLogin = async function() {
             try {
-                const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        redirectTo: 'https://7v7kgr6m2c-svg.github.io/athletic-record/' // 記得最後面加返斜線 /
-                    }
-                });
-
-                if (error) {
-                    alert('Google 登入失敗：' + error.message);
-                }
-            } catch (err) {
-                alert('發生例外錯誤：' + err.message);
+                const result = await signInWithPopup(auth, provider);
+                window.location.href = 'athletes.html';
+            } catch (error) {
+                alert('Google 登入失敗：' + error.message);
             }
-        }
-
+        };
     </script>
 </body>
 </html>
