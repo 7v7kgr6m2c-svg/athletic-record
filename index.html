@@ -47,14 +47,21 @@
 
         // 處理 Google 快捷登入
         document.getElementById('btn-google-login').addEventListener('click', async () => {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin + '/athletes.html'
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + '/athletes.html'
+                    }
+                });
+                if (error) {
+                    alert('登入錯誤: ' + error.message);
                 }
-            });
-            if (error) alert('Google 登入失敗：' + error.message);
+            } catch (err) {
+                alert('發生例外狀況: ' + err.message);
+            }
         });
+
     </script>
 </body>
 </html>
