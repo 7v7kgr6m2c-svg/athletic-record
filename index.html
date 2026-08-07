@@ -45,22 +45,24 @@
         }
         checkExistingSession();
 
-        // 處理 Google 快捷登入
+        // 處理 Google 快捷登入（手動取得網址並強制跳轉）
         document.getElementById('btn-google-login').addEventListener('click', async () => {
-            try {
-                const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        redirectTo: http://127.0.0.1:5500/athletes.html'
-                    }
-                });
-                if (error) {
-                    alert('登入錯誤: ' + error.message);
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + '/athletes.html',
+                    skipBrowserRedirect: true // 關鍵：不要讓 SDK 自動跳轉，改由我們手動控制
                 }
-            } catch (err) {
-                alert('發生例外狀況: ' + err.message);
+            });
+
+            if (error) {
+                alert('登入失敗：' + error.message);
+            } else if (data && data.url) {
+                // 強制導向 Google 登入頁面
+                window.location.href = data.url;
             }
         });
+
 
     </script>
 </body>
