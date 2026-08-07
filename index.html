@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>個人田徑成績記錄網</title>
+  <script src="https://tailwindcss.com"></script>
+  <script src="https://jsdelivr.net"></script>
+  <script src="https://jsdelivr.net"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
+
+  <div id="auth-section" class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm space-y-4 my-12">
+    <h2 id="auth-title" class="text-xl font-bold text-center text-slate-900">用戶登入</h2>
+    <div class="space-y-3">
+      <input type="email" id="auth-email" placeholder="電子郵件" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input type="password" id="auth-password" placeholder="密碼" class="w-full border rounded-lg p-2 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <button onclick="handleAuth()" id="auth-btn" class="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 transition">登入</button>
+      <p class="text-xs text-center text-slate-500">
+        <span id="auth-toggle-text">沒有帳戶？</span>
+        <button onclick="toggleAuthMode()" class="text-blue-600 underline font-medium">切換註冊/登入</button>
+      </p>
+    </div>
+  </div>
+
+  <div id="main-app" class="max-w-3xl mx-auto space-y-6 hidden">
+    <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-6 rounded-xl shadow-sm gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">🏃‍♂️ 個人田徑成績記錄網</h1>
+        <p class="text-slate-500 text-sm mt-1">追蹤訓練與比賽表現，突破個人 PB！</p>
+      </div>
+      <button onclick="logout()" class="text-xs bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg hover:bg-slate-300">登出帳戶</button>
+    </header>
+
+    <section class="bg-white p-6 rounded-xl shadow-sm">
+      <h2 class="text-md font-bold text-slate-900 mb-3">👥 選擇/切換運動員 (最多3人)</h2>
+      <div id="athlete-list" class="flex flex-wrap gap-3 items-center"></div>
+      <div id="add-athlete-box" class="mt-4 pt-4 border-t hidden">
+        <div class="flex flex-wrap gap-2 items-center text-sm">
+          <input type="text" id="new-athlete-name" placeholder="新運動員姓名" class="border rounded-lg p-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <select id="new-athlete-gender" class="border rounded-lg p-1.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="M">男子組</option>
+            <option value="F">女子組</option>
+          </select>
+          <button onclick="addAthlete()" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-700">＋確認新增</button>
+        </div>
+      </div>
+    </section>
+    <div class="space-y-6">
+      <section class="bg-white p-6 rounded-xl shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績紀錄 (<span id="current-athlete-title" class="text-blue-600 font-bold">目前未選擇運動員</span>)</h2>
+        <form id="record-form" class="space-y-3">
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">賽事名稱 <span class="text-red-500">*</span></label>
+            <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
+            <input type="date" id="date" class="flex-1 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
+            <div class="grid grid-cols-5 gap-0.5 p-1 bg-slate-100 rounded-lg text-xs font-medium text-center flex-1">
+              <button type="button" onclick="filterCategory('all', this)" class="cat-btn py-1 rounded bg-white text-blue-600 shadow-sm transition">全部</button>
+              <button type="button" onclick="filterCategory('track', this)" class="cat-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">徑項</button>
+              <button type="button" onclick="filterCategory('field', this)" class="cat-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">田項</button>
+              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">接力</button>
+              <button type="button" onclick="filterCategory('combined', this)" class="cat-btn py-1 rounded text-slate-600 hover:text-slate-900 transition">全能</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
+            <div class="flex-1 flex items-center gap-2 min-w-0">
+              <select id="event-select" class="flex-1 w-0 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <option value="100m">100米</option><option value="200m">200米</option><option value="400m">400米</option>
+                <option value="800m">800米</option><option value="1500m">1500米</option><option value="跳高">跳高</option>
+                <option value="跳遠">跳遠</option><option value="三級跳遠">三級跳遠</option><option value="鉛球">鉛球</option>
+              </select>
+              <label class="text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
+              <select id="status-select" class="flex-1 w-0 border rounded-lg p-1.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="決賽">決賽</option><option value="初賽">初賽</option><option value="訓練">訓練</option>
+              </select>
+            </div>
+          </div>
+          <div id="single-event-inputs">
+            <div class="flex items-center gap-3">
+              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
+              <div class="flex items-center gap-2 flex-wrap">
+                <div id="time-input-group" class="flex items-center gap-1">
+                  <input type="number" id="time-min" placeholder="分" class="w-12 border rounded-lg p-1 text-center text-sm bg-slate-50"> :
+                  <input type="number" id="time-sec" placeholder="秒" class="w-12 border rounded-lg p-1 text-center text-sm bg-slate-50"> .
+                  <input type="number" id="time-ms" placeholder="毫秒" class="w-12 border rounded-lg p-1 text-center text-sm bg-slate-50">
+                </div>
+                <div id="distance-input-group" class="hidden flex items-center gap-1">
+                  <input type="number" id="dist-m" placeholder="米" class="w-14 border rounded-lg p-1 text-center text-sm bg-slate-50"> .
+                  <input type="number" id="dist-cm" placeholder="厘米" class="w-14 border rounded-lg p-1 text-center text-sm bg-slate-50">
+                </div>
+                <div id="wind-container" class="flex items-center gap-1 pl-2 border-l">
+                  <label class="text-xs font-medium text-slate-500 whitespace-nowrap">風速</label>
+                  <input type="text" id="wind" placeholder="+1.2" class="w-16 border rounded-lg p-1 text-center text-sm bg-slate-50">
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" id="submit-btn" class="w-full bg-blue-600 text-white font-medium py-2 rounded-lg hover:bg-blue-700 shadow mt-2">儲存紀錄</button>
+        </form>
+      </section>
+      <section class="bg-white p-6 rounded-xl shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">歷史紀錄明細</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr class="border-b bg-slate-50 text-slate-600 font-medium">
+                <th class="p-2">日期</th><th class="p-2">賽事名稱</th><th class="p-2">項目</th>
+                <th class="p-2">狀態</th><th class="p-2">成績</th><th class="p-2">風速</th>
+              </tr>
+            </thead>
+            <tbody id="record-table-body" class="divide-y text-slate-700"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://7v7kgrnvqizyllyzfyen.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_IxHaOmI1ajjePc3dxcluqg__ulOsso6";
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let isLoginMode = true; let currentAthleteId = null;
+
+    window.onload = async function() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) { showApp(); }
+    };
+
+    function toggleAuthMode() {
+      isLoginMode = !isLoginMode;
+      document.getElementById('auth-title').innerText = isLoginMode ? '用戶登入' : '帳戶註冊';
+      document.getElementById('auth-btn').innerText = isLoginMode ? '登入' : '註冊';
+      document.getElementById('auth-toggle-text').innerText = isLoginMode ? '沒有帳戶？' : '已有帳戶？';
+    }
+
+    async function handleAuth() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-password').value;
+      if(!email || !password) return alert('請完整填寫帳密');
+      if (isLoginMode) {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return alert('登入失敗: ' + error.message);
+        showApp();
+      } else {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) return alert('註冊失敗: ' + error.message);
+        alert('註冊成功！請直接嘗試登入。'); toggleAuthMode();
+      }
+    }
+
+    async function logout() { await supabase.auth.signOut(); location.reload(); }
+    function showApp() {
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      loadAthletes();
+    }
+    async function loadAthletes() {
+      const { data: athletes, error } = await supabase.from('athletes').select('*');
+      if(error) return console.error(error);
+      const listDiv = document.getElementById('athlete-list');
+      listDiv.innerHTML = '';
+      athletes.forEach(ath => {
+        const activeClass = currentAthleteId == ath.id ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-100 hover:bg-slate-200 text-slate-800';
+        listDiv.innerHTML += `<button onclick="selectAthlete(${ath.id}, '${ath.name}')" class="px-4 py-2 rounded-full font-medium text-sm transition ${activeClass}">🏃 ${ath.name} (${ath.gender === 'M' ? '男' : '女'})</button>`;
+      });
+      const addBox = document.getElementById('add-athlete-box');
+      if (athletes.length < 3) { addBox.classList.remove('hidden'); } else { addBox.classList.add('hidden'); }
+      if (!currentAthleteId && athletes.length > 0) { selectAthlete(athletes[0].id, athletes[0].name); }
+    }
+
+    async function addAthlete() {
+      const name = document.getElementById('new-athlete-name').value;
+      const gender = document.getElementById('new-athlete-gender').value;
+      if (!name) return alert('請輸入姓名');
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('athletes').insert([{ user_id: user.id, name: name, gender: gender }]);
+      if (error) { alert('新增失敗: ' + error.message); } else { document.getElementById('new-athlete-name').value = ''; loadAthletes(); }
+    }
+
+    function selectAthlete(id, name) { currentAthleteId = id; document.getElementById('current-athlete-title').innerText = name; loadRecords(); }
+
+    async function loadRecords() {
+      if (!currentAthleteId) return;
+      const { data: records, error } = await supabase.from('records').select('*').eq('athlete_id', currentAthleteId).order('date', { ascending: false });
+      if (error) return console.error(error);
+      const tbody = document.getElementById('record-table-body'); tbody.innerHTML = '';
+      records.forEach(r => {
+        tbody.innerHTML += `<tr class="hover:bg-slate-50 border-b"><td class="p-2 whitespace-nowrap">${r.date}</td><td class="p-2">${r.competition}</td><td class="p-2">${r.event}</td><td class="p-2">${r.status}</td><td class="p-2 font-bold text-blue-600">${r.result}</td><td class="p-2 text-slate-500">${r.wind || '-'}</td></tr>`;
+      });
+    }
+
+    document.getElementById('record-form').onsubmit = async function(e) {
+      e.preventDefault(); if (!currentAthleteId) return alert('請先選擇或新增一位運動員');
+      const { data: { user } } = await supabase.auth.getUser();
+      let resultStr = ""; const isTimeHidden = document.getElementById('time-input-group').classList.contains('hidden');
+      if (!isTimeHidden) {
+        resultStr = `${document.getElementById('time-min').value || "0"}:${document.getElementById('time-sec').value || "0"}.${document.getElementById('time-ms').value || "0"}`;
+      } else {
+        resultStr = `${document.getElementById('dist-m').value || "0"}.${document.getElementById('dist-cm').value || "0"}m`;
+      }
+      const { error } = await supabase.from('records').insert([{ user_id: user.id, athlete_id: currentAthleteId, competition: document.getElementById('competition').value, date: document.getElementById('date').value, category: isTimeHidden ? 'field' : 'track', event: document.getElementById('event-select').value, status: document.getElementById('status-select').value, result: resultStr, wind: document.getElementById('wind').value }]);
+      if (error) { alert('儲存失敗: ' + error.message); } else { alert('成績儲存成功！'); document.getElementById('competition').value = ''; document.getElementById('time-min').value = ''; document.getElementById('time-sec').value = ''; document.getElementById('time-ms').value = ''; document.getElementById('dist-m').value = ''; document.getElementById('dist-cm').value = ''; document.getElementById('wind').value = ''; loadRecords(); }
+    };
+
+    function filterCategory(cat, btn) {
+      if(cat === 'field') { document.getElementById('time-input-group').classList.add('hidden'); document.getElementById('distance-input-group').classList.remove('hidden'); } else { document.getElementById('time-input-group').classList.remove('hidden'); document.getElementById('distance-input-group').classList.add('hidden'); }
+      document.querySelectorAll('.cat-btn').forEach(b => { b.classList.remove('bg-white', 'text-blue-600', 'shadow-sm'); b.classList.add('text-slate-600'); }); btn.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+    }
+  </script>
+</body>
+</html>
