@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>田徑紀錄系統 - 快捷登入</title>
-    <!-- 引入 Supabase JS SDK CDN -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- 正確引入 Supabase JS SDK CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { background-color: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
         .login-container { width: 100%; max-width: 400px; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; box-sizing: border-box; }
@@ -30,11 +30,11 @@
 
     <script>
         // ==========================================
-        // 初始化 Supabase (請替換成你的專案憑證)
+        // 初始化 Supabase
         // ==========================================
         const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_QuBGykWcj3D-SOmzuRCHaQ_ta4blPUN';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // 自動檢查機制：如果已經登入，直接跳轉到第二頁
         async function checkExistingSession() {
