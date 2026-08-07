@@ -28,25 +28,28 @@
         </button>
     </div>
 
-    <script>
-        // 初始化 Supabase
+        <script>
+        // 1. 測試彈窗：確保腳本有在跑
+        alert("網頁腳本開始執行");
+
         const SUPABASE_URL = 'https://csgxxfmhqloukuuwuhhd.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_QuBGykWcj3D-SOmzuRCHaQ_ta4blPUN';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 自動檢查：若已登入直接跳轉
-        async function checkSession() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                window.location.href = 'athletes.html';
-            }
+        let supabase = null;
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            alert("Supabase 初始化成功！");
+        } catch (e) {
+            alert("Supabase 初始化失敗報錯: " + e.message);
         }
-        checkSession();
 
-        // 獨立的登入觸發函式
         async function handleLogin() {
-            alert("按鈕點擊成功！準備向 Supabase 發起請求...");
-            
+            if (!supabase) {
+                alert("錯誤：supabase 物件不存在！");
+                return;
+            }
+
+            alert("準備向 Google 發起登入請求...");
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -56,14 +59,15 @@
             });
 
             if (error) {
-                alert("登入失敗錯誤： " + error.message);
+                alert("登入錯誤: " + error.message);
             } else if (data && data.url) {
-                alert("成功取得網址，即將跳轉到 Google！");
+                alert("成功取得網址，跳轉中！");
                 window.location.href = data.url;
             } else {
-                alert("發生未知狀況，未回傳網址");
+                alert("未回傳網址");
             }
         }
     </script>
+
 </body>
 </html>
