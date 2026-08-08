@@ -2,24 +2,30 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <!-- 1. 禁止頁面 Zoom in / 縮放 (Viewport 鎖定) -->
+    <!-- Viewport 鎖定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>選擇與新增運動員</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-        /* 禁用手勢放大與雙擊縮放 */
-        html, body {
+        /* 禁用手勢與雙擊縮放 */
+        html, body, input, select, textarea, button {
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
         }
+
+        /* 強制輸入框字級降至最低 16px */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+
         .swipe-container { position: relative; overflow: hidden; border-radius: 1rem; touch-action: pan-y; }
         .swipe-content { transition: transform 0.2s ease-out; will-change: transform; }
         .cropper-view-box, .cropper-face { border-radius: 50%; }
         .cropper-container { touch-action: none; }
 
-        /* iOS Wheel Picker 自訂樣式：嚴格鎖定僅能上下滑動 */
+        /* iOS Wheel Picker 自訂樣式 */
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
         .picker-column { 
@@ -43,9 +49,25 @@
         .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
     </style>
     <script>
-      // JS 層級全面攔截 iOS Safari 雙指縮放與雙擊放大
+      // 全方位攔截 iOS Safari 手勢與雙擊縮放
       document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
-      document.addEventListener('touchstart', function (e) { if (e.touches.length > 1) { e.preventDefault(); } }, { passive: false });
+      document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+      document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+
+      document.addEventListener('touchstart', function (e) {
+        if (e.touches.length > 1) { e.preventDefault(); }
+      }, { passive: false });
+
+      document.addEventListener('touchmove', function (e) {
+        if (e.touches.length > 1) { e.preventDefault(); }
+      }, { passive: false });
+
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function (e) {
+        const now = (new Date()).getTime();
+        if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+        lastTouchEnd = now;
+      }, false);
     </script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 flex items-center justify-center select-none">
@@ -89,7 +111,7 @@
                 <div class="space-y-3">
                     <div class="flex items-center gap-3">
                         <label class="w-24 text-sm md:text-base font-bold text-slate-700 whitespace-nowrap">運動員姓名 <span class="text-red-500">*</span></label>
-                        <input type="text" id="athlete-name" required placeholder="例如：陳大文" class="flex-1 border border-slate-300 rounded-xl h-11 px-3 text-sm md:text-base bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="athlete-name" required placeholder="例如：陳大文" class="flex-1 border border-slate-300 rounded-xl h-11 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="flex items-center gap-3">
@@ -103,7 +125,7 @@
 
                     <div class="flex items-center gap-3">
                         <label class="w-24 text-sm md:text-base font-bold text-slate-700 whitespace-nowrap">性別 <span class="text-red-500">*</span></label>
-                        <select id="athlete-gender" required class="flex-1 border border-slate-300 rounded-xl h-11 px-3 text-sm md:text-base bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="athlete-gender" required class="flex-1 border border-slate-300 rounded-xl h-11 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">請選擇性別</option>
                             <option value="男">男</option>
                             <option value="女">女</option>
@@ -154,7 +176,7 @@
         </div>
     </div>
 
-    <!-- 自訂 Modal：取代原生 Alert 與 Confirm -->
+    <!-- 自訂 Modal -->
     <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
