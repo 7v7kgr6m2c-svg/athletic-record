@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <!-- 1. 禁止頁面 Zoom in / 縮放 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 1. 禁止頁面 Zoom in / 縮放 (Viewport 鎖定) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>選擇與新增運動員</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
@@ -12,6 +12,7 @@
         /* 禁用手勢放大與雙擊縮放 */
         html, body {
             touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
         }
         .swipe-container { position: relative; overflow: hidden; border-radius: 1rem; touch-action: pan-y; }
         .swipe-content { transition: transform 0.2s ease-out; will-change: transform; }
@@ -24,7 +25,7 @@
         .picker-column { 
             scroll-snap-type: y mandatory; 
             scroll-behavior: smooth; 
-            touch-action: pan-y; /* 防左右扯動 */
+            touch-action: pan-y;
             overscroll-behavior-x: none;
             overflow-x: hidden !important;
         }
@@ -41,6 +42,11 @@
         }
         .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
     </style>
+    <script>
+      // JS 層級全面攔截 iOS Safari 雙指縮放與雙擊放大
+      document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+      document.addEventListener('touchstart', function (e) { if (e.touches.length > 1) { e.preventDefault(); } }, { passive: false });
+    </script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 flex items-center justify-center select-none">
 
@@ -148,7 +154,7 @@
         </div>
     </div>
 
-    <!-- 2. 自訂 Modal：取代原生 Alert 與 Confirm -->
+    <!-- 自訂 Modal：取代原生 Alert 與 Confirm -->
     <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
@@ -187,7 +193,6 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- 自訂 Alert 與 Confirm ---
         window.showAlert = function(msg, icon = 'i') {
             document.getElementById('custom-alert-msg').textContent = msg;
             const iconEl = document.getElementById('custom-alert-icon');
@@ -220,7 +225,6 @@
             if (confirmResolver) confirmResolver(val);
         }
 
-        // --- 計算年齡函式 ---
         function calculateAge(dobString) {
             if (!dobString) return '未填寫';
             const birthDate = new Date(dobString);
@@ -244,7 +248,6 @@
             { bg: 'bg-gradient-to-r from-purple-600 to-indigo-800' }
         ];
 
-        // --- iOS 3D Wheel Picker 控制器 ---
         let activePickerTarget = null;
         let selectedY = new Date().getFullYear();
         let selectedM = new Date().getMonth() + 1;
@@ -468,7 +471,6 @@
                                 <div class="space-y-0.5">
                                     <h3 class="text-lg font-bold">${athlete.name}</h3>
                                     <p class="text-xs text-white/90">出生日期: ${athlete.dob || '未填寫'}</p>
-                                    <!-- 3. 出生日期下顯示年齡 -->
                                     <p class="text-xs text-white/90">年齡: ${calculateAge(athlete.dob)}</p>
                                     <p class="text-xs text-white/80">性別: ${athlete.gender || '未指定'}</p>
                                 </div>
