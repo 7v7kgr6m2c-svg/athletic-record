@@ -763,7 +763,6 @@
         `;
         tbody.appendChild(tr);
 
-        // 若為全能項目，自動產生細項展開列
         if (r.isCombined && r.subDetails?.length > 0) {
           const subTr = document.createElement('tr');
           subTr.id = `sub-${r.id}`;
@@ -789,6 +788,9 @@
     }
 
     window.updateChart = function() {
+      // 判斷 chartInstance 是否已建立，避免在初始化前執行造成 null 錯誤
+      if (!chartInstance) return;
+
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       
