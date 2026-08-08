@@ -240,7 +240,7 @@
         </div>
       </section>
 
-      <!-- 3. 歷史紀錄明細（卡片風格與切換） -->
+      <!-- 3. 歷史紀錄明細 -->
       <section class="bg-white p-6 rounded-xl shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-2">
           <h2 class="text-lg font-bold text-slate-900">歷史紀錄明細</h2>
@@ -257,6 +257,9 @@
             <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition font-medium cursor-pointer">編輯記錄</button>
           </div>
         </div>
+
+        <!-- 項目快捷篩選列（預設隱藏，僅在選擇「項目」頁籤時動態顯示） -->
+        <div id="event-filter-bar" class="hidden flex flex-wrap gap-2 pt-2 border-t border-slate-100"></div>
 
         <!-- 卡片容器 -->
         <div id="cards-container" class="space-y-4"></div>
@@ -397,6 +400,7 @@
     let currentUser = null;
     let cropper = null;
     let currentGroupMode = 'all'; // 'all' | 'comp' | 'event'
+    let currentSelectedEventFilter = 'all'; // 項目分頁下的子類別篩選
 
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
@@ -752,7 +756,6 @@
           });
         });
         
-        // 抓取完畢後進行精準排序
         records = sortRecordsChronologically(records);
         renderList();
         updateChart();
@@ -1125,7 +1128,11 @@
         }
       }
 
-      // 平滑滾動至頂部表單區塊
+      // 💡 自動關閉歷史卡片編輯模式，並平滑滾動至頂部表單
+      isHistoryEditMode = false;
+      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
+      renderList();
+
       document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
     }
 
@@ -1140,6 +1147,7 @@
       }
     }
 
+    // 取消編輯或完成更新時呼叫
     window.cancelEditMode = function() {
       document.getElementById('edit-record-id').value = '';
       document.getElementById('form-title').textContent = '新增成績紀錄';
@@ -1148,6 +1156,11 @@
       document.getElementById('record-form').reset();
       setInitialTodayDate();
       onEventSelectChange();
+
+      // 💡 退出歷史紀錄明細的編輯狀態，恢復為一般瀏覽狀態
+      isHistoryEditMode = false;
+      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
+      renderList();
     }
 
     window.toggleEditMode = function() {
@@ -1158,6 +1171,8 @@
 
     window.switchGroupMode = function(mode) {
       currentGroupMode = mode;
+      currentSelectedEventFilter = 'all'; // 重置項目子類別篩選
+      
       ['all', 'comp', 'event'].forEach(m => {
         const btn = document.getElementById(`tab-${m}`);
         if (m === mode) {
@@ -1166,6 +1181,11 @@
           btn.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
         }
       });
+      renderList();
+    }
+
+    window.filterEventGroup = function(eventName) {
+      currentSelectedEventFilter = eventName;
       renderList();
     }
 
@@ -1267,22 +1287,26 @@
 
     function renderList() {
       const container = document.getElementById('cards-container');
+      const eventFilterBar = document.getElementById('event-filter-bar');
       container.innerHTML = '';
 
       if (records.length === 0) {
+        eventFilterBar.classList.add('hidden');
+        eventFilterBar.innerHTML = '';
         container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">目前尚無紀錄</div>`;
         return;
       }
 
-      // 多重邏輯精密排序（含初賽/決賽層級）
       const sortedRecords = sortRecordsChronologically(records);
 
       if (currentGroupMode === 'all') {
+        eventFilterBar.classList.add('hidden');
         sortedRecords.forEach(r => {
           container.innerHTML += buildRecordCardHtml(r, true);
         });
 
       } else if (currentGroupMode === 'comp') {
+        eventFilterBar.classList.add('hidden');
         const groups = {};
         sortedRecords.forEach(r => {
           if (!groups[r.competition]) groups[r.competition] = [];
@@ -1317,13 +1341,54 @@
         });
 
       } else if (currentGroupMode === 'event') {
+        // 1. 自動抓取所有「有成績紀錄的項目」名稱（不重複）
+        const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))];
+
+        // 2. 渲染分隔線下方的項目選項列
+        eventFilterBar.classList.remove('hidden');
+        let filterBarHtml = `
+          <button onclick="filterEventGroup('all')" 
+            class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
+              currentSelectedEventFilter === 'all' 
+                ? 'bg-blue-600 text-white shadow-xs' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }">
+            全部項目 (${activeEventNames.length})
+          </button>
+        `;
+
+        activeEventNames.forEach(name => {
+          const count = sortedRecords.filter(r => r.eventName === name).length;
+          const isSelected = currentSelectedEventFilter === name;
+          filterBarHtml += `
+            <button onclick="filterEventGroup('${name}')" 
+              class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
+                isSelected 
+                  ? 'bg-blue-600 text-white shadow-xs' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }">
+              ${name} (${count})
+            </button>
+          `;
+        });
+        eventFilterBar.innerHTML = filterBarHtml;
+
+        // 3. 分組與篩選顯示
         const groups = {};
         sortedRecords.forEach(r => {
+          if (currentSelectedEventFilter !== 'all' && r.eventName !== currentSelectedEventFilter) {
+            return;
+          }
           if (!groups[r.eventName]) groups[r.eventName] = [];
           groups[r.eventName].push(r);
         });
 
         const sortedEventNames = Object.keys(groups);
+
+        if (sortedEventNames.length === 0) {
+          container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">該項目尚無紀錄</div>`;
+          return;
+        }
 
         sortedEventNames.forEach(eventName => {
           const eventRecords = groups[eventName];
@@ -1358,7 +1423,6 @@
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            // 只保留 Chart.js 原生 Tooltip (黑色提示框)
             tooltip: {
               enabled: true,
               mode: 'nearest',
@@ -1407,7 +1471,6 @@
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       
-      // 篩選出正常成績，並依日期由舊到新排序以繪製趨勢線
       const filtered = records
         .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
         .sort((a,b) => new Date(a.date) - new Date(b.date));
