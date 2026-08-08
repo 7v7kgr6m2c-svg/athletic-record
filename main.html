@@ -96,9 +96,9 @@
     </header>
 
     <div class="space-y-6">
-      <!-- 1. 新增 / 編輯成績紀錄區塊 -->
+      <!-- 1. 新增 / 編輯成績區塊 -->
       <section id="form-section" class="bg-white p-6 rounded-xl shadow-sm">
-        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績紀錄</h2>
+        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績</h2>
         <form id="record-form" class="space-y-3" oninput="validateForm()">
           <input type="hidden" id="edit-record-id" value="">
           
@@ -130,14 +130,15 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
-            <div class="flex-1 flex items-center gap-3 min-w-0">
-              <select id="event-select" onchange="onEventSelectChange()" class="flex-[3] w-0 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-              </select>
-              
-              <label class="text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
-              <select id="status-select" onchange="onStatusChange()" class="flex-[2.5] w-0 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              </select>
-            </div>
+            <select id="event-select" onchange="onEventSelectChange()" class="flex-1 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            </select>
+          </div>
+
+          <!-- 獨立特設：狀態 -->
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
+            <select id="status-select" onchange="onStatusChange()" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </select>
           </div>
 
           <div id="single-event-inputs" class="space-y-3">
@@ -229,10 +230,10 @@
         </form>
       </section>
 
-      <!-- 2. 成績進步趨勢 -->
+      <!-- 2. 成績趨勢 -->
       <section class="bg-white p-6 rounded-xl shadow-sm">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
-          <h2 class="text-lg font-bold text-slate-900">成績進步趨勢</h2>
+          <h2 class="text-lg font-bold text-slate-900">成績趨勢</h2>
           <select id="chart-filter" onchange="updateChart()" class="border rounded-lg h-9 px-3 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
         </div>
         <div class="h-64">
@@ -240,10 +241,10 @@
         </div>
       </section>
 
-      <!-- 3. 歷史紀錄明細 -->
+      <!-- 3. 歷史記錄 -->
       <section class="bg-white p-6 rounded-xl shadow-sm space-y-4">
-        <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-2">
-          <h2 class="text-lg font-bold text-slate-900">歷史紀錄明細</h2>
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <h2 class="text-lg font-bold text-slate-900">歷史記錄</h2>
           
           <div class="flex items-center gap-2">
             <!-- 分類 Tab -->
@@ -258,8 +259,8 @@
           </div>
         </div>
 
-        <!-- 項目快捷篩選列（預設隱藏，僅在選擇「項目」頁籤時動態顯示） -->
-        <div id="event-filter-bar" class="hidden flex flex-wrap gap-2 pt-2 border-t border-slate-100"></div>
+        <!-- 項目快捷篩選列（膠囊與分隔線置於下方） -->
+        <div id="event-filter-bar" class="hidden flex flex-wrap gap-2 pt-1 pb-3 border-b border-slate-100"></div>
 
         <!-- 卡片容器 -->
         <div id="cards-container" class="space-y-4"></div>
@@ -760,7 +761,7 @@
         renderList();
         updateChart();
       } catch (err) {
-        showAlert('載入歷史紀錄失敗：' + err.message, '❌');
+        showAlert('載入歷史記錄失敗：' + err.message, '❌');
       }
     }
 
@@ -1051,7 +1052,7 @@
       if (!r) return;
 
       document.getElementById('edit-record-id').value = r.id;
-      document.getElementById('form-title').textContent = '編輯成績紀錄';
+      document.getElementById('form-title').textContent = '編輯成績';
       document.getElementById('submit-btn').textContent = '更新紀錄';
       document.getElementById('cancel-edit-btn').classList.remove('hidden');
 
@@ -1128,7 +1129,7 @@
         }
       }
 
-      // 💡 自動關閉歷史卡片編輯模式，並平滑滾動至頂部表單
+      // 自動關閉歷史卡片編輯模式，並平滑滾動至頂部表單
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
       renderList();
@@ -1150,14 +1151,14 @@
     // 取消編輯或完成更新時呼叫
     window.cancelEditMode = function() {
       document.getElementById('edit-record-id').value = '';
-      document.getElementById('form-title').textContent = '新增成績紀錄';
+      document.getElementById('form-title').textContent = '新增成績';
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
       setInitialTodayDate();
       onEventSelectChange();
 
-      // 💡 退出歷史紀錄明細的編輯狀態，恢復為一般瀏覽狀態
+      // 退出歷史紀錄明細的編輯狀態，恢復為一般瀏覽狀態
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
       renderList();
@@ -1344,7 +1345,7 @@
         // 1. 自動抓取所有「有成績紀錄的項目」名稱（不重複）
         const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))];
 
-        // 2. 渲染分隔線下方的項目選項列
+        // 2. 渲染膠囊與下方分隔線
         eventFilterBar.classList.remove('hidden');
         let filterBarHtml = `
           <button onclick="filterEventGroup('all')" 
@@ -1470,21 +1471,17 @@
 
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
-      
-      // 💡 關鍵更新：折線圖由左至右順序（舊到新 / 初賽到決賽）
+
       const filtered = records
         .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
         .sort((a, b) => {
-          // 1. 先按日期（舊到新，舊的在左邊）
           const dateDiff = new Date(a.date) - new Date(b.date);
           if (dateDiff !== 0) return dateDiff;
 
-          // 2. 同日期按賽事名稱
           if (a.competition !== b.competition) {
             return a.competition.localeCompare(b.competition, 'zh-HK');
           }
 
-          // 3. 同日期、同賽事：按階段順序（初賽 1 -> 準決賽 2 -> 決賽 3），初賽在左邊
           const weightA = STAGE_ORDER[a.stage] || 1;
           const weightB = STAGE_ORDER[b.stage] || 1;
           return weightA - weightB;
