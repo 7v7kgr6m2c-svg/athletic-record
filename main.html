@@ -6,6 +6,7 @@
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 引入 Cropper.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
@@ -157,7 +158,7 @@
           </div>
 
           <div class="flex gap-2 pt-2">
-            <button type="submit" id="submit-btn" disabled class="flex-1 bg-slate-300 text-slate-500 cursor-not-allowed font-medium h-10 rounded-lg transition duration-200 shadow">
+            <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium h-10 rounded-lg transition duration-200 shadow cursor-pointer">
               儲存紀錄
             </button>
             <button type="button" id="cancel-edit-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-lg transition duration-200">
@@ -227,6 +228,14 @@
       </div>
   </div>
 
+  <!-- 全域 JS 診斷捕獲 -->
+  <script>
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      alert("❌ 頁面程式發生錯誤：\n" + msg + "\n(於第 " + lineNo + " 行)");
+      return false;
+    };
+  </script>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -274,6 +283,7 @@
         currentUser = user;
 
         if (!currentAthleteId) {
+          alert('未選擇運動員，將為您返回選擇頁面！');
           window.location.href = 'athletes.html';
           return;
         }
@@ -342,7 +352,6 @@
 
     window.confirmHeaderCrop = async function() {
       if (!cropper) return;
-      // 壓縮尺寸為 150x150，壓縮品質為 0.6，避免 Firestore 超限報錯
       const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
       const croppedBase64 = canvas.toDataURL('image/jpeg', 0.6);
 
@@ -354,9 +363,9 @@
       try {
         const athleteRef = doc(db, "athletes", currentAthleteId);
         await updateDoc(athleteRef, { avatar: croppedBase64 });
-        alert('頭像更新成功！');
+        alert('✅ 頭像更新成功！');
       } catch (err) {
-        alert('頭像更新失敗：' + err.message);
+        alert('❌ 頭像更新失敗：' + err.message);
       }
     };
 
@@ -419,95 +428,65 @@
         renderList();
         updateChart();
       } catch (err) {
-        alert('載入成績紀錄失敗：' + err.message);
+        alert('❌ 載入歷史紀錄失敗：' + err.message);
       }
     }
 
     async function saveRecordToFirestore(record, editId) {
+      if (!currentUser || !currentUser.uid) {
+        alert("❌ 錯誤：尚未偵測到用戶登入資訊！");
+        return false;
+      }
+      if (!currentAthleteId) {
+        alert("❌ 錯誤：找不到運動員 ID！");
+        return false;
+      }
+
       const dbPayload = {
         athlete_id: currentAthleteId, 
-      user_id: currentUser.uid,
-      event_id: record.eventId, 
-      event_name: record.eventName,
-      competition: record.competition, 
-      date: record.date,
-      status: record.status, 
-      stage: record.stage, 
-      rank: record.rank,
-      is_combined: record.isCombined, 
-      type: record.type,
-      result: record.result, 
-      wind: record.wind !== undefined ? record.wind : null,
-      sub_details: record.subDetails || [], 
-      updated_at: serverTimestamp()
-    };
+        user_id: currentUser.uid,
+        event_id: record.eventId, 
+        event_name: record.eventName,
+        competition: record.competition, 
+        date: record.date,
+        status: record.status, 
+        stage: record.stage, 
+        rank: record.rank || '',
+        is_combined: record.isCombined, 
+        type: record.type,
+        result: record.result, 
+        wind: (record.wind !== undefined && record.wind !== null) ? record.wind : null,
+        sub_details: record.subDetails || [], 
+        updated_at: serverTimestamp()
+      };
 
-    try {
-      if (editId) {
-        await updateDoc(doc(db, "records", editId), dbPayload);
-      } else {
-        dbPayload.created_at = serverTimestamp();
-        await addDoc(collection(db, "records"), dbPayload);
+      try {
+        if (editId) {
+          await updateDoc(doc(db, "records", editId), dbPayload);
+        } else {
+          dbPayload.created_at = serverTimestamp();
+          await addDoc(collection(db, "records"), dbPayload);
+        }
+        return true;
+      } catch (err) {
+        alert('❌ Firestore 儲存失敗：' + err.code + '\n' + err.message);
+        return false;
       }
-      return true;
-    } catch (err) {
-      console.error("Firestore Save Error:", err);
-      alert('儲存失敗：' + err.code + ' - ' + err.message);
-      return false;
     }
-  }
-
 
     async function deleteRecordFromFirestore(id) {
       try {
         await deleteDoc(doc(db, "records", id));
         return true;
       } catch (err) {
-        alert('刪除失敗：' + err.message);
+        alert('❌ 刪除失敗：' + err.message);
         return false;
       }
     }
 
     window.validateForm = function() {
-      const btn = document.getElementById('submit-btn');
-      const comp = document.getElementById('competition').value.trim();
-      const date = document.getElementById('date').value;
-      if (!comp || !date) { disableBtn(btn); return; }
-
-      const selectedId = document.getElementById('event-select').value;
-      const status = document.getElementById('status-select').value;
-      const itemObj = EVENTS_DB.find(e => e.id === selectedId);
-      if (!itemObj) { disableBtn(btn); return; }
-
-      if (itemObj.subs) {
-        if (status === 'DQ' || status === 'DNS') { enableBtn(btn); return; }
-        const rows = Array.from(document.getElementById('sub-events-container').children);
-        let valid = rows.length > 0 && rows.every(div => div.querySelector('.sub-pts').value.trim() !== '');
-        if (valid) enableBtn(btn); else disableBtn(btn);
-      } else {
-        if (status !== 'NORMAL') { enableBtn(btn); } 
-        else {
-          if (itemObj.type === 'time') {
-            const sec = document.getElementById('time-sec').value.trim();
-            const ms = document.getElementById('time-ms').value.trim();
-            if (sec !== '' && ms !== '') enableBtn(btn); else disableBtn(btn);
-          } else {
-            const m = document.getElementById('dist-m').value.trim();
-            const cm = document.getElementById('dist-cm').value.trim();
-            if (m !== '' && cm !== '') enableBtn(btn); else disableBtn(btn);
-          }
-        }
-      }
-    }
-
-    function enableBtn(btn) {
-      btn.disabled = false;
-      btn.className = "flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium h-10 rounded-lg transition duration-200 shadow cursor-pointer";
-    }
-
-    function disableBtn(btn) {
-      btn.disabled = true;
-      btn.className = "flex-1 bg-slate-300 text-slate-500 cursor-not-allowed font-medium h-10 rounded-lg transition duration-200 shadow";
+      // 保持按鈕可點擊，若條件未滿足則在 submit 時彈出明確警告，確保不會完全無反應
+      return true;
     }
 
     window.onStatusChange = function() {
@@ -530,7 +509,6 @@
           }
         }
       }
-      validateForm();
     }
 
     window.onSubStatusChange = function(selectEl) {
@@ -544,7 +522,6 @@
         }
       });
       calculateTotalScore();
-      validateForm();
     }
 
     window.filterCategory = function(cat, btnEl) {
@@ -610,18 +587,18 @@
             <div class="flex items-center justify-between flex-1 gap-1" data-subname="${subName}" data-subtype="${subType}">
               <div class="flex items-center gap-0.5">
                 ${subType === 'time' ? 
-                  `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="sub-min w-10 border rounded h-9 text-center bg-white"><span>:</span>
-                   <input type="number" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); validateForm();" class="sub-sec w-10 border rounded h-9 text-center bg-white"><span>.</span>
-                   <input type="number" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="sub-ms w-10 border rounded h-9 text-center bg-white">` :
-                  `<input type="number" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="sub-m w-12 border rounded h-9 text-center bg-white"><span>.</span>
-                   <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); validateForm();" class="sub-cm w-12 border rounded h-9 text-center bg-white">`
+                  `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this)" class="sub-min w-10 border rounded h-9 text-center bg-white"><span>:</span>
+                   <input type="number" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this)" class="sub-sec w-10 border rounded h-9 text-center bg-white"><span>.</span>
+                   <input type="number" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this)" class="sub-ms w-10 border rounded h-9 text-center bg-white">` :
+                  `<input type="number" min="0" placeholder="米" oninput="sanitizeDigit(this)" class="sub-m w-12 border rounded h-9 text-center bg-white"><span>.</span>
+                   <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this)" class="sub-cm w-12 border rounded h-9 text-center bg-white">`
                 }
               </div>
               <div class="flex items-center gap-1">
                 <select onchange="onSubStatusChange(this)" class="sub-status border rounded h-9 px-1 text-[11px] bg-white">
                   <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                 </select>
-                <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore(); validateForm();" class="sub-pts w-14 border rounded h-9 bg-white font-bold text-center">
+                <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-14 border rounded h-9 bg-white font-bold text-center">
               </div>
             </div>`;
           container.appendChild(div);
@@ -637,7 +614,6 @@
       onStatusChange();
       document.getElementById('chart-filter').value = selectedId;
       updateChart();
-      validateForm();
     }
 
     window.calculateTotalScore = function() {
@@ -661,18 +637,29 @@
 
     async function handleFormSubmit(e) {
       e.preventDefault();
+
+      const comp = document.getElementById('competition').value.trim();
+      const date = document.getElementById('date').value;
+      if (!comp) { alert("⚠️ 請填寫賽事名稱！"); return; }
+      if (!date) { alert("⚠️ 請選擇比賽日期！"); return; }
+
       const editId = document.getElementById('edit-record-id').value;
       const selectedId = document.getElementById('event-select').value;
       const status = document.getElementById('status-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
+      if (!itemObj) { alert("⚠️ 請選擇比賽項目！"); return; }
+
       let record = {
-        eventId: selectedId, eventName: itemObj.name,
-        competition: document.getElementById('competition').value,
-        date: document.getElementById('date').value,
-        status: status, stage: document.getElementById('stage-select').value,
+        eventId: selectedId, 
+        eventName: itemObj.name,
+        competition: comp,
+        date: date,
+        status: status, 
+        stage: document.getElementById('stage-select').value,
         rank: itemObj.subs ? document.getElementById('combined-rank-select').value : document.getElementById('rank-select').value,
-        isCombined: !!itemObj.subs, type: itemObj.type
+        isCombined: !!itemObj.subs, 
+        type: itemObj.type
       };
 
       if (itemObj.subs) {
@@ -694,7 +681,23 @@
         }
       } else {
         if (status === 'NORMAL') {
-          record.result = itemObj.type === 'time' ? formatTimeStr(document.getElementById('time-min').value, document.getElementById('time-sec').value, document.getElementById('time-ms').value) : formatDistStr(document.getElementById('dist-m').value, document.getElementById('dist-cm').value);
+          if (itemObj.type === 'time') {
+            const sec = document.getElementById('time-sec').value.trim();
+            const ms = document.getElementById('time-ms').value.trim();
+            if (sec === '' || ms === '') {
+              alert("⚠️ 請輸入完整的秒數與毫秒！");
+              return;
+            }
+            record.result = formatTimeStr(document.getElementById('time-min').value, sec, ms);
+          } else {
+            const m = document.getElementById('dist-m').value.trim();
+            const cm = document.getElementById('dist-cm').value.trim();
+            if (m === '' || cm === '') {
+              alert("⚠️ 請輸入完整的距離（米與厘米）！");
+              return;
+            }
+            record.result = formatDistStr(m, cm);
+          }
           record.wind = itemObj.hasWind && document.getElementById('wind').value ? parseFloat(document.getElementById('wind').value) : null;
         } else {
           record.result = status;
@@ -702,8 +705,9 @@
         }
       }
 
-      if (await saveRecordToFirestore(record, editId)) {
-        alert('成績紀錄儲存成功！');
+      const success = await saveRecordToFirestore(record, editId);
+      if (success) {
+        alert('✅ 成績紀錄儲存成功！');
         cancelEditMode();
         await fetchRecordsFromFirestore();
       }
@@ -712,6 +716,7 @@
     window.deleteRecord = async function(id) {
       if (confirm('確定要刪除這筆紀錄嗎？')) {
         if (await deleteRecordFromFirestore(id)) {
+          alert('已成功刪除紀錄！');
           await fetchRecordsFromFirestore();
           if (document.getElementById('edit-record-id').value === id) cancelEditMode();
         }
@@ -790,10 +795,10 @@
       try {
         await signOut(auth);
         localStorage.clear();
-        alert('成功登出！');
+        alert('✅ 成功登出！');
         window.location.href = 'index.html';
       } catch (err) {
-        alert('登出失敗：' + err.message);
+        alert('❌ 登出失敗：' + err.message);
       }
     });
 
