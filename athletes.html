@@ -172,11 +172,12 @@
             { bg: 'bg-gradient-to-r from-purple-600 to-indigo-800' }
         ];
 
-        // --- iOS 3D Wheel Picker 控制器（預設當天） ---
+        // --- iOS 3D Wheel Picker 控制器（防自動跑位版） ---
         let activePickerTarget = null;
         let selectedY = new Date().getFullYear();
         let selectedM = new Date().getMonth() + 1;
         let selectedD = new Date().getDate();
+        let isProgrammaticScrolling = false;
 
         function setTodayAsDefault() {
             const now = new Date();
@@ -208,13 +209,15 @@
 
             renderWheelYears();
             renderWheelMonths();
-            renderWheelDays();
+            renderWheelDays(false);
 
-            setTimeout(() => {
-                scrollWheelToValue('wheel-year', selectedY);
-                scrollWheelToValue('wheel-month', selectedM);
-                scrollWheelToValue('wheel-day', selectedD);
-            }, 50);
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    scrollWheelToValue('wheel-year', selectedY);
+                    scrollWheelToValue('wheel-month', selectedM);
+                    scrollWheelToValue('wheel-day', selectedD);
+                }, 100);
+            });
         }
 
         window.closeIosWheelPicker = function() {
@@ -242,7 +245,10 @@
                 container.appendChild(div);
             }
             container.innerHTML += '<div class="h-20"></div>';
-            bindWheelScroll('wheel-year', (val) => { selectedY = val; renderWheelDays(); });
+            bindWheelScroll('wheel-year', (val) => { 
+                selectedY = val; 
+                renderWheelDays(true); 
+            });
         }
 
         function renderWheelMonths() {
@@ -256,10 +262,13 @@
                 container.appendChild(div);
             }
             container.innerHTML += '<div class="h-20"></div>';
-            bindWheelScroll('wheel-month', (val) => { selectedM = val; renderWheelDays(); });
+            bindWheelScroll('wheel-month', (val) => { 
+                selectedM = val; 
+                renderWheelDays(true); 
+            });
         }
 
-        function renderWheelDays() {
+        function renderWheelDays(keepCurrentDay = true) {
             const container = document.getElementById('wheel-day');
             const daysCount = new Date(selectedY, selectedM, 0).getDate();
             if (selectedD > daysCount) selectedD = daysCount;
@@ -274,13 +283,18 @@
             }
             container.innerHTML += '<div class="h-20"></div>';
             bindWheelScroll('wheel-day', (val) => { selectedD = val; });
-            scrollWheelToValue('wheel-day', selectedD);
+
+            if (keepCurrentDay) {
+                scrollWheelToValue('wheel-day', selectedD);
+            }
         }
 
         function bindWheelScroll(elementId, onSelectCallback) {
             const el = document.getElementById(elementId);
             let timer = null;
             el.onscroll = () => {
+                if (isProgrammaticScrolling) return;
+
                 clearTimeout(timer);
                 timer = setTimeout(() => {
                     const centerOffset = el.scrollTop + 80;
@@ -302,7 +316,7 @@
                         const val = parseInt(closest.dataset.val);
                         onSelectCallback(val);
                     }
-                }, 60);
+                }, 80);
             };
         }
 
@@ -312,7 +326,9 @@
             items.forEach(item => {
                 if (parseInt(item.dataset.val) === val) {
                     item.classList.add('selected');
+                    isProgrammaticScrolling = true;
                     el.scrollTop = item.offsetTop - 80;
+                    setTimeout(() => { isProgrammaticScrolling = false; }, 150);
                 } else {
                     item.classList.remove('selected');
                 }
