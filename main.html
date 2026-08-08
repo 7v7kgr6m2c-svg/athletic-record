@@ -170,6 +170,7 @@
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
               <select id="stage-select" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="初賽">初賽</option>
+                <option value="準決賽">準決賽</option>
                 <option value="決賽">決賽</option>
               </select>
             </div>
@@ -239,7 +240,7 @@
         </div>
       </section>
 
-      <!-- 3. 歷史紀錄明細（全新卡片風格與分類切換） -->
+      <!-- 3. 歷史紀錄明細（卡片風格與切換） -->
       <section class="bg-white p-6 rounded-xl shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-2">
           <h2 class="text-lg font-bold text-slate-900">歷史紀錄明細</h2>
@@ -306,7 +307,7 @@
       </div>
   </div>
 
-  <!-- 自訂 Modal -->
+  <!-- 自訂 Alert / Confirm Modal -->
   <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
           <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
@@ -402,6 +403,37 @@
     let selectedD = new Date().getDate();
     let isProgrammaticScrolling = false;
     let isInitializingPicker = false;
+
+    // 階段權重定義：決賽 > 準決賽 > 初賽 (確保預設新到舊排序時，決賽位在初賽上方)
+    const STAGE_ORDER = {
+      '決賽': 3,
+      '準決賽': 2,
+      '初賽': 1
+    };
+
+    // 多重精準排序函數
+    function sortRecordsChronologically(recordArray) {
+      return [...recordArray].sort((a, b) => {
+        // 1. 日期降序 (新到舊)
+        const dateDiff = new Date(b.date) - new Date(a.date);
+        if (dateDiff !== 0) return dateDiff;
+
+        // 2. 比賽名稱拼音/字元排序
+        if (a.competition !== b.competition) {
+          return a.competition.localeCompare(b.competition, 'zh-HK');
+        }
+
+        // 3. 項目名稱排序
+        if (a.eventName !== b.eventName) {
+          return a.eventName.localeCompare(b.eventName, 'zh-HK');
+        }
+
+        // 4. 同比賽、同項目，依階段權重排序 (決賽 > 準決賽 > 初賽)
+        const weightA = STAGE_ORDER[a.stage] || 0;
+        const weightB = STAGE_ORDER[b.stage] || 0;
+        return weightB - weightA; 
+      });
+    }
 
     function setInitialTodayDate() {
       const now = new Date();
@@ -719,7 +751,9 @@
             type: row.type, result: row.result, wind: row.wind, subDetails: row.sub_details
           });
         });
-        records.sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        // 抓取完畢後進行精準排序
+        records = sortRecordsChronologically(records);
         renderList();
         updateChart();
       } catch (err) {
@@ -1053,7 +1087,7 @@
       if (el) el.classList.toggle('hidden');
     }
 
-    // 取得名次 Icon Badge HTML
+    // 名次 Icon Badge HTML
     function getRankBadgeHtml(rankStr) {
       if (rankStr === '第1名') {
         return `<div class="w-10 h-10 rounded-full bg-amber-400 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-300">1</div>`;
@@ -1152,8 +1186,8 @@
         return;
       }
 
-      // 按日期降序排序 (最新 -> 最舊)
-      const sortedRecords = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+      // 使用多重邏輯進行精密排序（含初賽/決賽層級）
+      const sortedRecords = sortRecordsChronologically(records);
 
       if (currentGroupMode === 'all') {
         // 模式 1：全部紀錄平鋪
