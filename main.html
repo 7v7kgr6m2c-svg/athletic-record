@@ -425,28 +425,38 @@
 
     async function saveRecordToFirestore(record, editId) {
       const dbPayload = {
-        athlete_id: currentAthleteId, user_id: currentUser.uid,
-        event_id: record.eventId, event_name: record.eventName,
-        competition: record.competition, date: record.date,
-        status: record.status, stage: record.stage, rank: record.rank,
-        is_combined: record.isCombined, type: record.type,
-        result: record.result, wind: record.wind || null,
-        sub_details: record.subDetails || [], updated_at: serverTimestamp()
-      };
+        athlete_id: currentAthleteId, 
+      user_id: currentUser.uid,
+      event_id: record.eventId, 
+      event_name: record.eventName,
+      competition: record.competition, 
+      date: record.date,
+      status: record.status, 
+      stage: record.stage, 
+      rank: record.rank,
+      is_combined: record.isCombined, 
+      type: record.type,
+      result: record.result, 
+      wind: record.wind !== undefined ? record.wind : null,
+      sub_details: record.subDetails || [], 
+      updated_at: serverTimestamp()
+    };
 
-      try {
-        if (editId) {
-          await updateDoc(doc(db, "records", editId), dbPayload);
-        } else {
-          dbPayload.created_at = serverTimestamp();
-          await addDoc(collection(db, "records"), dbPayload);
-        }
-        return true;
-      } catch (err) {
-        alert('儲存失敗：' + err.message);
-        return false;
+    try {
+      if (editId) {
+        await updateDoc(doc(db, "records", editId), dbPayload);
+      } else {
+        dbPayload.created_at = serverTimestamp();
+        await addDoc(collection(db, "records"), dbPayload);
       }
+      return true;
+    } catch (err) {
+      console.error("Firestore Save Error:", err);
+      alert('儲存失敗：' + err.code + ' - ' + err.message);
+      return false;
     }
+  }
+
 
     async function deleteRecordFromFirestore(id) {
       try {
