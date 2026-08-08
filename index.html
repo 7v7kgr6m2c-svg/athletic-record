@@ -2,19 +2,26 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 1. 禁止頁面 Zoom in / 縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>田徑紀錄系統 - 快捷登入</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f1f5f9; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+        /* 禁用手勢放大與雙擊縮放 */
+        html, body {
+            touch-action: manipulation;
+            background-color: #f1f5f9;
+            font-family: sans-serif;
+        }
         .login-container { width: 100%; max-width: 400px; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; box-sizing: border-box; }
-        h2 { color: #0f172a; margin-bottom: 8px; font-size: 24px; }
+        h2 { color: #0f172a; margin-bottom: 8px; font-size: 24px; font-weight: bold; }
         .subtitle { color: #64748b; font-size: 14px; margin-bottom: 30px; }
         .btn-oauth { width: 100%; padding: 12px; margin-bottom: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity 0.2s; }
         .btn-oauth:hover { opacity: 0.9; }
         .btn-google { background-color: #4285F4; }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center select-none p-4">
 
     <div class="login-container">
         <h2>歡迎使用田徑紀錄系統</h2>
@@ -25,12 +32,20 @@
         </button>
     </div>
 
+    <!-- 2. 自訂 Alert Modal：取代原生 Alert -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div id="custom-alert-icon" class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">❌</div>
+            <p id="custom-alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+            <button onclick="closeCustomAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+        </div>
+    </div>
+
     <!-- 引入 Firebase SDK (使用 ES Modules) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // TODO: 請填入你的 Firebase 專案設定 (可在 Firebase Console 取得)
         const firebaseConfig = {
             apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
             authDomain: "athletes-record.firebaseapp.com",
@@ -45,6 +60,16 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
+        // 自訂 Alert
+        window.showAlert = function(msg) {
+            document.getElementById('custom-alert-msg').textContent = msg;
+            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        }
+
+        window.closeCustomAlert = function() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+
         // 自動檢查登入狀態
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -58,7 +83,7 @@
                 const result = await signInWithPopup(auth, provider);
                 window.location.href = 'athletes.html';
             } catch (error) {
-                alert('Google 登入失敗：' + error.message);
+                showAlert('Google 登入失敗：' + error.message);
             }
         };
     </script>
