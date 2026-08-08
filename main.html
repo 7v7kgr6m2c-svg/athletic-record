@@ -812,9 +812,22 @@
         records = sortRecordsChronologically(records);
         renderList();
         renderPBPage();
+        updateChartDropdown();
         updateChart();
       } catch (err) {
         showAlert('載入歷史記錄失敗：' + err.message, '❌');
+      }
+    }
+
+    function updateChartDropdown() {
+      const chartSelect = document.getElementById('chart-filter');
+      const currentVal = chartSelect.value;
+      chartSelect.innerHTML = '';
+      EVENTS_DB.forEach(item => {
+        chartSelect.appendChild(new Option(item.name, item.id));
+      });
+      if (EVENTS_DB.some(e => e.id === currentVal)) {
+        chartSelect.value = currentVal;
       }
     }
 
@@ -926,7 +939,7 @@
               </div>
             </div>
 
-            <!-- 下半部：小字資訊全部靠右，逐行展示 -->
+            <!-- 下半部：小字資訊統整大小為 text-xs，靠右逐行獨立展示 -->
             <div class="space-y-1 text-xs text-right text-slate-500 font-medium">
               <div class="text-slate-800 font-bold leading-snug break-words">${r.competition}</div>
               <div class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</div>
@@ -1039,17 +1052,14 @@
       }
 
       const selectEl = document.getElementById('event-select');
-      const chartSelect = document.getElementById('chart-filter');
       const currentSelectedVal = selectEl.value;
       selectEl.innerHTML = '';
 
       const filtered = cat === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === cat);
       filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
 
-      chartSelect.innerHTML = selectEl.innerHTML;
       if (filtered.some(e => e.id === currentSelectedVal)) {
         selectEl.value = currentSelectedVal;
-        chartSelect.value = currentSelectedVal;
       } else {
         onEventSelectChange();
       }
@@ -1118,8 +1128,6 @@
         if (itemObj.hasWind) windContainer.classList.remove('hidden'); else windContainer.classList.add('hidden');
       }
       onStatusChange();
-      document.getElementById('chart-filter').value = selectedId;
-      updateChart();
     }
 
     window.calculateTotalScore = function() {
@@ -1623,6 +1631,7 @@
         }
       });
       
+      updateChartDropdown();
       updateChart();
     }
 
