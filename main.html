@@ -16,7 +16,7 @@
           -webkit-text-size-adjust: 100%;
       }
       
-      /* 關鍵：iOS 點擊輸入框時，字體若小於 16px 會強制 Auto-Zoom，此處強制鎖定至少 16px */
+      /* iOS 點擊輸入框時，字體若小於 16px 會強制 Auto-Zoom，此處強制鎖定至少 16px */
       input, select, textarea {
           font-size: 16px !important;
       }
@@ -96,8 +96,8 @@
     </header>
 
     <div class="space-y-6">
-      <!-- 1. 新增成績紀錄 -->
-      <section class="bg-white p-6 rounded-xl shadow-sm">
+      <!-- 1. 新增 / 編輯成績紀錄區塊 -->
+      <section id="form-section" class="bg-white p-6 rounded-xl shadow-sm">
         <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績紀錄</h2>
         <form id="record-form" class="space-y-3" oninput="validateForm()">
           <input type="hidden" id="edit-record-id" value="">
@@ -435,11 +435,11 @@
       });
     }
 
-    function setInitialTodayDate() {
-      const now = new Date();
-      selectedY = now.getFullYear();
-      selectedM = now.getMonth() + 1;
-      selectedD = now.getDate();
+    function setInitialTodayDate(dateStr = null) {
+      const targetDate = dateStr ? new Date(dateStr) : new Date();
+      selectedY = targetDate.getFullYear();
+      selectedM = targetDate.getMonth() + 1;
+      selectedD = targetDate.getDate();
       const formatted = `${selectedY}-${String(selectedM).padStart(2, '0')}-${String(selectedD).padStart(2, '0')}`;
       document.getElementById('race-date').value = formatted;
       document.getElementById('race-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
@@ -1036,10 +1036,97 @@
 
       const success = await saveRecordToFirestore(record, editId);
       if (success) {
-        showAlert('成績紀錄儲存成功！', '✅');
+        showAlert(editId ? '成績紀錄更新成功！' : '成績紀錄儲存成功！', '✅');
         cancelEditMode();
         await fetchRecordsFromFirestore();
       }
+    }
+
+    // 點擊「編輯紀錄」卡片按鈕，將數據回填入最上方表單
+    window.editRecord = function(id) {
+      const r = records.find(item => item.id === id);
+      if (!r) return;
+
+      document.getElementById('edit-record-id').value = r.id;
+      document.getElementById('form-title').textContent = '編輯成績紀錄';
+      document.getElementById('submit-btn').textContent = '更新紀錄';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+      // 填入比賽名稱與日期
+      document.getElementById('competition').value = r.competition;
+      setInitialTodayDate(r.date);
+
+      // 設定項目
+      const itemObj = EVENTS_DB.find(e => e.id === r.eventId);
+      if (itemObj) {
+        filterCategory(itemObj.cat);
+        document.getElementById('event-select').value = r.eventId;
+        onEventSelectChange();
+      }
+
+      // 填入階段與狀態
+      document.getElementById('stage-select').value = r.stage || '初賽';
+      document.getElementById('status-select').value = r.status || 'NORMAL';
+      onStatusChange();
+
+      // 填入成績或細項
+      if (r.isCombined) {
+        document.getElementById('combined-rank-select').value = r.rank || '';
+        if (r.subDetails && r.subDetails.length > 0) {
+          const rows = document.querySelectorAll('.sub-item-row');
+          r.subDetails.forEach((sub, idx) => {
+            if (rows[idx]) {
+              rows[idx].querySelector('.sub-status').value = sub.status || 'NORMAL';
+              rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
+              if (sub.type === 'time' && sub.val.includes('.')) {
+                const parts = sub.val.split('.');
+                const minSec = parts[0].split(':');
+                if (minSec.length === 2) {
+                  rows[idx].querySelector('.sub-min').value = minSec[0];
+                  rows[idx].querySelector('.sub-sec').value = minSec[1];
+                } else {
+                  rows[idx].querySelector('.sub-sec').value = minSec[0];
+                }
+                rows[idx].querySelector('.sub-ms').value = parts[1];
+              } else if (sub.type === 'distance' && sub.val.includes('.')) {
+                const parts = sub.val.split('.');
+                rows[idx].querySelector('.sub-m').value = parts[0];
+                rows[idx].querySelector('.sub-cm').value = parts[1];
+              }
+            }
+          });
+          calculateTotalScore();
+        }
+      } else {
+        document.getElementById('rank-select').value = r.rank || '';
+        if (r.wind !== null && r.wind !== undefined) {
+          document.getElementById('wind').value = r.wind;
+        }
+        if (r.status === 'NORMAL' && r.result) {
+          if (r.type === 'time') {
+            const parts = r.result.split('.');
+            if (parts.length === 2) {
+              document.getElementById('time-ms').value = parts[1];
+              const minSec = parts[0].split(':');
+              if (minSec.length === 2) {
+                document.getElementById('time-min').value = minSec[0];
+                document.getElementById('time-sec').value = minSec[1];
+              } else {
+                document.getElementById('time-sec').value = minSec[0];
+              }
+            }
+          } else {
+            const parts = r.result.split('.');
+            if (parts.length === 2) {
+              document.getElementById('dist-m').value = parts[0];
+              document.getElementById('dist-cm').value = parts[1];
+            }
+          }
+        }
+      }
+
+      // 平滑滾動至頂部表單區塊
+      document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
     }
 
     window.deleteRecord = async function(id) {
@@ -1168,6 +1255,7 @@
 
           ${isHistoryEditMode ? `
             <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
+              <button onclick="editRecord('${r.id}')" class="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition cursor-pointer">編輯此筆紀錄</button>
               <button onclick="deleteRecord('${r.id}')" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition cursor-pointer">刪除此筆紀錄</button>
             </div>
           ` : ''}
@@ -1186,24 +1274,21 @@
         return;
       }
 
-      // 使用多重邏輯進行精密排序（含初賽/決賽層級）
+      // 多重邏輯精密排序（含初賽/決賽層級）
       const sortedRecords = sortRecordsChronologically(records);
 
       if (currentGroupMode === 'all') {
-        // 模式 1：全部紀錄平鋪
         sortedRecords.forEach(r => {
           container.innerHTML += buildRecordCardHtml(r, true);
         });
 
       } else if (currentGroupMode === 'comp') {
-        // 模式 2：按比賽名稱分組
         const groups = {};
         sortedRecords.forEach(r => {
           if (!groups[r.competition]) groups[r.competition] = [];
           groups[r.competition].push(r);
         });
 
-        // 依最新比賽日期排序各個比賽群組
         const sortedCompNames = Object.keys(groups).sort((a, b) => {
           const dateA = new Date(groups[a][0].date);
           const dateB = new Date(groups[b][0].date);
@@ -1232,7 +1317,6 @@
         });
 
       } else if (currentGroupMode === 'event') {
-        // 模式 3：按項目分組
         const groups = {};
         sortedRecords.forEach(r => {
           if (!groups[r.eventName]) groups[r.eventName] = [];
@@ -1274,7 +1358,7 @@
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
-            // 自訂 Hover / 懸停時的 Tooltip
+            // 只保留 Chart.js 原生 Tooltip (黑色提示框)
             tooltip: {
               enabled: true,
               mode: 'nearest',
@@ -1323,15 +1407,13 @@
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       
-      // 篩選出正常成績，並依日期由舊到新排序以正確繪製進步趨勢線
+      // 篩選出正常成績，並依日期由舊到新排序以繪製趨勢線
       const filtered = records
         .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
         .sort((a,b) => new Date(a.date) - new Date(b.date));
 
-      // 1. X 軸標籤僅顯示日期
       chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
 
-      // 2. 打包數值與 Pop-up 所需的詳細資料
       const chartDataPoints = filtered.map(r => {
         let numericValue = 0;
         let unit = itemObj?.type === 'distance' ? '米' : (itemObj?.type === 'points' ? '分' : '秒');
@@ -1350,7 +1432,6 @@
         return {
           x: r.date.replace(/-/g, '/'),
           y: numericValue,
-          // 提供給 Pop-up 讀取的擴充屬性
           date: r.date,
           competition: r.competition,
           stage: r.stage,
@@ -1366,15 +1447,15 @@
         borderColor: '#2563eb',
         backgroundColor: 'rgba(37, 99, 235, 0.15)',
         pointBackgroundColor: '#1d4ed8',
-        pointRadius: 6,           // 加大圓點半徑方便手機點擊
-        pointHoverRadius: 9,      // 點擊/ Hover 時放大
+        pointRadius: 6,
+        pointHoverRadius: 9,
         fill: true,
         tension: 0.3
       }];
 
       const isTimeEvent = itemObj && itemObj.type === 'time';
       chartInstance.options.scales.y = {
-        reverse: isTimeEvent, // 徑項時間越小代表成績越好，故反轉 Y 軸
+        reverse: isTimeEvent,
         title: {
           display: true,
           text: isTimeEvent ? '時間 (秒)' : (itemObj?.type === 'distance' ? '距離 (米)' : '分數')
