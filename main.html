@@ -313,7 +313,7 @@
     let currentUser = null;
     let cropper = null;
 
-    // --- iOS 3D Wheel Picker 控制器（防自動跑位版） ---
+    // --- iOS 3D Wheel Picker 控制器（修正開頭跑位版） ---
     let activePickerTarget = null;
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
@@ -335,11 +335,11 @@
       modal.classList.remove('hidden');
 
       const currentVal = document.getElementById('race-date').value;
-      if (currentVal) {
+      if (currentVal && currentVal.includes('-')) {
           const parts = currentVal.split('-');
-          selectedY = parseInt(parts[0]);
-          selectedM = parseInt(parts[1]);
-          selectedD = parseInt(parts[2]);
+          selectedY = parseInt(parts[0], 10);
+          selectedM = parseInt(parts[1], 10);
+          selectedD = parseInt(parts[2], 10);
       } else {
           const now = new Date();
           selectedY = now.getFullYear();
@@ -351,13 +351,11 @@
       renderWheelMonths();
       renderWheelDays(false);
 
-      requestAnimationFrame(() => {
-          setTimeout(() => {
-              scrollWheelToValue('wheel-year', selectedY);
-              scrollWheelToValue('wheel-month', selectedM);
-              scrollWheelToValue('wheel-day', selectedD);
-          }, 100);
-      });
+      setTimeout(() => {
+          scrollWheelToValue('wheel-year', selectedY);
+          scrollWheelToValue('wheel-month', selectedM);
+          scrollWheelToValue('wheel-day', selectedD);
+      }, 50);
     }
 
     window.closeIosWheelPicker = function() {
@@ -375,7 +373,7 @@
       const container = document.getElementById('wheel-year');
       const nowY = new Date().getFullYear();
       container.innerHTML = '<div class="h-20"></div>';
-      for (let y = nowY + 2; y >= nowY - 15; y--) {
+      for (let y = nowY + 2; y >= nowY - 20; y--) {
           const div = document.createElement('div');
           div.className = 'picker-item';
           div.dataset.val = y;
@@ -451,7 +449,7 @@
 
               if (closest) {
                   closest.classList.add('selected');
-                  const val = parseInt(closest.dataset.val);
+                  const val = parseInt(closest.dataset.val, 10);
                   onSelectCallback(val);
               }
           }, 80);
@@ -462,11 +460,11 @@
       const el = document.getElementById(elementId);
       const items = el.querySelectorAll('.picker-item');
       items.forEach(item => {
-          if (parseInt(item.dataset.val) === val) {
+          if (parseInt(item.dataset.val, 10) === val) {
               item.classList.add('selected');
               isProgrammaticScrolling = true;
               el.scrollTop = item.offsetTop - 80;
-              setTimeout(() => { isProgrammaticScrolling = false; }, 150);
+              setTimeout(() => { isProgrammaticScrolling = false; }, 200);
           } else {
               item.classList.remove('selected');
           }
