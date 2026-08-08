@@ -178,6 +178,7 @@
         let selectedM = new Date().getMonth() + 1;
         let selectedD = new Date().getDate();
         let isProgrammaticScrolling = false;
+        let isInitializingPicker = false;
 
         function setTodayAsDefault() {
             const now = new Date();
@@ -207,16 +208,25 @@
                 selectedD = now.getDate();
             }
 
+            isInitializingPicker = true;
+            isProgrammaticScrolling = true;
+
             renderWheelYears();
             renderWheelMonths();
             renderWheelDays(false);
 
-            // 使用 requestAnimationFrame 確保 Modal 在 DOM 中完全完成渲染後才定位
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
                     scrollWheelToValue('wheel-year', selectedY);
                     scrollWheelToValue('wheel-month', selectedM);
-                    scrollWheelToValue('wheel-day', selectedD);
+                    
+                    setTimeout(() => {
+                        scrollWheelToValue('wheel-day', selectedD);
+                        setTimeout(() => {
+                            isProgrammaticScrolling = false;
+                            isInitializingPicker = false;
+                        }, 150);
+                    }, 50);
                 });
             });
         }
@@ -248,7 +258,7 @@
             container.innerHTML += '<div class="h-20"></div>';
             bindWheelScroll('wheel-year', (val) => { 
                 selectedY = val; 
-                renderWheelDays(true); 
+                if (!isInitializingPicker) renderWheelDays(true); 
             });
         }
 
@@ -265,7 +275,7 @@
             container.innerHTML += '<div class="h-20"></div>';
             bindWheelScroll('wheel-month', (val) => { 
                 selectedM = val; 
-                renderWheelDays(true); 
+                if (!isInitializingPicker) renderWheelDays(true); 
             });
         }
 
@@ -285,7 +295,7 @@
             container.innerHTML += '<div class="h-20"></div>';
             bindWheelScroll('wheel-day', (val) => { selectedD = val; });
 
-            if (keepCurrentDay) {
+            if (keepCurrentDay && !isInitializingPicker) {
                 scrollWheelToValue('wheel-day', selectedD);
             }
         }
@@ -323,17 +333,13 @@
 
         function scrollWheelToValue(elementId, val) {
             const el = document.getElementById(elementId);
+            if (!el) return;
             const items = el.querySelectorAll('.picker-item');
             items.forEach(item => {
                 if (parseInt(item.dataset.val, 10) === val) {
                     item.classList.add('selected');
-                    isProgrammaticScrolling = true;
-                    // 使用 smooth 捲動，增加跨瀏覽器與手機裝置滾動確定度
-                    el.scrollTo({
-                        top: item.offsetTop - 80,
-                        behavior: 'smooth'
-                    });
-                    setTimeout(() => { isProgrammaticScrolling = false; }, 300);
+                    const targetTop = item.offsetTop - 80;
+                    el.scrollTop = targetTop;
                 } else {
                     item.classList.remove('selected');
                 }
