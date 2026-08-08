@@ -125,7 +125,6 @@
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
-                alert('偵測到未登入，請先進行登入！');
                 window.location.href = 'index.html';
                 return;
             }
