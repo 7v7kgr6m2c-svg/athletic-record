@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>選擇與新增運動員</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Cropper.js 樣式與 Script -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         .swipe-container { position: relative; overflow: hidden; border-radius: 1rem; touch-action: pan-y; }
         .swipe-content { transition: transform 0.2s ease-out; will-change: transform; }
-        /* 裁切框強制顯示為圓形 */
         .cropper-view-box, .cropper-face { border-radius: 50%; }
+        /* 確保手機端裁切時畫面不會隨意滑動 */
+        .cropper-container { touch-action: none; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 flex items-center justify-center">
@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <!-- 新增運動員資料 Modal -->
+    <!-- 新增運動員 Modal -->
     <div id="add-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-40">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-5">
             <div class="flex justify-between items-center border-b pb-2">
@@ -80,11 +80,11 @@
         </div>
     </div>
 
-    <!-- 圖片裁切 Modal (覆蓋層) -->
+    <!-- 圖片裁切 Modal -->
     <div id="crop-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-slate-800 text-center">調整頭像位置與縮放</h3>
-            <div class="max-h-[60vh] overflow-hidden rounded-xl bg-black">
+            <div class="max-h-[50vh] overflow-hidden rounded-xl bg-black">
                 <img id="crop-image-target" src="" class="max-w-full block">
             </div>
             <div class="flex gap-3">
@@ -168,13 +168,11 @@
                         </button>
                         <div class="swipe-content ${theme.bg} text-white p-5 rounded-2xl flex items-center justify-between cursor-pointer select-none">
                             <div class="flex items-center gap-4">
-                                <img src="${athlete.avatar || defaultAvatar}" class="w-14 h-14 rounded-full object-cover border-2 border-white/50 bg-black/20">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <h3 class="text-lg font-bold">${athlete.name}</h3>
-                                        <span class="text-xs px-2 py-0.5 rounded-full ${theme.badge}">${athlete.gender || '未指定'}</span>
-                                    </div>
-                                    <p class="text-xs text-white/80 mt-0.5">生日: ${athlete.dob || '未填寫'}</p>
+                                <img src="${athlete.avatar || defaultAvatar}" class="w-14 h-14 rounded-full object-cover border-2 border-white/50 bg-black/20 flex-shrink-0">
+                                <div class="space-y-0.5">
+                                    <h3 class="text-lg font-bold">${athlete.name}</h3>
+                                    <p class="text-xs text-white/90">出生日期: ${athlete.dob || '未填寫'}</p>
+                                    <p class="text-xs text-white/80">性別: ${athlete.gender || '未指定'}</p>
                                 </div>
                             </div>
                             <div class="text-white/80 flex items-center">
@@ -284,7 +282,7 @@
             document.getElementById('avatar-preview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
         }
 
-        // --- 圖片裁切 (Cropper.js) 邏輯 ---
+        // --- 圖片裁切 (Cropper.js) ---
         window.handleFileSelect = function(event) {
             const file = event.target.files[0];
             if (file) {
@@ -295,23 +293,25 @@
                     document.getElementById('crop-modal').classList.remove('hidden');
 
                     if (cropper) cropper.destroy();
-                    cropper = new Cropper(cropImg, {
-                        aspectRatio: 1,
-                        viewMode: 1,
-                        dragMode: 'move',
-                        autoCropArea: 0.8,
-                        restore: false,
-                        guides: false,
-                        center: true,
-                        highlight: false,
-                        cropBoxMovable: true,
-                        cropBoxResizable: true,
-                        toggleDragModeOnDblclick: false,
-                    });
+                    setTimeout(() => {
+                        cropper = new Cropper(cropImg, {
+                            aspectRatio: 1,
+                            viewMode: 1,
+                            dragMode: 'move',
+                            autoCropArea: 0.8,
+                            restore: false,
+                            guides: false,
+                            center: true,
+                            highlight: false,
+                            cropBoxMovable: true,
+                            cropBoxResizable: true,
+                            toggleDragModeOnDblclick: false,
+                        });
+                    }, 100);
                 };
                 reader.readAsDataURL(file);
             }
-            event.target.value = ''; // 清空 input 讓重複選同一張相片也能觸發
+            event.target.value = '';
         };
 
         window.closeCropModal = function() {
@@ -321,8 +321,9 @@
 
         window.confirmCrop = function() {
             if (!cropper) return;
-            const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
-            selectedAvatarBase64 = canvas.toDataURL('image/jpeg', 0.8);
+            // 壓縮尺寸為 150x150，大幅減少 base64 檔案大小避免超限
+            const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
+            selectedAvatarBase64 = canvas.toDataURL('image/jpeg', 0.6);
             document.getElementById('avatar-preview').src = selectedAvatarBase64;
             closeCropModal();
         };
