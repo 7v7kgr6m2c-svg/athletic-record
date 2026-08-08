@@ -926,16 +926,12 @@
               </div>
             </div>
 
-            <!-- 下半部：完整賽事資訊與日期 -->
-            <div class="space-y-1.5 text-xs text-slate-500 font-medium">
-              <div class="flex justify-between items-start gap-4">
-                <span class="text-slate-800 font-bold leading-snug break-words flex-1">${r.competition}</span>
-                <span class="font-mono text-slate-400 whitespace-nowrap">${r.date.replace(/-/g, '/')}</span>
-              </div>
-              <div class="flex justify-between items-center text-slate-400 pt-1">
-                <span>階段: ${r.stage || '初賽'} ${r.rank ? `(${r.rank})` : ''}</span>
-                <span>創紀錄時年齡: ${ageText}</span>
-              </div>
+            <!-- 下半部：小字資訊全部靠右，逐行展示 -->
+            <div class="space-y-1 text-xs text-right text-slate-500 font-medium">
+              <div class="text-slate-800 font-bold leading-snug break-words">${r.competition}</div>
+              <div class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</div>
+              <div class="text-slate-400">階段: ${r.stage || '初賽'} ${r.rank ? `(${r.rank})` : ''}</div>
+              <div class="text-slate-400">創紀錄時年齡: ${ageText}</div>
             </div>
           </div>
         `;
