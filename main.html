@@ -95,6 +95,19 @@
       </button>
     </header>
 
+    <!-- 主功能頁籤導覽列 (Main Tabs Nav) -->
+    <nav class="bg-white p-1.5 rounded-2xl shadow-sm flex gap-1 font-bold text-sm text-slate-500">
+      <button type="button" onclick="switchPageTab('add')" id="main-tab-add" class="flex-1 py-2.5 rounded-xl transition cursor-pointer text-center bg-blue-600 text-white shadow-sm">
+        新增成績
+      </button>
+      <button type="button" onclick="switchPageTab('trend')" id="main-tab-trend" class="flex-1 py-2.5 rounded-xl transition cursor-pointer text-center hover:text-slate-900">
+        成績趨勢
+      </button>
+      <button type="button" onclick="switchPageTab('history')" id="main-tab-history" class="flex-1 py-2.5 rounded-xl transition cursor-pointer text-center hover:text-slate-900">
+        歷史記錄
+      </button>
+    </nav>
+
     <div class="space-y-6">
       <!-- 1. 新增 / 編輯成績區塊 -->
       <section id="form-section" class="bg-white p-6 rounded-xl shadow-sm">
@@ -134,7 +147,7 @@
             </select>
           </div>
 
-          <!-- 獨立特設：狀態 -->
+          <!-- 狀態 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
             <select id="status-select" onchange="onStatusChange()" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -231,7 +244,7 @@
       </section>
 
       <!-- 2. 成績趨勢 -->
-      <section class="bg-white p-6 rounded-xl shadow-sm">
+      <section id="trend-section" class="hidden bg-white p-6 rounded-xl shadow-sm">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
           <h2 class="text-lg font-bold text-slate-900">成績趨勢</h2>
           <select id="chart-filter" onchange="updateChart()" class="border rounded-lg h-9 px-3 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
@@ -242,7 +255,7 @@
       </section>
 
       <!-- 3. 歷史記錄 -->
-      <section class="bg-white p-6 rounded-xl shadow-sm space-y-4">
+      <section id="history-section" class="hidden bg-white p-6 rounded-xl shadow-sm space-y-4">
         <div class="flex justify-between items-center flex-wrap gap-2">
           <h2 class="text-lg font-bold text-slate-900">歷史記錄</h2>
           
@@ -259,7 +272,7 @@
           </div>
         </div>
 
-        <!-- 項目快捷篩選列（膠囊與分隔線置於下方） -->
+        <!-- 項目快捷篩選列 -->
         <div id="event-filter-bar" class="hidden flex flex-wrap gap-2 pt-1 pb-3 border-b border-slate-100"></div>
 
         <!-- 卡片容器 -->
@@ -400,8 +413,8 @@
     let chartInstance = null;
     let currentUser = null;
     let cropper = null;
-    let currentGroupMode = 'all'; // 'all' | 'comp' | 'event'
-    let currentSelectedEventFilter = 'all'; // 項目分頁下的子類別篩選
+    let currentGroupMode = 'all'; 
+    let currentSelectedEventFilter = 'all';
 
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
@@ -409,31 +422,60 @@
     let isProgrammaticScrolling = false;
     let isInitializingPicker = false;
 
-    // 階段權重定義：決賽(3) > 準決賽(2) > 初賽(1)
+    // 階段權重：決賽(3) > 準決賽(2) > 初賽(1)
     const STAGE_ORDER = {
       '決賽': 3,
       '準決賽': 2,
       '初賽': 1
     };
 
-    // 歷史明細卡片排序：新到舊（決賽在最上）
+    // 切換分頁（Add, Trend, History）
+    window.switchPageTab = function(tabKey) {
+      const formSec = document.getElementById('form-section');
+      const trendSec = document.getElementById('trend-section');
+      const historySec = document.getElementById('history-section');
+
+      const btnAdd = document.getElementById('main-tab-add');
+      const btnTrend = document.getElementById('main-tab-trend');
+      const btnHistory = document.getElementById('main-tab-history');
+
+      // 隱藏所有區塊
+      formSec.classList.add('hidden');
+      trendSec.classList.add('hidden');
+      historySec.classList.add('hidden');
+
+      // 復原所有按鈕樣式
+      [btnAdd, btnTrend, btnHistory].forEach(btn => {
+        btn.className = 'flex-1 py-2.5 rounded-xl transition cursor-pointer text-center hover:text-slate-900';
+      });
+
+      // 根據目標開頭顯示並切換樣式
+      if (tabKey === 'add') {
+        formSec.classList.remove('hidden');
+        btnAdd.className = 'flex-1 py-2.5 rounded-xl transition cursor-pointer text-center bg-blue-600 text-white shadow-sm';
+      } else if (tabKey === 'trend') {
+        trendSec.classList.remove('hidden');
+        btnTrend.className = 'flex-1 py-2.5 rounded-xl transition cursor-pointer text-center bg-blue-600 text-white shadow-sm';
+        updateChart(); // 切換到圖表時重繪，避免隱藏時尺寸出錯
+      } else if (tabKey === 'history') {
+        historySec.classList.remove('hidden');
+        btnHistory.className = 'flex-1 py-2.5 rounded-xl transition cursor-pointer text-center bg-blue-600 text-white shadow-sm';
+      }
+    };
+
     function sortRecordsChronologically(recordArray) {
       return [...recordArray].sort((a, b) => {
-        // 1. 日期降序 (新到舊)
         const dateDiff = new Date(b.date) - new Date(a.date);
         if (dateDiff !== 0) return dateDiff;
 
-        // 2. 比賽名稱拼音/字元排序
         if (a.competition !== b.competition) {
           return a.competition.localeCompare(b.competition, 'zh-HK');
         }
 
-        // 3. 項目名稱排序
         if (a.eventName !== b.eventName) {
           return a.eventName.localeCompare(b.eventName, 'zh-HK');
         }
 
-        // 4. 同比賽、同項目，依階段權重排序 (決賽 > 準決賽 > 初賽)
         const weightA = STAGE_ORDER[a.stage] || 0;
         const weightB = STAGE_ORDER[b.stage] || 0;
         return weightB - weightA; 
@@ -1046,7 +1088,7 @@
       }
     }
 
-    // 點擊「編輯紀錄」卡片按鈕，將數據回填入最上方表單
+    // 點擊「編輯紀錄」卡片按鈕，將數據回填入最上方表單並切換至新增成績頁籤
     window.editRecord = function(id) {
       const r = records.find(item => item.id === id);
       if (!r) return;
@@ -1129,11 +1171,12 @@
         }
       }
 
-      // 自動關閉歷史卡片編輯模式，並平滑滾動至頂部表單
+      // 自動關閉歷史卡片編輯模式，並切換至「新增成績」頁籤並平滑滾動至頂部
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
       renderList();
 
+      switchPageTab('add');
       document.getElementById('form-section').scrollIntoView({ behavior: 'smooth' });
     }
 
