@@ -60,6 +60,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <label class="w-28 text-sm md:text-base font-bold text-slate-700 whitespace-nowrap">出生日期 <span class="text-red-500">*</span></label>
+                        <!-- 確保類型為 date，以顯示完整年/月/日選擇器 -->
                         <input type="date" id="athlete-dob" required class="flex-1 border border-slate-300 rounded-xl h-11 px-3 text-sm md:text-base bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="flex items-center gap-3">
@@ -321,7 +322,6 @@
 
         window.confirmCrop = function() {
             if (!cropper) return;
-            // 壓縮尺寸為 150x150，大幅減少 base64 檔案大小避免超限
             const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
             selectedAvatarBase64 = canvas.toDataURL('image/jpeg', 0.6);
             document.getElementById('avatar-preview').src = selectedAvatarBase64;
