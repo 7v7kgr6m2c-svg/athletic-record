@@ -172,7 +172,7 @@
             { bg: 'bg-gradient-to-r from-purple-600 to-indigo-800' }
         ];
 
-        // --- iOS 3D Wheel Picker 控制器（修正開頭跑位版） ---
+        // --- iOS 3D Wheel Picker 控制器 ---
         let activePickerTarget = null;
         let selectedY = new Date().getFullYear();
         let selectedM = new Date().getMonth() + 1;
@@ -211,11 +211,14 @@
             renderWheelMonths();
             renderWheelDays(false);
 
-            setTimeout(() => {
-                scrollWheelToValue('wheel-year', selectedY);
-                scrollWheelToValue('wheel-month', selectedM);
-                scrollWheelToValue('wheel-day', selectedD);
-            }, 50);
+            // 使用 requestAnimationFrame 確保 Modal 在 DOM 中完全完成渲染後才定位
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    scrollWheelToValue('wheel-year', selectedY);
+                    scrollWheelToValue('wheel-month', selectedM);
+                    scrollWheelToValue('wheel-day', selectedD);
+                });
+            });
         }
 
         window.closeIosWheelPicker = function() {
@@ -325,8 +328,12 @@
                 if (parseInt(item.dataset.val, 10) === val) {
                     item.classList.add('selected');
                     isProgrammaticScrolling = true;
-                    el.scrollTop = item.offsetTop - 80;
-                    setTimeout(() => { isProgrammaticScrolling = false; }, 200);
+                    // 使用 smooth 捲動，增加跨瀏覽器與手機裝置滾動確定度
+                    el.scrollTo({
+                        top: item.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    setTimeout(() => { isProgrammaticScrolling = false; }, 300);
                 } else {
                     item.classList.remove('selected');
                 }
