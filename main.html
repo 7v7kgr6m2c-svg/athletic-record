@@ -790,9 +790,42 @@
 
     window.updateChart = function() {
       const selectedId = document.getElementById('chart-filter').value;
-      const filtered = records.filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL')).sort((a,b) => new Date(a.date) - new Date(b.date));
+      const itemObj = EVENTS_DB.find(e => e.id === selectedId);
+      
+      const filtered = records
+        .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
+        .sort((a,b) => new Date(a.date) - new Date(b.date));
+
       chartInstance.data.labels = filtered.map(r => `${r.date} (${r.competition})`);
-      chartInstance.data.datasets = [{ data: filtered.map(r => parseFloat(r.result) || 0), borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3 }];
+      chartInstance.data.datasets = [{
+        label: itemObj ? itemObj.name : '成績',
+        data: filtered.map(r => {
+          if (itemObj && itemObj.type === 'time' && typeof r.result === 'string') {
+            const parts = r.result.split(':');
+            if (parts.length === 2) {
+              return (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+            }
+            return parseFloat(r.result) || 0;
+          }
+          return parseFloat(r.result) || 0;
+        }),
+        borderColor: '#2563eb',
+        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        fill: true,
+        tension: 0.3
+      }];
+
+      const isTimeEvent = itemObj && itemObj.type === 'time';
+      chartInstance.options.scales = {
+        y: {
+          reverse: isTimeEvent,
+          title: {
+            display: true,
+            text: isTimeEvent ? '時間 (秒)' : (itemObj?.type === 'distance' ? '距離 (米)' : '分數')
+          }
+        }
+      };
+
       chartInstance.update();
     }
 
