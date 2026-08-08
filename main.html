@@ -6,11 +6,11 @@
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- 引入 Cropper.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
       .cropper-view-box, .cropper-face { border-radius: 50%; }
+      .cropper-container { touch-action: none; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
@@ -27,10 +27,9 @@
         <input type="file" id="header-avatar-input" accept="image/*" class="hidden" onchange="handleHeaderFileSelect(event)">
 
         <div class="space-y-1">
-          <div class="flex items-center gap-2">
-            <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">載入中...</h1>
-          </div>
-          <p id="athlete-info" class="text-sm text-white/80">性別與生日載入中...</p>
+          <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">載入中...</h1>
+          <p id="athlete-dob" class="text-xs md:text-sm text-white/90">出生日期: 載入中...</p>
+          <p id="athlete-gender" class="text-xs md:text-sm text-white/80">性別: 載入中...</p>
         </div>
       </div>
 
@@ -218,7 +217,7 @@
   <div id="crop-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
           <h3 class="text-base font-bold text-slate-800 text-center">調整頭像位置與縮放</h3>
-          <div class="max-h-[60vh] overflow-hidden rounded-xl bg-black">
+          <div class="max-h-[50vh] overflow-hidden rounded-xl bg-black">
               <img id="crop-image-target" src="" class="max-w-full block">
           </div>
           <div class="flex gap-3">
@@ -296,10 +295,8 @@
 
     function initProfileUI() {
       document.getElementById('athlete-name').textContent = athleteProfile.name;
-      let infoText = [];
-      if (athleteProfile.gender) infoText.push(`性別: ${athleteProfile.gender}`);
-      if (athleteProfile.dob) infoText.push(`生日: ${athleteProfile.dob}`);
-      document.getElementById('athlete-info').textContent = infoText.length > 0 ? infoText.join(' | ') : '';
+      document.getElementById('athlete-dob').textContent = `出生日期: ${athleteProfile.dob || '未填寫'}`;
+      document.getElementById('athlete-gender').textContent = `性別: ${athleteProfile.gender || '未指定'}`;
 
       if (athleteProfile.avatar) {
         document.getElementById('avatar-img').src = athleteProfile.avatar;
@@ -317,19 +314,21 @@
           document.getElementById('crop-modal').classList.remove('hidden');
 
           if (cropper) cropper.destroy();
-          cropper = new Cropper(cropImg, {
-            aspectRatio: 1,
-            viewMode: 1,
-            dragMode: 'move',
-            autoCropArea: 0.8,
-            restore: false,
-            guides: false,
-            center: true,
-            highlight: false,
-            cropBoxMovable: true,
-            cropBoxResizable: true,
-            toggleDragModeOnDblclick: false,
-          });
+          setTimeout(() => {
+            cropper = new Cropper(cropImg, {
+              aspectRatio: 1,
+              viewMode: 1,
+              dragMode: 'move',
+              autoCropArea: 0.8,
+              restore: false,
+              guides: false,
+              center: true,
+              highlight: false,
+              cropBoxMovable: true,
+              cropBoxResizable: true,
+              toggleDragModeOnDblclick: false,
+            });
+          }, 100);
         };
         reader.readAsDataURL(file);
       }
@@ -343,8 +342,9 @@
 
     window.confirmHeaderCrop = async function() {
       if (!cropper) return;
-      const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
-      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+      // 壓縮尺寸為 150x150，壓縮品質為 0.6，避免 Firestore 超限報錯
+      const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
+      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.6);
 
       document.getElementById('avatar-img').src = croppedBase64;
       athleteProfile.avatar = croppedBase64;
