@@ -12,11 +12,27 @@
       .cropper-view-box, .cropper-face { border-radius: 50%; }
       .cropper-container { touch-action: none; }
 
-      /* iOS Wheel Picker 自訂樣式 */
+      /* iOS Wheel Picker 自訂樣式：嚴格鎖定僅能上下滑動 */
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-      .picker-column { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
-      .picker-item { height: 40px; line-height: 40px; scroll-snap-align: center; text-align: center; font-size: 16px; font-weight: 600; color: #64748b; transition: color 0.15s, transform 0.15s; }
+      .picker-column { 
+          scroll-snap-type: y mandatory; 
+          scroll-behavior: smooth; 
+          touch-action: pan-y; /* 防左右扯動 */
+          overscroll-behavior-x: none;
+          overflow-x: hidden !important;
+      }
+      .picker-item { 
+          height: 40px; 
+          line-height: 40px; 
+          scroll-snap-align: center; 
+          text-align: center; 
+          font-size: 16px; 
+          font-weight: 600; 
+          color: #64748b; 
+          transition: color 0.15s, transform 0.15s; 
+          user-select: none;
+      }
       .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
   </style>
 </head>
@@ -61,7 +77,7 @@
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
             <div onclick="openIosWheelPicker('race')" class="flex-1 border rounded-lg h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-blue-500 transition">
-              <span id="race-display-text" class="text-slate-800 font-medium">請選擇日期</span>
+              <span id="race-display-text" class="text-slate-800 font-medium">載入中...</span>
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
             <input type="hidden" id="race-date" required>
@@ -233,13 +249,13 @@
               <button type="button" onclick="confirmIosWheelPicker()" class="text-blue-600 hover:text-blue-700 font-bold text-sm cursor-pointer">完成</button>
           </div>
 
-          <div class="relative h-48 overflow-hidden my-2">
+          <div class="relative h-48 overflow-hidden my-2 select-none">
               <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-slate-100/80 rounded-xl border-y border-slate-200/80 pointer-events-none -z-0"></div>
 
-              <div class="flex w-full h-full relative z-10">
-                  <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
-                  <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
-                  <div id="wheel-day" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
+              <div class="flex w-full h-full relative z-10 overflow-hidden">
+                  <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+                  <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+                  <div id="wheel-day" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
               </div>
           </div>
       </div>
@@ -297,7 +313,7 @@
     let currentUser = null;
     let cropper = null;
 
-    // --- iOS 3D Wheel Picker 控制器 ---
+    // --- iOS 3D Wheel Picker 控制器（預設當天） ---
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
     let selectedD = new Date().getDate();
@@ -322,6 +338,11 @@
           selectedY = parseInt(parts[0]);
           selectedM = parseInt(parts[1]);
           selectedD = parseInt(parts[2]);
+      } else {
+          const now = new Date();
+          selectedY = now.getFullYear();
+          selectedM = now.getMonth() + 1;
+          selectedD = now.getDate();
       }
 
       renderWheelYears();
@@ -950,7 +971,7 @@
       
       const filtered = records
         .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
-        .sort((a,b) => new Date(a.date) - new Date(b.date));
+        .sort((a,b) => new Date(a.date) - new Date(a.date));
 
       chartInstance.data.labels = filtered.map(r => `${r.date} (${r.competition})`);
       chartInstance.data.datasets = [{
