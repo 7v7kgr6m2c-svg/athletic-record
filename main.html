@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <!-- 1. 禁止頁面 Zoom in / 縮放 (Viewport 鎖定) -->
+  <!-- 1. Viewport 鎖定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -10,15 +10,21 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
-      /* 禁用手勢放大與雙擊縮放 */
-      html, body {
+      /* 禁用手勢與雙擊縮放 */
+      html, body, input, select, textarea, button {
           touch-action: manipulation;
           -webkit-text-size-adjust: 100%;
       }
+      
+      /* 關鍵：iOS 點擊輸入框時，字體若小於 16px 會強制 Auto-Zoom，此處強制鎖定至少 16px */
+      input, select, textarea {
+          font-size: 16px !important;
+      }
+
       .cropper-view-box, .cropper-face { border-radius: 50%; }
       .cropper-container { touch-action: none; }
 
-      /* iOS Wheel Picker 自訂樣式：嚴格鎖定僅能上下滑動 */
+      /* iOS Wheel Picker 自訂樣式 */
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
       .picker-column { 
@@ -42,9 +48,25 @@
       .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
   </style>
   <script>
-    // JS 層級全面攔截 iOS Safari 雙指縮放與雙擊放大
+    // 全方位攔截 iOS Safari 手勢與雙擊縮放
     document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
-    document.addEventListener('touchstart', function (e) { if (e.touches.length > 1) { e.preventDefault(); } }, { passive: false });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length > 1) { e.preventDefault(); }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function (e) {
+      if (e.touches.length > 1) { e.preventDefault(); }
+    }, { passive: false });
+
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (e) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+      lastTouchEnd = now;
+    }, false);
   </script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 select-none">
@@ -82,7 +104,7 @@
           
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">賽事名稱 <span class="text-red-500">*</span></label>
-            <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
           <!-- 比賽日期 iOS 滾輪觸發位 -->
@@ -109,11 +131,11 @@
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
             <div class="flex-1 flex items-center gap-3 min-w-0">
-              <select id="event-select" onchange="onEventSelectChange()" class="flex-[3] w-0 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <select id="event-select" onchange="onEventSelectChange()" class="flex-[3] w-0 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
               </select>
               
               <label class="text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
-              <select id="status-select" onchange="onStatusChange()" class="flex-[2.5] w-0 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select id="status-select" onchange="onStatusChange()" class="flex-[2.5] w-0 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
               </select>
             </div>
           </div>
@@ -124,29 +146,29 @@
               
               <div class="flex items-center gap-2 flex-wrap flex-1">
                 <div id="time-input-group" class="flex items-center gap-1">
-                  <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                  <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">:</span>
-                  <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                  <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">.</span>
-                  <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                  <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-lg h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div id="distance-input-group" class="hidden flex items-center gap-1">
-                  <input type="number" id="dist-m" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                  <input type="number" id="dist-m" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-lg h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">.</span>
-                  <input type="number" id="dist-cm" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-lg h-10 text-center text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                  <input type="number" id="dist-cm" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-lg h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
                 </div>
               </div>
             </div>
 
             <div id="wind-container" class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">風速</label>
-              <input type="number" id="wind" step="0.1" placeholder="+1.2" oninput="validateForm()" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input type="number" id="wind" step="0.1" placeholder="+1.2" oninput="validateForm()" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
-              <select id="stage-select" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select id="stage-select" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="初賽">初賽</option>
                 <option value="決賽">決賽</option>
               </select>
@@ -154,7 +176,7 @@
 
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
-              <select id="rank-select" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select id="rank-select" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">無名次</option>
                 <option value="第1名">第1名</option>
                 <option value="第2名">第2名</option>
@@ -181,7 +203,7 @@
 
             <div class="flex items-center gap-3 pt-2">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
-              <select id="combined-rank-select" class="w-36 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select id="combined-rank-select" class="w-36 border rounded-lg h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">無名次</option>
                 <option value="第1名">第1名</option>
                 <option value="第2名">第2名</option>
@@ -287,7 +309,7 @@
       </div>
   </div>
 
-  <!-- 自訂 Modal：取代原生 Alert 與 Confirm -->
+  <!-- 自訂 Modal -->
   <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
           <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
