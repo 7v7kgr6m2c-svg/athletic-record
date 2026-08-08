@@ -903,7 +903,7 @@
           const isLegal = r.wind <= 2.0;
           const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
           windBadge = `
-            <span class="text-xs px-2.5 py-1 rounded-full font-bold border ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
+            <span class="text-xs px-2.5 py-0.5 rounded-full font-bold border ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
               風速 ${windStr} m/s ${!isLegal ? '(超風速)' : ''}
             </span>
           `;
@@ -911,28 +911,28 @@
 
         const cardHtml = `
           <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition">
-            <div class="flex justify-between items-start">
+            
+            <!-- 上半部：項目名稱（左，加大字體）與 成績（右） -->
+            <div class="flex justify-between items-center gap-3 border-b border-slate-100 pb-3">
               <div>
-                <span class="text-xs font-extrabold text-blue-600 bg-blue-50 px-3 py-1 rounded-full tracking-wide">PERSONAL BEST</span>
-                <h3 class="text-xl font-black text-slate-900 mt-2">${r.eventName}</h3>
+                <h3 class="text-2xl font-black text-slate-900">${r.eventName}</h3>
+                ${windBadge ? `<div class="mt-1">${windBadge}</div>` : ''}
               </div>
-              ${windBadge}
-            </div>
 
-            <!-- 超大字體展示 PB 結果 -->
-            <div class="my-2">
-              <div class="flex items-baseline gap-1">
-                <span class="text-4xl md:text-5xl font-black tracking-tight text-blue-900 font-mono">${r.result}</span>
-                <span class="text-base font-bold text-slate-500">${unit}</span>
+              <!-- 右側大字體成績 -->
+              <div class="text-right flex items-baseline gap-1">
+                <span class="text-3xl md:text-4xl font-black tracking-tight text-blue-900 font-mono">${r.result}</span>
+                <span class="text-sm font-bold text-slate-500">${unit}</span>
               </div>
             </div>
 
-            <div class="border-t border-slate-100 pt-3 space-y-1 text-xs text-slate-500 font-medium">
-              <div class="flex justify-between items-center">
-                <span class="text-slate-700 font-bold truncate max-w-[180px]">${r.competition}</span>
-                <span class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</span>
+            <!-- 下半部：完整賽事資訊與日期 -->
+            <div class="space-y-1.5 text-xs text-slate-500 font-medium">
+              <div class="flex justify-between items-start gap-4">
+                <span class="text-slate-800 font-bold leading-snug break-words flex-1">${r.competition}</span>
+                <span class="font-mono text-slate-400 whitespace-nowrap">${r.date.replace(/-/g, '/')}</span>
               </div>
-              <div class="flex justify-between items-center text-slate-400">
+              <div class="flex justify-between items-center text-slate-400 pt-1">
                 <span>階段: ${r.stage || '初賽'} ${r.rank ? `(${r.rank})` : ''}</span>
                 <span>創紀錄時年齡: ${ageText}</span>
               </div>
