@@ -54,6 +54,7 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
+            <!-- 確保此處為 type="date" 即可支援 年/月/日 選擇 -->
             <input type="date" id="date" class="flex-1 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
@@ -788,7 +789,6 @@
     }
 
     window.updateChart = function() {
-      // 判斷 chartInstance 是否已建立，避免在初始化前執行造成 null 錯誤
       if (!chartInstance) return;
 
       const selectedId = document.getElementById('chart-filter').value;
