@@ -2,13 +2,18 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 1. 禁止頁面 Zoom in / 縮放 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
+      /* 禁用手勢放大與雙擊縮放 */
+      html, body {
+          touch-action: manipulation;
+      }
       .cropper-view-box, .cropper-face { border-radius: 50%; }
       .cropper-container { touch-action: none; }
 
@@ -36,7 +41,7 @@
       .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 select-none">
 
   <div class="max-w-3xl mx-auto space-y-6">
     <!-- 運動員資料 Header -->
@@ -51,6 +56,8 @@
         <div class="space-y-1">
           <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">載入中...</h1>
           <p id="athlete-dob" class="text-xs md:text-sm text-white/90">出生日期: 載入中...</p>
+          <!-- 3. 出生日期下顯示年齡 -->
+          <p id="athlete-age" class="text-xs md:text-sm text-white/90">年齡: 載入中...</p>
           <p id="athlete-gender" class="text-xs md:text-sm text-white/80">性別: 載入中...</p>
         </div>
       </div>
@@ -275,6 +282,26 @@
       </div>
   </div>
 
+  <!-- 2. 自訂 Modal：取代瀏覽器原生 Alert 與 Confirm 彈窗 (解決顯示 URL 與禁止顯示對話方塊問題) -->
+  <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+          <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+          <p id="custom-alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+          <button onclick="closeCustomAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+      </div>
+  </div>
+
+  <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+          <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">?</div>
+          <p id="custom-confirm-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+          <div class="flex gap-3">
+              <button onclick="resolveCustomConfirm(false)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
+              <button onclick="resolveCustomConfirm(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">確定刪除</button>
+          </div>
+      </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -293,6 +320,39 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // --- 自訂 Alert 與 Confirm (消除頂部網址及底部選項) ---
+    window.showAlert = function(msg, icon = 'i') {
+      document.getElementById('custom-alert-msg').textContent = msg;
+      const iconEl = document.getElementById('custom-alert-icon');
+      iconEl.textContent = icon;
+      if (icon === '✅') {
+        iconEl.className = 'w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+      } else if (icon === '❌' || icon === '⚠️') {
+        iconEl.className = 'w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+      } else {
+        iconEl.className = 'w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+      }
+      document.getElementById('custom-alert-modal').classList.remove('hidden');
+    }
+
+    window.closeCustomAlert = function() {
+      document.getElementById('custom-alert-modal').classList.add('hidden');
+    }
+
+    let confirmResolver = null;
+    window.showConfirm = function(msg) {
+      document.getElementById('custom-confirm-msg').textContent = msg;
+      document.getElementById('custom-confirm-modal').classList.remove('hidden');
+      return new Promise((resolve) => {
+        confirmResolver = resolve;
+      });
+    }
+
+    window.resolveCustomConfirm = function(val) {
+      document.getElementById('custom-confirm-modal').classList.add('hidden');
+      if (confirmResolver) confirmResolver(val);
+    }
 
     let currentAthleteId = localStorage.getItem('current_athlete_id');
     let currentAthleteName = localStorage.getItem('current_athlete_name');
@@ -493,8 +553,8 @@
         currentUser = user;
 
         if (!currentAthleteId) {
-          alert('未選擇運動員，將為您返回選擇頁面！');
-          window.location.href = 'athletes.html';
+          showAlert('未選擇運動員，將為您返回選擇頁面！', '⚠️');
+          setTimeout(() => { window.location.href = 'athletes.html'; }, 1500);
           return;
         }
 
@@ -511,9 +571,25 @@
 
     window.switchAthlete = function() { window.location.href = 'athletes.html'; }
 
+    // 3. 計算年齡函式
+    function calculateAge(dobString) {
+      if (!dobString) return '未填寫';
+      const birthDate = new Date(dobString);
+      if (isNaN(birthDate.getTime())) return '未填寫';
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age >= 0 ? `${age} 歲` : '未填寫';
+    }
+
     function initProfileUI() {
       document.getElementById('athlete-name').textContent = athleteProfile.name;
       document.getElementById('athlete-dob').textContent = `出生日期: ${athleteProfile.dob || '未填寫'}`;
+      // 3. 顯示年齡
+      document.getElementById('athlete-age').textContent = `年齡: ${calculateAge(athleteProfile.dob)}`;
       document.getElementById('athlete-gender').textContent = `性別: ${athleteProfile.gender || '未指定'}`;
 
       if (athleteProfile.avatar) {
@@ -562,9 +638,9 @@
       try {
         const athleteRef = doc(db, "athletes", currentAthleteId);
         await updateDoc(athleteRef, { avatar: croppedBase64 });
-        alert('✅ 頭像更新成功！');
+        showAlert('頭像更新成功！', '✅');
       } catch (err) {
-        alert('❌ 頭像更新失敗：' + err.message);
+        showAlert('頭像更新失敗：' + err.message, '❌');
       }
     };
 
@@ -622,17 +698,17 @@
         renderList();
         updateChart();
       } catch (err) {
-        alert('❌ 載入歷史紀錄失敗：' + err.message);
+        showAlert('載入歷史紀錄失敗：' + err.message, '❌');
       }
     }
 
     async function saveRecordToFirestore(record, editId) {
       if (!currentUser || !currentUser.uid) {
-        alert("❌ 錯誤：尚未偵測到用戶登入資訊！");
+        showAlert("錯誤：尚未偵測到用戶登入資訊！", '❌');
         return false;
       }
       if (!currentAthleteId) {
-        alert("❌ 錯誤：找不到運動員 ID！");
+        showAlert("錯誤：找不到運動員 ID！", '❌');
         return false;
       }
 
@@ -663,7 +739,7 @@
         }
         return true;
       } catch (err) {
-        alert('❌ Firestore 儲存失敗：' + err.code + '\n' + err.message);
+        showAlert('Firestore 儲存失敗：' + err.code + '\n' + err.message, '❌');
         return false;
       }
     }
@@ -673,7 +749,7 @@
         await deleteDoc(doc(db, "records", id));
         return true;
       } catch (err) {
-        alert('❌ 刪除失敗：' + err.message);
+        showAlert('刪除失敗：' + err.message, '❌');
         return false;
       }
     }
@@ -834,15 +910,15 @@
       const comp = document.getElementById('competition').value.trim();
       const date = document.getElementById('race-date').value;
 
-      if (!comp) { alert("⚠️ 請填寫賽事名稱！"); return; }
-      if (!date) { alert("⚠️ 請選擇比賽日期！"); return; }
+      if (!comp) { showAlert("請填寫賽事名稱！", '⚠️'); return; }
+      if (!date) { showAlert("請選擇比賽日期！", '⚠️'); return; }
 
       const editId = document.getElementById('edit-record-id').value;
       const selectedId = document.getElementById('event-select').value;
       const status = document.getElementById('status-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
-      if (!itemObj) { alert("⚠️ 請選擇比賽項目！"); return; }
+      if (!itemObj) { showAlert("請選擇比賽項目！", '⚠️'); return; }
 
       let record = {
         eventId: selectedId, 
@@ -879,7 +955,7 @@
             const sec = document.getElementById('time-sec').value.trim();
             const ms = document.getElementById('time-ms').value.trim();
             if (sec === '' || ms === '') {
-              alert("⚠️ 請輸入完整的秒數與毫秒！");
+              showAlert("請輸入完整的秒數與毫秒！", '⚠️');
               return;
             }
             record.result = formatTimeStr(document.getElementById('time-min').value, sec, ms);
@@ -887,7 +963,7 @@
             const m = document.getElementById('dist-m').value.trim();
             const cm = document.getElementById('dist-cm').value.trim();
             if (m === '' || cm === '') {
-              alert("⚠️ 請輸入完整的距離（米與厘米）！");
+              showAlert("請輸入完整的距離（米與厘米）！", '⚠️');
               return;
             }
             record.result = formatDistStr(m, cm);
@@ -901,16 +977,17 @@
 
       const success = await saveRecordToFirestore(record, editId);
       if (success) {
-        alert('✅ 成績紀錄儲存成功！');
+        showAlert('成績紀錄儲存成功！', '✅');
         cancelEditMode();
         await fetchRecordsFromFirestore();
       }
     }
 
     window.deleteRecord = async function(id) {
-      if (confirm('確定要刪除這筆紀錄嗎？')) {
+      const confirmed = await showConfirm('確定要刪除這筆紀錄嗎？');
+      if (confirmed) {
         if (await deleteRecordFromFirestore(id)) {
-          alert('已成功刪除紀錄！');
+          showAlert('已成功刪除紀錄！', '✅');
           await fetchRecordsFromFirestore();
           if (document.getElementById('edit-record-id').value === id) cancelEditMode();
         }
@@ -1038,10 +1115,10 @@
       try {
         await signOut(auth);
         localStorage.clear();
-        alert('✅ 成功登出！');
-        window.location.href = 'index.html';
+        showAlert('成功登出！', '✅');
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
       } catch (err) {
-        alert('❌ 登出失敗：' + err.message);
+        showAlert('登出失敗：' + err.message, '❌');
       }
     });
 
