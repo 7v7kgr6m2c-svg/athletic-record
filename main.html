@@ -408,14 +408,14 @@
     let isProgrammaticScrolling = false;
     let isInitializingPicker = false;
 
-    // 階段權重定義：決賽 > 準決賽 > 初賽 (確保預設新到舊排序時，決賽位在初賽上方)
+    // 階段權重定義：決賽(3) > 準決賽(2) > 初賽(1)
     const STAGE_ORDER = {
       '決賽': 3,
       '準決賽': 2,
       '初賽': 1
     };
 
-    // 多重精準排序函數
+    // 歷史明細卡片排序：新到舊（決賽在最上）
     function sortRecordsChronologically(recordArray) {
       return [...recordArray].sort((a, b) => {
         // 1. 日期降序 (新到舊)
@@ -1471,9 +1471,24 @@
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       
+      // 💡 關鍵更新：折線圖由左至右順序（舊到新 / 初賽到決賽）
       const filtered = records
         .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
-        .sort((a,b) => new Date(a.date) - new Date(b.date));
+        .sort((a, b) => {
+          // 1. 先按日期（舊到新，舊的在左邊）
+          const dateDiff = new Date(a.date) - new Date(b.date);
+          if (dateDiff !== 0) return dateDiff;
+
+          // 2. 同日期按賽事名稱
+          if (a.competition !== b.competition) {
+            return a.competition.localeCompare(b.competition, 'zh-HK');
+          }
+
+          // 3. 同日期、同賽事：按階段順序（初賽 1 -> 準決賽 2 -> 決賽 3），初賽在左邊
+          const weightA = STAGE_ORDER[a.stage] || 1;
+          const weightB = STAGE_ORDER[b.stage] || 1;
+          return weightA - weightB;
+        });
 
       chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
 
