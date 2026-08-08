@@ -6,7 +6,6 @@
   <title>個人田徑成績記錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- 引入 Cropper.js -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
@@ -20,7 +19,6 @@
     <!-- 運動員資料 Header -->
     <header class="relative overflow-hidden bg-gradient-to-r from-blue-700 to-blue-900 p-6 rounded-2xl shadow-md text-white flex items-center justify-between">
       <div class="flex items-center gap-5">
-        <!-- 頭像 -->
         <div class="relative group cursor-pointer w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/85 shadow-inner bg-blue-950 flex-shrink-0 flex items-center justify-center" onclick="document.getElementById('header-avatar-input').click()">
           <img id="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="w-full h-full object-cover">
           <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[11px] font-bold text-white text-center p-1">更換頭像</div>
@@ -52,10 +50,14 @@
             <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
+          <!-- 替換為 3 個獨立 Select 下拉選單 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
-            <!-- 確保此處為 type="date" 即可支援 年/月/日 選擇 -->
-            <input type="date" id="date" class="flex-1 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <div class="flex-1 flex gap-1.5 min-w-0">
+              <select id="race-year" required onchange="updateRaceDays()" class="flex-[1.2] min-w-0 border rounded-lg h-10 px-1 text-xs md:text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+              <select id="race-month" required onchange="updateRaceDays()" class="flex-1 min-w-0 border rounded-lg h-10 px-1 text-xs md:text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+              <select id="race-day" required class="flex-1 min-w-0 border rounded-lg h-10 px-1 text-xs md:text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            </div>
           </div>
 
           <div class="flex items-center gap-3">
@@ -229,14 +231,6 @@
       </div>
   </div>
 
-  <!-- 全域 JS 診斷捕獲 -->
-  <script>
-    window.onerror = function(msg, url, lineNo, columnNo, error) {
-      alert("❌ 頁面程式發生錯誤：\n" + msg + "\n(於第 " + lineNo + " 行)");
-      return false;
-    };
-  </script>
-
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -275,6 +269,49 @@
     let currentUser = null;
     let cropper = null;
 
+    // 初始化比賽日期下拉選單 (年份: 從今年向前5年/向後10年)
+    function initRaceDatePicker(defaultDateStr) {
+      const ySelect = document.getElementById('race-year');
+      const mSelect = document.getElementById('race-month');
+      const now = defaultDateStr ? new Date(defaultDateStr) : new Date();
+      const currentYear = new Date().getFullYear();
+
+      ySelect.innerHTML = '';
+      mSelect.innerHTML = '';
+
+      for (let y = currentYear + 2; y >= currentYear - 15; y--) {
+        ySelect.appendChild(new Option(`${y}年`, y));
+      }
+      for (let m = 1; m <= 12; m++) {
+        mSelect.appendChild(new Option(`${m}月`, String(m).padStart(2, '0')));
+      }
+
+      ySelect.value = now.getFullYear();
+      mSelect.value = String(now.getMonth() + 1).padStart(2, '0');
+
+      window.updateRaceDays(String(now.getDate()).padStart(2, '0'));
+    }
+
+    window.updateRaceDays = function(targetDay) {
+      const y = document.getElementById('race-year').value;
+      const m = document.getElementById('race-month').value;
+      const dSelect = document.getElementById('race-day');
+      const selectedDay = targetDay || dSelect.value;
+
+      dSelect.innerHTML = '';
+      if (!y || !m) return;
+
+      const daysInMonth = new Date(y, m, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dayStr = String(d).padStart(2, '0');
+        dSelect.appendChild(new Option(`${d}日`, dayStr));
+      }
+
+      if (selectedDay && parseInt(selectedDay) <= daysInMonth) {
+        dSelect.value = selectedDay;
+      }
+    }
+
     async function initMainPage() {
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
@@ -290,9 +327,7 @@
         }
 
         initProfileUI();
-
-        const dateInput = document.getElementById('date');
-        dateInput.value = getTodayString();
+        initRaceDatePicker();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
         await fetchRecordsFromFirestore();
@@ -396,11 +431,6 @@
       { id: 'heptathlon', cat: 'combined', type: 'points', name: '七項全能 Heptathlon', subs: ['100米欄', '跳高', '推鉛球', '200米', '跳遠', '擲標槍', '800米'] },
       { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能 Decathlon', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
-
-    function getTodayString() {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    }
 
     async function fetchRecordsFromFirestore() {
       try {
@@ -630,10 +660,14 @@
       e.preventDefault();
 
       const comp = document.getElementById('competition').value.trim();
-      const date = document.getElementById('date').value;
-      if (!comp) { alert("⚠️ 請填寫賽事名稱！"); return; }
-      if (!date) { alert("⚠️ 請選擇比賽日期！"); return; }
+      const ry = document.getElementById('race-year').value;
+      const rm = document.getElementById('race-month').value;
+      const rd = document.getElementById('race-day').value;
 
+      if (!comp) { alert("⚠️ 請填寫賽事名稱！"); return; }
+      if (!ry || !rm || !rd) { alert("⚠️ 請選擇完整的比賽日期（年、月、日）！"); return; }
+
+      const date = `${ry}-${rm}-${rd}`;
       const editId = document.getElementById('edit-record-id').value;
       const selectedId = document.getElementById('event-select').value;
       const status = document.getElementById('status-select').value;
@@ -720,7 +754,7 @@
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
-      document.getElementById('date').value = getTodayString();
+      initRaceDatePicker();
       onEventSelectChange();
     }
 
