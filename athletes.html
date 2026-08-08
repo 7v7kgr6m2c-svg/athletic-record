@@ -13,11 +13,27 @@
         .cropper-view-box, .cropper-face { border-radius: 50%; }
         .cropper-container { touch-action: none; }
 
-        /* iOS Wheel Picker 自訂樣式 */
+        /* iOS Wheel Picker 自訂樣式：嚴格鎖定僅能上下滑動 */
         .scrollbar-none::-webkit-scrollbar { display: none; }
         .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-        .picker-column { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
-        .picker-item { height: 40px; line-height: 40px; scroll-snap-align: center; text-align: center; font-size: 16px; font-weight: 600; color: #64748b; transition: color 0.15s, transform 0.15s; }
+        .picker-column { 
+            scroll-snap-type: y mandatory; 
+            scroll-behavior: smooth; 
+            touch-action: pan-y; /* 防左右扯動 */
+            overscroll-behavior-x: none;
+            overflow-x: hidden !important;
+        }
+        .picker-item { 
+            height: 40px; 
+            line-height: 40px; 
+            scroll-snap-align: center; 
+            text-align: center; 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: #64748b; 
+            transition: color 0.15s, transform 0.15s; 
+            user-select: none;
+        }
         .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
     </style>
 </head>
@@ -67,9 +83,8 @@
 
                     <div class="flex items-center gap-3">
                         <label class="w-24 text-sm md:text-base font-bold text-slate-700 whitespace-nowrap">出生日期 <span class="text-red-500">*</span></label>
-                        <!-- 觸發 iOS 滾輪 Modal 的按鈕欄位 -->
                         <div onclick="openIosWheelPicker('dob')" class="flex-1 border border-slate-300 rounded-xl h-11 px-3 flex items-center justify-between bg-slate-50 text-sm md:text-base cursor-pointer hover:border-blue-500 transition">
-                            <span id="dob-display-text" class="text-slate-400">請選擇年月日</span>
+                            <span id="dob-display-text" class="text-slate-800 font-medium">載入中...</span>
                             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
                         <input type="hidden" id="athlete-dob" required>
@@ -93,7 +108,7 @@
         </div>
     </div>
 
-    <!-- iOS 3D 日期滾輪選擇 Modal -->
+    <!-- iOS 3D 日期滾輪 Modal -->
     <div id="ios-wheel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 transition-opacity">
         <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
@@ -102,15 +117,13 @@
                 <button type="button" onclick="confirmIosWheelPicker()" class="text-blue-600 hover:text-blue-700 font-bold text-sm cursor-pointer">完成</button>
             </div>
 
-            <!-- 滾輪容器 -->
-            <div class="relative h-48 overflow-hidden my-2">
-                <!-- 中間高亮遮罩條 -->
+            <div class="relative h-48 overflow-hidden my-2 select-none">
                 <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-slate-100/80 rounded-xl border-y border-slate-200/80 pointer-events-none -z-0"></div>
 
-                <div class="flex w-full h-full relative z-10">
-                    <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
-                    <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
-                    <div id="wheel-day" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
+                <div class="flex w-full h-full relative z-10 overflow-hidden">
+                    <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+                    <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+                    <div id="wheel-day" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
                 </div>
             </div>
         </div>
@@ -159,11 +172,21 @@
             { bg: 'bg-gradient-to-r from-purple-600 to-indigo-800' }
         ];
 
-        // --- iOS 3D Wheel Picker 控制器引擎 ---
+        // --- iOS 3D Wheel Picker 控制器（預設當天） ---
         let activePickerTarget = null;
-        let selectedY = new Date().getFullYear() - 15;
-        let selectedM = 1;
-        let selectedD = 1;
+        let selectedY = new Date().getFullYear();
+        let selectedM = new Date().getMonth() + 1;
+        let selectedD = new Date().getDate();
+
+        function setTodayAsDefault() {
+            const now = new Date();
+            selectedY = now.getFullYear();
+            selectedM = now.getMonth() + 1;
+            selectedD = now.getDate();
+            const formatted = `${selectedY}-${String(selectedM).padStart(2, '0')}-${String(selectedD).padStart(2, '0')}`;
+            document.getElementById('athlete-dob').value = formatted;
+            document.getElementById('dob-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
+        }
 
         window.openIosWheelPicker = function(targetType) {
             activePickerTarget = targetType;
@@ -176,6 +199,11 @@
                 selectedY = parseInt(parts[0]);
                 selectedM = parseInt(parts[1]);
                 selectedD = parseInt(parts[2]);
+            } else {
+                const now = new Date();
+                selectedY = now.getFullYear();
+                selectedM = now.getMonth() + 1;
+                selectedD = now.getDate();
             }
 
             renderWheelYears();
@@ -198,8 +226,6 @@
             if (activePickerTarget === 'dob') {
                 document.getElementById('athlete-dob').value = formatted;
                 document.getElementById('dob-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
-                document.getElementById('dob-display-text').classList.remove('text-slate-400');
-                document.getElementById('dob-display-text').classList.add('text-slate-800', 'font-medium');
             }
             closeIosWheelPicker();
         }
@@ -299,6 +325,7 @@
                 return;
             }
             currentUser = user;
+            setTodayAsDefault();
             await fetchAthletes();
         });
 
@@ -444,12 +471,15 @@
             }
         }
 
-        window.openAddModal = function() { document.getElementById('add-modal').classList.remove('hidden'); }
+        window.openAddModal = function() { 
+            document.getElementById('add-modal').classList.remove('hidden'); 
+            setTodayAsDefault();
+        }
+
         window.closeAddModal = function() {
             document.getElementById('add-modal').classList.add('hidden');
             document.getElementById('add-athlete-form').reset();
-            document.getElementById('dob-display-text').textContent = '請選擇年月日';
-            document.getElementById('dob-display-text').className = 'text-slate-400';
+            setTodayAsDefault();
             selectedAvatarBase64 = '';
             document.getElementById('avatar-preview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
         }
