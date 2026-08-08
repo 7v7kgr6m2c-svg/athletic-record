@@ -2,14 +2,15 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <!-- 1. 禁止頁面 Zoom in / 縮放 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 1. 禁止頁面 Zoom in / 縮放 (Viewport 鎖定) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>田徑紀錄系統 - 快捷登入</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* 禁用手勢放大與雙擊縮放 */
         html, body {
             touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
             background-color: #f1f5f9;
             font-family: sans-serif;
         }
@@ -20,6 +21,11 @@
         .btn-oauth:hover { opacity: 0.9; }
         .btn-google { background-color: #4285F4; }
     </style>
+    <script>
+      // JS 層級全面攔截 iOS Safari 雙指縮放與雙擊放大
+      document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+      document.addEventListener('touchstart', function (e) { if (e.touches.length > 1) { e.preventDefault(); } }, { passive: false });
+    </script>
 </head>
 <body class="min-h-screen flex items-center justify-center select-none p-4">
 
@@ -32,7 +38,7 @@
         </button>
     </div>
 
-    <!-- 2. 自訂 Alert Modal：取代原生 Alert -->
+    <!-- 自訂 Alert Modal：取代原生 Alert -->
     <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div id="custom-alert-icon" class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">❌</div>
@@ -41,7 +47,6 @@
         </div>
     </div>
 
-    <!-- 引入 Firebase SDK (使用 ES Modules) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -60,7 +65,6 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // 自訂 Alert
         window.showAlert = function(msg) {
             document.getElementById('custom-alert-msg').textContent = msg;
             document.getElementById('custom-alert-modal').classList.remove('hidden');
@@ -70,14 +74,12 @@
             document.getElementById('custom-alert-modal').classList.add('hidden');
         }
 
-        // 自動檢查登入狀態
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 window.location.href = 'athletes.html';
             }
         });
 
-        // 綁定到全域讓按鈕呼叫
         window.handleGoogleLogin = async function() {
             try {
                 const result = await signInWithPopup(auth, provider);
