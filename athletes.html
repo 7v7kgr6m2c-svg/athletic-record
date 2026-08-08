@@ -61,7 +61,7 @@
                     <input type="file" id="athlete-avatar" accept="image/*" onchange="handleAvatarPreview(event)" class="hidden">
                 </div>
 
-                <!-- 2. 表單輸入區：標題在左邊放大，輸入框在右邊對齊 -->
+                <!-- 2. 表單輸入區 -->
                 <div class="space-y-3">
                     <!-- 運動員姓名 -->
                     <div class="flex items-center gap-3">
@@ -345,10 +345,12 @@
             }
         });
 
+        // 登出帳戶事件
         document.getElementById('btn-logout').addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 localStorage.clear();
+                alert('成功登出！');
                 window.location.href = 'index.html';
             } catch (err) {
                 alert('登出失敗：' + err.message);
