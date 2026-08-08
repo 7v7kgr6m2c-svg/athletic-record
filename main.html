@@ -239,29 +239,26 @@
         </div>
       </section>
 
-      <!-- 3. 歷史紀錄明細 -->
+      <!-- 3. 歷史紀錄明細（全新卡片風格與分類切換） -->
       <section class="bg-white p-6 rounded-xl shadow-sm space-y-4">
-        <div class="flex justify-between items-center border-b pb-2">
+        <div class="flex justify-between items-center border-b pb-3 flex-wrap gap-2">
           <h2 class="text-lg font-bold text-slate-900">歷史紀錄明細</h2>
-          <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition font-medium cursor-pointer">編輯記錄</button>
+          
+          <div class="flex items-center gap-2">
+            <!-- 分類 Tab -->
+            <div class="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+              <button type="button" onclick="switchGroupMode('all')" id="tab-all" class="px-3 py-1.5 rounded-lg bg-white text-blue-600 shadow-xs transition cursor-pointer">全部</button>
+              <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer">比賽</button>
+              <button type="button" onclick="switchGroupMode('event')" id="tab-event" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer">項目</button>
+            </div>
+
+            <!-- 編輯模式 toggle -->
+            <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition font-medium cursor-pointer">編輯記錄</button>
+          </div>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm">
-            <thead class="bg-slate-50 text-slate-500 border-b">
-              <tr>
-                <th class="p-2">項目</th>
-                <th class="p-2">成績 / 狀態</th>
-                <th class="p-2">風速 / 明細</th>
-                <th class="p-2">階段</th>
-                <th class="p-2">名次</th>
-                <th class="p-2">名稱</th>
-                <th class="p-2">日期</th>
-                <th class="p-2 text-right action-col hidden">操作</th>
-              </tr>
-            </thead>
-            <tbody id="records-list" class="divide-y"></tbody>
-          </table>
-        </div>
+
+        <!-- 卡片容器 -->
+        <div id="cards-container" class="space-y-4"></div>
       </section>
 
       <!-- 4. 頁底登出按鈕 -->
@@ -398,8 +395,8 @@
     let chartInstance = null;
     let currentUser = null;
     let cropper = null;
+    let currentGroupMode = 'all'; // 'all' | 'comp' | 'event'
 
-    let activePickerTarget = null;
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
     let selectedD = new Date().getDate();
@@ -596,17 +593,22 @@
 
     window.switchAthlete = function() { window.location.href = 'athletes.html'; }
 
-    function calculateAge(dobString) {
-      if (!dobString) return '未填寫';
+    function getAgeAtDate(dobString, targetDateString) {
+      if (!dobString || !targetDateString) return null;
       const birthDate = new Date(dobString);
-      if (isNaN(birthDate.getTime())) return '未填寫';
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      const targetDate = new Date(targetDateString);
+      if (isNaN(birthDate.getTime()) || isNaN(targetDate.getTime())) return null;
+      let age = targetDate.getFullYear() - birthDate.getFullYear();
+      const m = targetDate.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && targetDate.getDate() < birthDate.getDate())) {
         age--;
       }
-      return age >= 0 ? `${age} 歲` : '未填寫';
+      return age >= 0 ? age : null;
+    }
+
+    function calculateAge(dobString) {
+      const age = getAgeAtDate(dobString, new Date().toISOString().split('T')[0]);
+      return age !== null ? `${age} 歲` : '未填寫';
     }
 
     function initProfileUI() {
@@ -1033,54 +1035,198 @@
       renderList();
     }
 
+    window.switchGroupMode = function(mode) {
+      currentGroupMode = mode;
+      ['all', 'comp', 'event'].forEach(m => {
+        const btn = document.getElementById(`tab-${m}`);
+        if (m === mode) {
+          btn.className = 'px-3 py-1.5 rounded-lg bg-white text-blue-600 shadow-xs transition cursor-pointer';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+        }
+      });
+      renderList();
+    }
+
     window.toggleSubDetails = function(id) {
       const el = document.getElementById(`sub-${id}`);
       if (el) el.classList.toggle('hidden');
     }
 
+    // 取得名次 Icon Badge HTML
+    function getRankBadgeHtml(rankStr) {
+      if (rankStr === '第1名') {
+        return `<div class="w-10 h-10 rounded-full bg-amber-400 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-300">1</div>`;
+      } else if (rankStr === '第2名') {
+        return `<div class="w-10 h-10 rounded-full bg-slate-300 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-slate-200">2</div>`;
+      } else if (rankStr === '第3名') {
+        return `<div class="w-10 h-10 rounded-full bg-amber-700 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-600">3</div>`;
+      } else if (rankStr) {
+        const num = rankStr.replace(/[^0-9]/g, '');
+        return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200">${num || '無'}</div>`;
+      } else {
+        return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-normal flex items-center justify-center text-xs border border-slate-200">無</div>`;
+      }
+    }
+
+    // 渲染單張成績卡片
+    function buildRecordCardHtml(r, showCompInHeader = true) {
+      const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
+      const ageText = ageNum !== null ? `參賽年齡 ${ageNum} 歲` : '參賽年齡 -';
+
+      let resultDisplay = '';
+      if (r.status && r.status !== 'NORMAL') {
+        resultDisplay = `<span class="text-red-600 font-bold text-xl">${STATUS_MAP[r.status] || r.status}</span>`;
+      } else if (r.isCombined) {
+        resultDisplay = `<span class="text-3xl font-black tracking-tight text-blue-900">${r.result}</span><span class="text-xs font-bold text-slate-500 ml-1">分</span>`;
+      } else {
+        const unit = r.type === 'distance' ? '米' : '秒';
+        resultDisplay = `<span class="text-3xl font-black tracking-tight text-blue-900">${r.result}</span><span class="text-xs font-bold text-slate-500 ml-1">${unit}</span>`;
+      }
+
+      let subInfoText = r.stage || '';
+      if (r.wind !== null && r.wind !== undefined) {
+        const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
+        subInfoText += subInfoText ? ` · 風速 ${windStr}` : `風速 ${windStr}`;
+      }
+
+      let cardHtml = `
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          ${showCompInHeader ? `
+            <div class="bg-blue-50/80 px-4 py-2.5 flex justify-between items-center border-b border-blue-100/60">
+              <span class="font-bold text-blue-900 text-sm md:text-base">${r.competition}</span>
+              <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
+            </div>
+          ` : ''}
+
+          <div class="p-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              ${getRankBadgeHtml(r.rank)}
+              
+              <div>
+                <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName}</h3>
+                <p class="text-xs text-slate-400 font-medium">${subInfoText || '賽事紀錄'}</p>
+              </div>
+            </div>
+
+            <div class="text-right flex flex-col items-end">
+              <div>${resultDisplay}</div>
+              <span class="text-xs text-slate-400 font-medium">${ageText}</span>
+            </div>
+          </div>
+
+          ${r.isCombined && r.subDetails?.length > 0 ? `
+            <div class="px-4 pb-3 border-t border-slate-100 pt-2 bg-slate-50/50">
+              <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
+                <span>查看全能單項細項 (${r.subDetails.length})</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </button>
+              <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                ${r.subDetails.map(sub => `
+                  <div class="bg-white p-2 rounded-lg border border-slate-200 text-xs text-slate-600 flex justify-between">
+                    <span class="font-bold text-slate-700">${sub.name}</span>
+                    <span class="font-mono">${sub.val} (${sub.pts}分)</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${isHistoryEditMode ? `
+            <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
+              <button onclick="deleteRecord('${r.id}')" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition cursor-pointer">刪除此筆紀錄</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      return cardHtml;
+    }
+
     function renderList() {
-      const tbody = document.getElementById('records-list');
-      tbody.innerHTML = '';
-      document.querySelectorAll('.action-col').forEach(col => col.classList.toggle('hidden', !isHistoryEditMode));
+      const container = document.getElementById('cards-container');
+      container.innerHTML = '';
 
       if (records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${isHistoryEditMode ? 8 : 7}" class="p-4 text-center text-slate-400">目前尚無紀錄</td></tr>`;
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">目前尚無紀錄</div>`;
         return;
       }
 
-      records.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition';
-        let extraCol = r.wind != null ? (r.wind > 0 ? '+' + r.wind : r.wind) : '-';
-        let resCol = r.status && r.status !== 'NORMAL' ? `<span class="px-2 py-0.5 rounded font-bold text-xs bg-red-100 text-red-700">${STATUS_MAP[r.status] || r.status}</span>` : (r.isCombined ? `<span class="text-blue-700 font-bold">${r.result} 分</span>` : `${r.result}${r.type === 'distance' ? ' 米' : ' 秒'}`);
-        if (r.isCombined && r.subDetails?.length > 0) extraCol = `<button onclick="toggleSubDetails('${r.id}')" class="text-xs text-blue-600 underline cursor-pointer">查看細項</button>`;
+      // 按日期降序排序 (最新 -> 最舊)
+      const sortedRecords = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        tr.innerHTML = `
-          <td class="p-2 font-semibold text-blue-600">${r.eventName}</td>
-          <td class="p-2 font-mono font-bold">${resCol}</td>
-          <td class="p-2 text-slate-500">${extraCol}</td>
-          <td class="p-2"><span class="px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-600">${r.stage || '-'}</span></td>
-          <td class="p-2 font-medium text-slate-700">${r.rank || '-'}</td>
-          <td class="p-2">${r.competition}</td>
-          <td class="p-2 text-slate-500 text-xs">${r.date}</td>
-          ${isHistoryEditMode ? `<td class="p-2 text-right space-x-1"><button onclick="deleteRecord('${r.id}')" class="text-red-500 text-xs px-2 py-1 bg-red-50 rounded cursor-pointer">刪除</button></td>` : ''}
-        `;
-        tbody.appendChild(tr);
+      if (currentGroupMode === 'all') {
+        // 模式 1：全部紀錄平鋪
+        sortedRecords.forEach(r => {
+          container.innerHTML += buildRecordCardHtml(r, true);
+        });
 
-        if (r.isCombined && r.subDetails?.length > 0) {
-          const subTr = document.createElement('tr');
-          subTr.id = `sub-${r.id}`;
-          subTr.className = 'hidden bg-slate-50/80';
-          let subHtml = `<td colspan="${isHistoryEditMode ? 8 : 7}" class="p-3 text-xs border-b">
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">`;
-          r.subDetails.forEach(sub => {
-            subHtml += `<div class="bg-white p-1.5 rounded border text-slate-600"><span class="font-bold">${sub.name}:</span> ${sub.val} (${sub.pts}分)</div>`;
-          });
-          subHtml += `</div></td>`;
-          subTr.innerHTML = subHtml;
-          tbody.appendChild(subTr);
-        }
-      });
+      } else if (currentGroupMode === 'comp') {
+        // 模式 2：按比賽名稱分組
+        const groups = {};
+        sortedRecords.forEach(r => {
+          if (!groups[r.competition]) groups[r.competition] = [];
+          groups[r.competition].push(r);
+        });
+
+        // 依最新比賽日期排序各個比賽群組
+        const sortedCompNames = Object.keys(groups).sort((a, b) => {
+          const dateA = new Date(groups[a][0].date);
+          const dateB = new Date(groups[b][0].date);
+          return dateB - dateA;
+        });
+
+        sortedCompNames.forEach(compName => {
+          const compRecords = groups[compName];
+          const latestDate = compRecords[0].date.replace(/-/g, '/');
+
+          let groupHtml = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between border-b pb-1 pt-2">
+                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>${compName}</span>
+                </h3>
+                <span class="text-xs text-slate-400 font-mono">${latestDate}</span>
+              </div>
+              <div class="space-y-3">
+                ${compRecords.map(r => buildRecordCardHtml(r, false)).join('')}
+              </div>
+            </div>
+          `;
+          container.innerHTML += groupHtml;
+        });
+
+      } else if (currentGroupMode === 'event') {
+        // 模式 3：按項目分組
+        const groups = {};
+        sortedRecords.forEach(r => {
+          if (!groups[r.eventName]) groups[r.eventName] = [];
+          groups[r.eventName].push(r);
+        });
+
+        const sortedEventNames = Object.keys(groups);
+
+        sortedEventNames.forEach(eventName => {
+          const eventRecords = groups[eventName];
+
+          let groupHtml = `
+            <div class="space-y-3">
+              <div class="border-b pb-1 pt-2">
+                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>${eventName}</span>
+                  <span class="text-xs font-normal text-slate-400">(${eventRecords.length} 筆紀錄)</span>
+                </h3>
+              </div>
+              <div class="space-y-3">
+                ${eventRecords.map(r => buildRecordCardHtml(r, true)).join('')}
+              </div>
+            </div>
+          `;
+          container.innerHTML += groupHtml;
+        });
+      }
     }
 
     function initChart() {
