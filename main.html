@@ -1304,23 +1304,6 @@
               }
             }
           },
-          // 點擊數據點時觸發 Pop-up 彈窗（行動裝置專用與優化）
-          onClick: (event, activeElements) => {
-            if (activeElements.length > 0) {
-              const index = activeElements[0].index;
-              const rawData = chartInstance.data.datasets[0].data[index];
-              
-              let detailMsg = `🏆 ${rawData.competition}\n📅 日期: ${rawData.date}\n🏃 階段: ${rawData.stage || '初賽'}`;
-              if (rawData.rank) detailMsg += ` (${rawData.rank})`;
-              detailMsg += `\n⏱️ 成績: ${rawData.displayResult}`;
-              if (rawData.wind !== null && rawData.wind !== undefined) {
-                const windStr = rawData.wind > 0 ? `+${rawData.wind}` : `${rawData.wind}`;
-                detailMsg += `\n💨 風速: ${windStr}`;
-              }
-              
-              showAlert(detailMsg, '🏆');
-            }
-          },
           scales: {
             x: {
               ticks: {
