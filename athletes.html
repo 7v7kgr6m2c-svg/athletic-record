@@ -2,12 +2,17 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 1. 禁止頁面 Zoom in / 縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>選擇與新增運動員</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
+        /* 禁用手勢放大與雙擊縮放 */
+        html, body {
+            touch-action: manipulation;
+        }
         .swipe-container { position: relative; overflow: hidden; border-radius: 1rem; touch-action: pan-y; }
         .swipe-content { transition: transform 0.2s ease-out; will-change: transform; }
         .cropper-view-box, .cropper-face { border-radius: 50%; }
@@ -37,7 +42,7 @@
         .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 flex items-center justify-center">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 flex items-center justify-center select-none">
 
     <div class="w-full max-w-md space-y-6">
         <div class="bg-white p-5 rounded-2xl shadow-sm text-center">
@@ -143,6 +148,26 @@
         </div>
     </div>
 
+    <!-- 2. 自訂 Modal：取代原生 Alert 與 Confirm -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+            <p id="custom-alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+            <button onclick="closeCustomAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+        </div>
+    </div>
+
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">?</div>
+            <p id="custom-confirm-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+            <div class="flex gap-3">
+                <button onclick="resolveCustomConfirm(false)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
+                <button onclick="resolveCustomConfirm(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">確定刪除</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -161,6 +186,53 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // --- 自訂 Alert 與 Confirm ---
+        window.showAlert = function(msg, icon = 'i') {
+            document.getElementById('custom-alert-msg').textContent = msg;
+            const iconEl = document.getElementById('custom-alert-icon');
+            iconEl.textContent = icon;
+            if (icon === '✅') {
+                iconEl.className = 'w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+            } else if (icon === '❌' || icon === '⚠️') {
+                iconEl.className = 'w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+            } else {
+                iconEl.className = 'w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+            }
+            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        }
+
+        window.closeCustomAlert = function() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+
+        let confirmResolver = null;
+        window.showConfirm = function(msg) {
+            document.getElementById('custom-confirm-msg').textContent = msg;
+            document.getElementById('custom-confirm-modal').classList.remove('hidden');
+            return new Promise((resolve) => {
+                confirmResolver = resolve;
+            });
+        }
+
+        window.resolveCustomConfirm = function(val) {
+            document.getElementById('custom-confirm-modal').classList.add('hidden');
+            if (confirmResolver) confirmResolver(val);
+        }
+
+        // --- 計算年齡函式 ---
+        function calculateAge(dobString) {
+            if (!dobString) return '未填寫';
+            const birthDate = new Date(dobString);
+            if (isNaN(birthDate.getTime())) return '未填寫';
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age >= 0 ? `${age} 歲` : '未填寫';
+        }
 
         let currentUser = null;
         let selectedAvatarBase64 = '';
@@ -367,7 +439,7 @@
                 athletes.sort((a, b) => (a.created_at?.seconds || 0) - (b.created_at?.seconds || 0));
                 renderSlots(athletes);
             } catch (err) {
-                alert('載入運動員失敗：' + err.message);
+                showAlert('載入運動員失敗：' + err.message, '❌');
             }
         }
 
@@ -396,6 +468,8 @@
                                 <div class="space-y-0.5">
                                     <h3 class="text-lg font-bold">${athlete.name}</h3>
                                     <p class="text-xs text-white/90">出生日期: ${athlete.dob || '未填寫'}</p>
+                                    <!-- 3. 出生日期下顯示年齡 -->
+                                    <p class="text-xs text-white/90">年齡: ${calculateAge(athlete.dob)}</p>
                                     <p class="text-xs text-white/80">性別: ${athlete.gender || '未指定'}</p>
                                 </div>
                             </div>
@@ -488,13 +562,14 @@
         }
 
         async function deleteAthlete(athleteId, name) {
-            if (!confirm(`⚠️ 警告：刪除數據後將無法修復！\n\n確定要完全刪除運動員「${name}」的資料及所有紀錄嗎？`)) return;
+            const confirmed = await showConfirm(`確定要完全刪除運動員「${name}」的資料及所有紀錄嗎？\n（注意：刪除後將無法還原）`);
+            if (!confirmed) return;
             try {
                 await deleteDoc(doc(db, "athletes", athleteId));
-                alert(`已完全刪除運動員：${name}`);
+                showAlert(`已完全刪除運動員：${name}`, '✅');
                 await fetchAthletes();
             } catch (err) {
-                alert('刪除失敗：' + err.message);
+                showAlert('刪除失敗：' + err.message, '❌');
             }
         }
 
@@ -554,7 +629,7 @@
             const gender = document.getElementById('athlete-gender').value;
 
             if (!name || !dob || !gender) {
-                alert('請完整填寫所有必填欄位（包含出生年月日）！');
+                showAlert('請完整填寫所有必填欄位（包含出生年月日）！', '⚠️');
                 return;
             }
 
@@ -568,7 +643,7 @@
                 closeAddModal();
                 await fetchAthletes();
             } catch (err) {
-                alert('新增失敗：' + err.message);
+                showAlert('新增失敗：' + err.message, '❌');
             }
         });
 
@@ -576,10 +651,10 @@
             try {
                 await signOut(auth);
                 localStorage.clear();
-                alert('成功登出！');
-                window.location.href = 'index.html';
+                showAlert('成功登出！', '✅');
+                setTimeout(() => { window.location.href = 'index.html'; }, 1000);
             } catch (err) {
-                alert('登出失敗：' + err.message);
+                showAlert('登出失敗：' + err.message, '❌');
             }
         });
     </script>
