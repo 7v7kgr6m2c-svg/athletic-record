@@ -4,87 +4,92 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>選擇與新增運動員</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f1f5f9; font-family: sans-serif; margin: 0; padding: 20px; }
-        .container { max-width: 500px; margin: 40px auto; padding: 25px; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; }
-        .athlete-list { margin: 20px 0; display: flex; flex-direction: column; gap: 10px; }
-        .athlete-btn { padding: 14px; font-size: 16px; background-color: #2563eb; color: white; border: none; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-        .athlete-btn:hover { background-color: #1d4ed8; }
-        .add-section { margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: left; }
-        .input-group { margin-bottom: 12px; }
-        .input-group label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 4px; color: #334155; }
-        .input-group input, .input-group select { padding: 10px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
-        .hidden { display: none; }
-        .logout-btn { background-color: #ef4444; margin-top: 20px; padding: 8px 16px; color: white; border: none; cursor: pointer; border-radius: 6px; font-weight: bold; }
-        .logout-btn:hover { background-color: #dc2626; }
-        .avatar-upload-container { display: flex; align-items: center; gap: 15px; margin-bottom: 12px; }
-        .avatar-preview { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #cbd5e1; border: 1px solid #94a3b8; }
+        .athlete-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .athlete-card:hover {
+            transform: translateY(-2px);
+        }
     </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 flex items-center justify-center">
 
-    <div class="container">
-        <h2>請選擇運動員</h2>
-        <p style="color: #64748b; font-size: 14px;">點擊下方運動員進入田徑運動記錄主頁</p>
-
-        <div class="athlete-list" id="athlete-container">
-            <p id="loading-msg">正在載入運動員資料...</p>
+    <div class="w-full max-w-md space-y-6">
+        <!-- 頂部標題與用戶資訊 -->
+        <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm">
+            <div>
+                <h2 class="text-xl font-bold text-slate-900">運動員列表</h2>
+                <p class="text-xs text-slate-500">最多可登記 3 位運動員</p>
+            </div>
+            <button id="btn-logout" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-3 py-2 rounded-lg transition">
+                登出帳戶
+            </button>
         </div>
 
-        <p id="limit-message" class="hidden" style="color: #dc2626; font-weight: bold;">
-            ⚠️ 已達到上限 3 名運動員，無法再新增。
-        </p>
+        <!-- 3 個固定的運動員/新增框區域 -->
+        <div id="slots-container" class="space-y-4">
+            <div class="text-center py-8 text-slate-400">正在載入資料...</div>
+        </div>
+    </div>
 
-        <div class="add-section" id="add-athlete-section">
-            <h3>新增運動員資料</h3>
-            <form id="add-athlete-form">
-                <div class="input-group">
-                    <label>運動員姓名 <span style="color: red;">*</span></label>
-                    <input type="text" id="athlete-name" required placeholder="例如：陳大文">
-                </div>
-                
-                <div class="input-group">
-                    <label>出生日期 <span style="color: red;">*</span></label>
-                    <input type="date" id="athlete-dob" required>
+    <!-- 新增運動員資料 Modal (彈出式視窗) -->
+    <div id="add-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-lg font-bold text-slate-900">新增運動員資料</h3>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <form id="add-athlete-form" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">運動員姓名 <span class="text-red-500">*</span></label>
+                    <input type="text" id="athlete-name" required placeholder="例如：陳大文" class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <div class="input-group">
-                    <label>性別 <span style="color: red;">*</span></label>
-                    <select id="athlete-gender" required>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">出生日期 <span class="text-red-500">*</span></label>
+                    <input type="date" id="athlete-dob" required class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">性別 <span class="text-red-500">*</span></label>
+                    <select id="athlete-gender" required class="w-full border rounded-lg p-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">請選擇性別</option>
                         <option value="男">男</option>
                         <option value="女">女</option>
                     </select>
                 </div>
 
-                <div class="input-group">
-                    <label>頭像相片（可選）</label>
-                    <div class="avatar-upload-container">
-                        <img id="avatar-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="avatar-preview">
-                        <input type="file" id="athlete-avatar" accept="image/*" onchange="handleAvatarPreview(event)">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">頭像相片（可選）</label>
+                    <div class="flex items-center gap-3">
+                        <img id="avatar-preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="w-12 h-12 rounded-full object-cover bg-slate-100 border">
+                        <input type="file" id="athlete-avatar" accept="image/*" onchange="handleAvatarPreview(event)" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                 </div>
 
-                <button type="submit" style="background-color: #2563eb; color: white; width: 100%; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">確認新增</button>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeAddModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-lg text-sm transition">取消</button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm shadow transition">確認新增</button>
+                </div>
             </form>
         </div>
-
-        <button class="logout-btn" id="btn-logout">登出帳戶</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, addCollection, query, where, getDocs, addDoc, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // TODO: 請填入與 index.html 相同的 Firebase 設定
         const firebaseConfig = {
             apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
             authDomain: "athletes-record.firebaseapp.com",
             projectId: "athletes-record",
             storageBucket: "athletes-record.appspot.com",
             messagingSenderId: "259439207122",
-            appId: "1:259439207122:web:26d6211ac1379c936e030b"
+            appId: "1:259439207122:web:26d6211ac1379c936e030b",
             measurementId: "G-F3ZH9YN0VT"
         };
 
@@ -95,9 +100,12 @@
         let currentUser = null;
         let selectedAvatarBase64 = '';
 
-        const athleteContainer = document.getElementById('athlete-container');
-        const addAthleteSection = document.getElementById('add-athlete-section');
-        const limitMessage = document.getElementById('limit-message');
+        // 3位運動員的專屬顏色主題 (藍色、綠色、紫色)
+        const COLOR_THEMES = [
+            { bg: 'bg-gradient-to-r from-blue-600 to-blue-800', border: 'border-blue-500', text: 'text-blue-100', badge: 'bg-blue-500/30' },
+            { bg: 'bg-gradient-to-r from-emerald-600 to-teal-800', border: 'border-emerald-500', text: 'text-emerald-100', badge: 'bg-emerald-500/30' },
+            { bg: 'bg-gradient-to-r from-purple-600 to-indigo-800', border: 'border-purple-500', text: 'text-purple-100', badge: 'bg-purple-500/30' }
+        ];
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
@@ -111,47 +119,95 @@
 
         async function fetchAthletes() {
             try {
-                // 從 Firestore 讀取屬於當前登入用戶的運動員
                 const q = query(collection(db, "athletes"), where("user_id", "==", currentUser.uid));
                 const querySnapshot = await getDocs(q);
                 
-                athleteContainer.innerHTML = '';
                 let athletes = [];
                 querySnapshot.forEach((doc) => {
                     athletes.push({ id: doc.id, ...doc.data() });
                 });
 
-                if (athletes.length === 0) {
-                    athleteContainer.innerHTML = '<p>目前沒有任何運動員，請在下方新增。</p>';
-                } else {
-                    athletes.forEach(athlete => {
-                        const button = document.createElement('button');
-                        button.className = 'athlete-btn';
-                        button.innerHTML = `<span>${athlete.name}</span> <span style="font-size: 12px; opacity: 0.8;">(${athlete.gender || '未填寫'})</span>`;
-                        
-                        button.addEventListener('click', () => {
-                            localStorage.setItem('current_athlete_id', athlete.id);
-                            localStorage.setItem('current_athlete_name', athlete.name);
-                            localStorage.setItem('current_athlete_dob', athlete.dob || '');
-                            localStorage.setItem('current_athlete_gender', athlete.gender || '');
-                            localStorage.setItem('current_athlete_avatar', athlete.avatar || '');
-                            window.location.href = 'main.html';
-                        });
-                        
-                        athleteContainer.appendChild(button);
-                    });
-                }
+                // 按建立時間升序排序，確保順序一致
+                athletes.sort((a, b) => (a.created_at?.seconds || 0) - (b.created_at?.seconds || 0));
 
-                if (athletes.length >= 3) {
-                    addAthleteSection.classList.add('hidden');
-                    limitMessage.classList.remove('hidden');
-                } else {
-                    addAthleteSection.classList.remove('hidden');
-                    limitMessage.classList.add('hidden');
-                }
+                renderSlots(athletes);
             } catch (err) {
                 alert('載入運動員失敗：' + err.message);
             }
+        }
+
+        function renderSlots(athletes) {
+            const container = document.getElementById('slots-container');
+            container.innerHTML = '';
+
+            const totalSlots = 3;
+            const count = athletes.length;
+
+            for (let i = 0; i < totalSlots; i++) {
+                if (i < count) {
+                    // 1. 已登記運動員：顯示資料卡 (帶專屬顏色)
+                    const athlete = athletes[i];
+                    const theme = COLOR_THEMES[i % COLOR_THEMES.length];
+                    const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+
+                    const card = document.createElement('div');
+                    card.className = `athlete-card ${theme.bg} text-white p-5 rounded-2xl shadow-md border cursor-pointer flex items-center justify-between`;
+                    card.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <img src="${athlete.avatar || defaultAvatar}" class="w-14 h-14 rounded-full object-cover border-2 border-white/50 bg-black/20">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-lg font-bold">${athlete.name}</h3>
+                                    <span class="text-xs px-2 py-0.5 rounded-full ${theme.badge}">${athlete.gender || '未指定'}</span>
+                                </div>
+                                <p class="text-xs ${theme.text} mt-0.5">生日: ${athlete.dob || '未填寫'}</p>
+                            </div>
+                        </div>
+                        <div class="text-white/80">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </div>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        localStorage.setItem('current_athlete_id', athlete.id);
+                        localStorage.setItem('current_athlete_name', athlete.name);
+                        localStorage.setItem('current_athlete_dob', athlete.dob || '');
+                        localStorage.setItem('current_athlete_gender', athlete.gender || '');
+                        localStorage.setItem('current_athlete_avatar', athlete.avatar || '');
+                        window.location.href = 'main.html';
+                    });
+
+                    container.appendChild(card);
+
+                } else if (i === count) {
+                    // 2. 剛好輪到的下一個位置：顯示 Add Icon 按鈕大框
+                    const addBox = document.createElement('div');
+                    addBox.className = "border-2 border-dashed border-slate-300 hover:border-blue-500 bg-white/50 hover:bg-blue-50/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition text-slate-400 hover:text-blue-600 min-h-[100px]";
+                    addBox.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin='round'><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        </div>
+                        <span class="text-xs font-bold">點擊新增第 ${i + 1} 位運動員</span>
+                    `;
+                    addBox.addEventListener('click', openAddModal);
+                    container.appendChild(addBox);
+
+                } else {
+                    // 3. 尚未輪到的位置：保持留空/隱藏（完全不繪製）
+                    break;
+                }
+            }
+        }
+
+        window.openAddModal = function() {
+            document.getElementById('add-modal').classList.remove('hidden');
+        }
+
+        window.closeAddModal = function() {
+            document.getElementById('add-modal').classList.add('hidden');
+            document.getElementById('add-athlete-form').reset();
+            selectedAvatarBase64 = '';
+            document.getElementById('avatar-preview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
         }
 
         window.handleAvatarPreview = function(event) {
@@ -187,10 +243,7 @@
                     created_at: serverTimestamp()
                 });
 
-                alert('成功新增運動員：' + name);
-                document.getElementById('add-athlete-form').reset();
-                selectedAvatarBase64 = '';
-                document.getElementById('avatar-preview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+                closeAddModal();
                 await fetchAthletes();
             } catch (err) {
                 alert('新增失敗：' + err.message);
@@ -201,7 +254,6 @@
             try {
                 await signOut(auth);
                 localStorage.clear();
-                alert('已成功登出！');
                 window.location.href = 'index.html';
             } catch (err) {
                 alert('登出失敗：' + err.message);
