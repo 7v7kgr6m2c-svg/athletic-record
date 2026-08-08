@@ -1264,10 +1264,73 @@
     }
 
     function initChart() {
-      chartInstance = new Chart(document.getElementById('progressChart').getContext('2d'), {
-        type: 'line', data: { labels: [], datasets: [] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+      const ctx = document.getElementById('progressChart').getContext('2d');
+      
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            // 自訂 Hover / 懸停時的 Tooltip
+            tooltip: {
+              enabled: true,
+              mode: 'nearest',
+              intersect: true,
+              callbacks: {
+                title: function(tooltipItems) {
+                  const rawData = tooltipItems[0].raw;
+                  return `${rawData.date} - ${rawData.competition}`;
+                },
+                label: function(context) {
+                  const rawData = context.raw;
+                  let lines = [];
+                  
+                  let stageInfo = `階段: ${rawData.stage || '初賽'}`;
+                  if (rawData.rank) stageInfo += ` (${rawData.rank})`;
+                  lines.push(stageInfo);
+                  
+                  lines.push(`成績: ${rawData.displayResult}`);
+                  
+                  if (rawData.wind !== null && rawData.wind !== undefined) {
+                    const windStr = rawData.wind > 0 ? `+${rawData.wind}` : `${rawData.wind}`;
+                    lines.push(`風速: ${windStr}`);
+                  }
+                  
+                  return lines;
+                }
+              }
+            }
+          },
+          // 點擊數據點時觸發 Pop-up 彈窗（行動裝置專用與優化）
+          onClick: (event, activeElements) => {
+            if (activeElements.length > 0) {
+              const index = activeElements[0].index;
+              const rawData = chartInstance.data.datasets[0].data[index];
+              
+              let detailMsg = `🏆 ${rawData.competition}\n📅 日期: ${rawData.date}\n🏃 階段: ${rawData.stage || '初賽'}`;
+              if (rawData.rank) detailMsg += ` (${rawData.rank})`;
+              detailMsg += `\n⏱️ 成績: ${rawData.displayResult}`;
+              if (rawData.wind !== null && rawData.wind !== undefined) {
+                const windStr = rawData.wind > 0 ? `+${rawData.wind}` : `${rawData.wind}`;
+                detailMsg += `\n💨 風速: ${windStr}`;
+              }
+              
+              showAlert(detailMsg, '🏆');
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                font: { size: 11 }
+              }
+            }
+          }
+        }
       });
+      
       updateChart();
     }
 
@@ -1277,37 +1340,61 @@
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       
+      // 篩選出正常成績，並依日期由舊到新排序以正確繪製進步趨勢線
       const filtered = records
         .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
         .sort((a,b) => new Date(a.date) - new Date(b.date));
 
-      chartInstance.data.labels = filtered.map(r => `${r.date} (${r.competition})`);
+      // 1. X 軸標籤僅顯示日期
+      chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
+
+      // 2. 打包數值與 Pop-up 所需的詳細資料
+      const chartDataPoints = filtered.map(r => {
+        let numericValue = 0;
+        let unit = itemObj?.type === 'distance' ? '米' : (itemObj?.type === 'points' ? '分' : '秒');
+        
+        if (itemObj && itemObj.type === 'time' && typeof r.result === 'string') {
+          const parts = r.result.split(':');
+          if (parts.length === 2) {
+            numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+          } else {
+            numericValue = parseFloat(r.result) || 0;
+          }
+        } else {
+          numericValue = parseFloat(r.result) || 0;
+        }
+
+        return {
+          x: r.date.replace(/-/g, '/'),
+          y: numericValue,
+          // 提供給 Pop-up 讀取的擴充屬性
+          date: r.date,
+          competition: r.competition,
+          stage: r.stage,
+          rank: r.rank,
+          wind: r.wind,
+          displayResult: `${r.result} ${unit}`
+        };
+      });
+
       chartInstance.data.datasets = [{
         label: itemObj ? itemObj.name : '成績',
-        data: filtered.map(r => {
-          if (itemObj && itemObj.type === 'time' && typeof r.result === 'string') {
-            const parts = r.result.split(':');
-            if (parts.length === 2) {
-              return (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
-            }
-            return parseFloat(r.result) || 0;
-          }
-          return parseFloat(r.result) || 0;
-        }),
+        data: chartDataPoints,
         borderColor: '#2563eb',
-        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+        backgroundColor: 'rgba(37, 99, 235, 0.15)',
+        pointBackgroundColor: '#1d4ed8',
+        pointRadius: 6,           // 加大圓點半徑方便手機點擊
+        pointHoverRadius: 9,      // 點擊/ Hover 時放大
         fill: true,
         tension: 0.3
       }];
 
       const isTimeEvent = itemObj && itemObj.type === 'time';
-      chartInstance.options.scales = {
-        y: {
-          reverse: isTimeEvent,
-          title: {
-            display: true,
-            text: isTimeEvent ? '時間 (秒)' : (itemObj?.type === 'distance' ? '距離 (米)' : '分數')
-          }
+      chartInstance.options.scales.y = {
+        reverse: isTimeEvent, // 徑項時間越小代表成績越好，故反轉 Y 軸
+        title: {
+          display: true,
+          text: isTimeEvent ? '時間 (秒)' : (itemObj?.type === 'distance' ? '距離 (米)' : '分數')
         }
       };
 
