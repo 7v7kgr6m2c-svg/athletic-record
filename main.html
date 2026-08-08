@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <button onclick="switchAthlete()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition border border-white/10 shadow-sm">
+      <button onclick="switchAthlete()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition border border-white/10 shadow-sm cursor-pointer">
         <span>切換</span>
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
       </button>
@@ -60,11 +60,11 @@
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
             <div class="grid grid-cols-5 p-1 bg-slate-100 rounded-lg text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
-              <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded bg-white text-blue-600 shadow-sm transition h-full flex items-center justify-center">全部</button>
-              <button type="button" onclick="filterCategory('track', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center">徑項</button>
-              <button type="button" onclick="filterCategory('field', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center">田項</button>
-              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center">接力</button>
-              <button type="button" onclick="filterCategory('combined', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center">全能</button>
+              <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded bg-white text-blue-600 shadow-sm transition h-full flex items-center justify-center cursor-pointer">全部</button>
+              <button type="button" onclick="filterCategory('track', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">徑項</button>
+              <button type="button" onclick="filterCategory('field', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">田項</button>
+              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">接力</button>
+              <button type="button" onclick="filterCategory('combined', this)" class="cat-btn rounded text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">全能</button>
             </div>
           </div>
 
@@ -161,7 +161,7 @@
             <button type="submit" id="submit-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium h-10 rounded-lg transition duration-200 shadow cursor-pointer">
               儲存紀錄
             </button>
-            <button type="button" id="cancel-edit-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-lg transition duration-200">
+            <button type="button" id="cancel-edit-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-lg transition duration-200 cursor-pointer">
               取消編輯
             </button>
           </div>
@@ -183,7 +183,7 @@
       <section class="bg-white p-6 rounded-xl shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b pb-2">
           <h2 class="text-lg font-bold text-slate-900">歷史紀錄明細</h2>
-          <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition font-medium">編輯記錄</button>
+          <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition font-medium cursor-pointer">編輯記錄</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm">
@@ -206,7 +206,7 @@
 
       <!-- 4. 頁底登出按鈕 -->
       <div class="pt-4 border-t border-slate-200">
-        <button id="btn-logout" class="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center gap-2">
+        <button id="btn-logout" class="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
           <span>登出帳戶</span>
         </button>
@@ -222,8 +222,8 @@
               <img id="crop-image-target" src="" class="max-w-full block">
           </div>
           <div class="flex gap-3">
-              <button type="button" onclick="closeCropModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm">取消</button>
-              <button type="button" onclick="confirmHeaderCrop()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow">完成裁切</button>
+              <button type="button" onclick="closeCropModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
+              <button type="button" onclick="confirmHeaderCrop()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">完成裁切</button>
           </div>
       </div>
   </div>
@@ -313,7 +313,6 @@
       }
     }
 
-    // --- Cropper.js 頭像裁切邏輯 ---
     window.handleHeaderFileSelect = function(event) {
       const file = event.target.files[0];
       if (file) {
@@ -326,17 +325,9 @@
           if (cropper) cropper.destroy();
           setTimeout(() => {
             cropper = new Cropper(cropImg, {
-              aspectRatio: 1,
-              viewMode: 1,
-              dragMode: 'move',
-              autoCropArea: 0.8,
-              restore: false,
-              guides: false,
-              center: true,
-              highlight: false,
-              cropBoxMovable: true,
-              cropBoxResizable: true,
-              toggleDragModeOnDblclick: false,
+              aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8,
+              restore: false, guides: false, center: true, highlight: false,
+              cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
             });
           }, 100);
         };
@@ -484,10 +475,7 @@
       }
     }
 
-    window.validateForm = function() {
-      // 保持按鈕可點擊，若條件未滿足則在 submit 時彈出明確警告，確保不會完全無反應
-      return true;
-    }
+    window.validateForm = function() { return true; }
 
     window.onStatusChange = function() {
       const status = document.getElementById('status-select').value;
@@ -512,7 +500,7 @@
     }
 
     window.onSubStatusChange = function(selectEl) {
-      const row = selectEl.closest('[data-subname]');
+      const row = selectEl.closest('.sub-item-row');
       const inputs = row.querySelectorAll('input');
       const val = selectEl.value;
       inputs.forEach(i => {
@@ -581,10 +569,12 @@
         itemObj.subs.forEach(subName => {
           const subType = SUB_EVENT_TYPES[subName] || 'time';
           const div = document.createElement('div');
-          div.className = 'bg-slate-50 p-2 rounded border flex items-center justify-between gap-1';
+          div.className = 'sub-item-row bg-slate-50 p-2 rounded border flex items-center justify-between gap-1';
+          div.dataset.subname = subName;
+          div.dataset.subtype = subType;
           div.innerHTML = `
             <span class="font-bold text-slate-700 whitespace-nowrap min-w-[56px]">${subName}</span>
-            <div class="flex items-center justify-between flex-1 gap-1" data-subname="${subName}" data-subtype="${subType}">
+            <div class="flex items-center justify-between flex-1 gap-1">
               <div class="flex items-center gap-0.5">
                 ${subType === 'time' ? 
                   `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this)" class="sub-min w-10 border rounded h-9 text-center bg-white"><span>:</span>
@@ -665,10 +655,10 @@
       if (itemObj.subs) {
         if (status === 'NORMAL') {
           let details = [];
-          document.querySelectorAll('#sub-events-container > div').forEach(div => {
-            const name = div.querySelector('span').textContent;
+          document.querySelectorAll('.sub-item-row').forEach(div => {
+            const name = div.dataset.subname;
             const pts = parseFloat(div.querySelector('.sub-pts').value) || 0;
-            const subType = div.querySelector('[data-subtype]').dataset.subtype;
+            const subType = div.dataset.subtype;
             const subStatus = div.querySelector('.sub-status').value;
             let valStr = subStatus === 'NORMAL' ? (subType === 'time' ? formatTimeStr(div.querySelector('.sub-min').value, div.querySelector('.sub-sec').value, div.querySelector('.sub-ms').value) : formatDistStr(div.querySelector('.sub-m').value, div.querySelector('.sub-cm').value)) : subStatus;
             details.push({ name, val: valStr, type: subType, pts, status: subStatus });
@@ -759,7 +749,7 @@
         tr.className = 'hover:bg-slate-50 transition';
         let extraCol = r.wind != null ? (r.wind > 0 ? '+' + r.wind : r.wind) : '-';
         let resCol = r.status && r.status !== 'NORMAL' ? `<span class="px-2 py-0.5 rounded font-bold text-xs bg-red-100 text-red-700">${STATUS_MAP[r.status] || r.status}</span>` : (r.isCombined ? `<span class="text-blue-700 font-bold">${r.result} 分</span>` : `${r.result}${r.type === 'distance' ? ' 米' : ' 秒'}`);
-        if (r.isCombined && r.subDetails?.length > 0) extraCol = `<button onclick="toggleSubDetails('${r.id}')" class="text-xs text-blue-600 underline">查看細項</button>`;
+        if (r.isCombined && r.subDetails?.length > 0) extraCol = `<button onclick="toggleSubDetails('${r.id}')" class="text-xs text-blue-600 underline cursor-pointer">查看細項</button>`;
 
         tr.innerHTML = `
           <td class="p-2 font-semibold text-blue-600">${r.eventName}</td>
@@ -769,9 +759,24 @@
           <td class="p-2 font-medium text-slate-700">${r.rank || '-'}</td>
           <td class="p-2">${r.competition}</td>
           <td class="p-2 text-slate-500 text-xs">${r.date}</td>
-          ${isHistoryEditMode ? `<td class="p-2 text-right space-x-1"><button onclick="deleteRecord('${r.id}')" class="text-red-500 text-xs px-2 py-1 bg-red-50 rounded">刪除</button></td>` : ''}
+          ${isHistoryEditMode ? `<td class="p-2 text-right space-x-1"><button onclick="deleteRecord('${r.id}')" class="text-red-500 text-xs px-2 py-1 bg-red-50 rounded cursor-pointer">刪除</button></td>` : ''}
         `;
         tbody.appendChild(tr);
+
+        // 若為全能項目，自動產生細項展開列
+        if (r.isCombined && r.subDetails?.length > 0) {
+          const subTr = document.createElement('tr');
+          subTr.id = `sub-${r.id}`;
+          subTr.className = 'hidden bg-slate-50/80';
+          let subHtml = `<td colspan="${isHistoryEditMode ? 8 : 7}" class="p-3 text-xs border-b">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">`;
+          r.subDetails.forEach(sub => {
+            subHtml += `<div class="bg-white p-1.5 rounded border text-slate-600"><span class="font-bold">${sub.name}:</span> ${sub.val} (${sub.pts}分)</div>`;
+          });
+          subHtml += `</div></td>`;
+          subTr.innerHTML = subHtml;
+          tbody.appendChild(subTr);
+        }
       });
     }
 
