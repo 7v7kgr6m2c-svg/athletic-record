@@ -11,6 +11,13 @@
   <style>
       .cropper-view-box, .cropper-face { border-radius: 50%; }
       .cropper-container { touch-action: none; }
+
+      /* iOS Wheel Picker 自訂樣式 */
+      .scrollbar-none::-webkit-scrollbar { display: none; }
+      .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+      .picker-column { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+      .picker-item { height: 40px; line-height: 40px; scroll-snap-align: center; text-align: center; font-size: 16px; font-weight: 600; color: #64748b; transition: color 0.15s, transform 0.15s; }
+      .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
@@ -50,14 +57,14 @@
             <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-lg h-10 px-3 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
-          <!-- 替換為 3 個獨立 Select 下拉選單 -->
+          <!-- 比賽日期 iOS 滾輪觸發位 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
-            <div class="flex-1 flex gap-1.5 min-w-0">
-              <select id="race-year" required onchange="updateRaceDays()" class="flex-[1.2] min-w-0 border rounded-lg h-10 px-1 text-xs md:text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-              <select id="race-month" required onchange="updateRaceDays()" class="flex-1 min-w-0 border rounded-lg h-10 px-1 text-xs md:text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-              <select id="race-day" required class="flex-1 min-w-0 border rounded-lg h-10 px-1 text-xs md:text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+            <div onclick="openIosWheelPicker('race')" class="flex-1 border rounded-lg h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-blue-500 transition">
+              <span id="race-display-text" class="text-slate-800 font-medium">請選擇日期</span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
+            <input type="hidden" id="race-date" required>
           </div>
 
           <div class="flex items-center gap-3">
@@ -217,6 +224,27 @@
     </div>
   </div>
 
+  <!-- iOS 3D 日期滾輪 Modal -->
+  <div id="ios-wheel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 transition-opacity">
+      <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4">
+          <div class="flex justify-between items-center border-b pb-3">
+              <button type="button" onclick="closeIosWheelPicker()" class="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer">取消</button>
+              <span class="font-bold text-slate-800 text-base">選擇日期</span>
+              <button type="button" onclick="confirmIosWheelPicker()" class="text-blue-600 hover:text-blue-700 font-bold text-sm cursor-pointer">完成</button>
+          </div>
+
+          <div class="relative h-48 overflow-hidden my-2">
+              <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-slate-100/80 rounded-xl border-y border-slate-200/80 pointer-events-none -z-0"></div>
+
+              <div class="flex w-full h-full relative z-10">
+                  <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
+                  <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
+                  <div id="wheel-day" class="picker-column flex-1 overflow-y-scroll scrollbar-none py-20"></div>
+              </div>
+          </div>
+      </div>
+  </div>
+
   <!-- 圖片裁切 Modal -->
   <div id="crop-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
@@ -269,47 +297,142 @@
     let currentUser = null;
     let cropper = null;
 
-    // 初始化比賽日期下拉選單 (年份: 從今年向前5年/向後10年)
-    function initRaceDatePicker(defaultDateStr) {
-      const ySelect = document.getElementById('race-year');
-      const mSelect = document.getElementById('race-month');
-      const now = defaultDateStr ? new Date(defaultDateStr) : new Date();
-      const currentYear = new Date().getFullYear();
+    // --- iOS 3D Wheel Picker 控制器 ---
+    let selectedY = new Date().getFullYear();
+    let selectedM = new Date().getMonth() + 1;
+    let selectedD = new Date().getDate();
 
-      ySelect.innerHTML = '';
-      mSelect.innerHTML = '';
-
-      for (let y = currentYear + 2; y >= currentYear - 15; y--) {
-        ySelect.appendChild(new Option(`${y}年`, y));
-      }
-      for (let m = 1; m <= 12; m++) {
-        mSelect.appendChild(new Option(`${m}月`, String(m).padStart(2, '0')));
-      }
-
-      ySelect.value = now.getFullYear();
-      mSelect.value = String(now.getMonth() + 1).padStart(2, '0');
-
-      window.updateRaceDays(String(now.getDate()).padStart(2, '0'));
+    function setInitialTodayDate() {
+      const now = new Date();
+      selectedY = now.getFullYear();
+      selectedM = now.getMonth() + 1;
+      selectedD = now.getDate();
+      const formatted = `${selectedY}-${String(selectedM).padStart(2, '0')}-${String(selectedD).padStart(2, '0')}`;
+      document.getElementById('race-date').value = formatted;
+      document.getElementById('race-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
     }
 
-    window.updateRaceDays = function(targetDay) {
-      const y = document.getElementById('race-year').value;
-      const m = document.getElementById('race-month').value;
-      const dSelect = document.getElementById('race-day');
-      const selectedDay = targetDay || dSelect.value;
+    window.openIosWheelPicker = function() {
+      const modal = document.getElementById('ios-wheel-modal');
+      modal.classList.remove('hidden');
 
-      dSelect.innerHTML = '';
-      if (!y || !m) return;
-
-      const daysInMonth = new Date(y, m, 0).getDate();
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dayStr = String(d).padStart(2, '0');
-        dSelect.appendChild(new Option(`${d}日`, dayStr));
+      const currentVal = document.getElementById('race-date').value;
+      if (currentVal) {
+          const parts = currentVal.split('-');
+          selectedY = parseInt(parts[0]);
+          selectedM = parseInt(parts[1]);
+          selectedD = parseInt(parts[2]);
       }
 
-      if (selectedDay && parseInt(selectedDay) <= daysInMonth) {
-        dSelect.value = selectedDay;
+      renderWheelYears();
+      renderWheelMonths();
+      renderWheelDays();
+
+      setTimeout(() => {
+          scrollWheelToValue('wheel-year', selectedY);
+          scrollWheelToValue('wheel-month', selectedM);
+          scrollWheelToValue('wheel-day', selectedD);
+      }, 50);
+    }
+
+    window.closeIosWheelPicker = function() {
+      document.getElementById('ios-wheel-modal').classList.add('hidden');
+    }
+
+    window.confirmIosWheelPicker = function() {
+      const formatted = `${selectedY}-${String(selectedM).padStart(2, '0')}-${String(selectedD).padStart(2, '0')}`;
+      document.getElementById('race-date').value = formatted;
+      document.getElementById('race-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
+      closeIosWheelPicker();
+    }
+
+    function renderWheelYears() {
+      const container = document.getElementById('wheel-year');
+      const nowY = new Date().getFullYear();
+      container.innerHTML = '<div class="h-20"></div>';
+      for (let y = nowY + 2; y >= nowY - 15; y--) {
+          const div = document.createElement('div');
+          div.className = 'picker-item';
+          div.dataset.val = y;
+          div.textContent = `${y}年`;
+          container.appendChild(div);
       }
+      container.innerHTML += '<div class="h-20"></div>';
+      bindWheelScroll('wheel-year', (val) => { selectedY = val; renderWheelDays(); });
+    }
+
+    function renderWheelMonths() {
+      const container = document.getElementById('wheel-month');
+      container.innerHTML = '<div class="h-20"></div>';
+      for (let m = 1; m <= 12; m++) {
+          const div = document.createElement('div');
+          div.className = 'picker-item';
+          div.dataset.val = m;
+          div.textContent = `${m}月`;
+          container.appendChild(div);
+      }
+      container.innerHTML += '<div class="h-20"></div>';
+      bindWheelScroll('wheel-month', (val) => { selectedM = val; renderWheelDays(); });
+    }
+
+    function renderWheelDays() {
+      const container = document.getElementById('wheel-day');
+      const daysCount = new Date(selectedY, selectedM, 0).getDate();
+      if (selectedD > daysCount) selectedD = daysCount;
+
+      container.innerHTML = '<div class="h-20"></div>';
+      for (let d = 1; d <= daysCount; d++) {
+          const div = document.createElement('div');
+          div.className = 'picker-item';
+          div.dataset.val = d;
+          div.textContent = `${d}日`;
+          container.appendChild(div);
+      }
+      container.innerHTML += '<div class="h-20"></div>';
+      bindWheelScroll('wheel-day', (val) => { selectedD = val; });
+      scrollWheelToValue('wheel-day', selectedD);
+    }
+
+    function bindWheelScroll(elementId, onSelectCallback) {
+      const el = document.getElementById(elementId);
+      let timer = null;
+      el.onscroll = () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+              const centerOffset = el.scrollTop + 80;
+              const items = el.querySelectorAll('.picker-item');
+              let closest = null;
+              let minDiff = Infinity;
+
+              items.forEach(item => {
+                  item.classList.remove('selected');
+                  const diff = Math.abs((item.offsetTop + 20) - centerOffset);
+                  if (diff < minDiff) {
+                      minDiff = diff;
+                      closest = item;
+                  }
+              });
+
+              if (closest) {
+                  closest.classList.add('selected');
+                  const val = parseInt(closest.dataset.val);
+                  onSelectCallback(val);
+              }
+          }, 60);
+      };
+    }
+
+    function scrollWheelToValue(elementId, val) {
+      const el = document.getElementById(elementId);
+      const items = el.querySelectorAll('.picker-item');
+      items.forEach(item => {
+          if (parseInt(item.dataset.val) === val) {
+              item.classList.add('selected');
+              el.scrollTop = item.offsetTop - 80;
+          } else {
+              item.classList.remove('selected');
+          }
+      });
     }
 
     async function initMainPage() {
@@ -327,7 +450,7 @@
         }
 
         initProfileUI();
-        initRaceDatePicker();
+        setInitialTodayDate();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
         await fetchRecordsFromFirestore();
@@ -660,14 +783,11 @@
       e.preventDefault();
 
       const comp = document.getElementById('competition').value.trim();
-      const ry = document.getElementById('race-year').value;
-      const rm = document.getElementById('race-month').value;
-      const rd = document.getElementById('race-day').value;
+      const date = document.getElementById('race-date').value;
 
       if (!comp) { alert("⚠️ 請填寫賽事名稱！"); return; }
-      if (!ry || !rm || !rd) { alert("⚠️ 請選擇完整的比賽日期（年、月、日）！"); return; }
+      if (!date) { alert("⚠️ 請選擇比賽日期！"); return; }
 
-      const date = `${ry}-${rm}-${rd}`;
       const editId = document.getElementById('edit-record-id').value;
       const selectedId = document.getElementById('event-select').value;
       const status = document.getElementById('status-select').value;
@@ -754,7 +874,7 @@
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
-      initRaceDatePicker();
+      setInitialTodayDate();
       onEventSelectChange();
     }
 
