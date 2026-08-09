@@ -110,7 +110,7 @@
         </div>
       </div>
 
-      <!-- 需求 2: 對齊 main_a.html 右側切換膠囊按鈕 -->
+      <!-- 右側切換膠囊按鈕 -->
       <div class="flex flex-col gap-2">
         <button onclick="switchAthlete()" class="flex items-center justify-between gap-2 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-black/20 hover:bg-black/30 px-4 py-2 rounded-full border border-white/20 transition cursor-pointer whitespace-nowrap">
           <span>切換運動員</span>
@@ -224,11 +224,12 @@
             </div>
           </div>
 
+          <!-- 需求 2: 泳池規格選項更新為「50米」與「25米」 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳池規格 <span class="text-red-500">*</span></label>
             <select id="pool-length-select" onchange="onPoolLengthChange()" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
-              <option value="50m">50m 長池 (LCM)</option>
-              <option value="25m">25m 短池 (SCM)</option>
+              <option value="50m">50米 長池 (LCM)</option>
+              <option value="25m">25米 短池 (SCM)</option>
             </select>
           </div>
 
@@ -701,7 +702,6 @@
       }
     }
 
-    // 需求 2 切換按鈕跳轉邏輯
     window.switchAthlete = function() { window.location.href = 'athletes.html'; }
     window.switchSport = function() { window.location.href = 'select_sport.html'; }
 
@@ -798,7 +798,7 @@
 
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跳)', 'DNF': 'DNF (未完賽)' };
 
-    // 需求 1: 「100米 個人混合式 (短池)」去掉了 (短池)
+    // 需求 1: 項目庫擴充混合接力項目
     const EVENTS_DB = [
       { id: '50m_free', cat: 'free', name: '50米 自由式' },
       { id: '100m_free', cat: 'free', name: '100米 自由式' },
@@ -824,10 +824,14 @@
       { id: '400m_im', cat: 'im', name: '400米 個人混合式' },
 
       { id: '4x50m_free_relay', cat: 'relay', name: '4x50米 自由式接力' },
+      { id: '4x50m_free_mixed_relay', cat: 'relay', name: '4x50米 自由式接力 (男女混合)' },
       { id: '4x100m_free_relay', cat: 'relay', name: '4x100米 自由式接力' },
+      { id: '4x100m_free_mixed_relay', cat: 'relay', name: '4x100米 自由式接力 (男女混合)' },
       { id: '4x200m_free_relay', cat: 'relay', name: '4x200米 自由式接力' },
       { id: '4x50m_medley_relay', cat: 'relay', name: '4x50米 混合式接力' },
-      { id: '4x100m_medley_relay', cat: 'relay', name: '4x100米 混合式接力' }
+      { id: '4x50m_medley_mixed_relay', cat: 'relay', name: '4x50米 混合式接力 (男女混合)' },
+      { id: '4x100m_medley_relay', cat: 'relay', name: '4x100米 混合式接力' },
+      { id: '4x100m_medley_mixed_relay', cat: 'relay', name: '4x100米 混合式接力 (男女混合)' }
     ];
 
     async function fetchRecordsFromFirestore() {
@@ -873,7 +877,8 @@
         const [eId, pLen] = key.split('_');
         const itemObj = EVENTS_DB.find(e => e.id === eId);
         if (itemObj) {
-          chartSelect.appendChild(new Option(`${itemObj.name} (${pLen})`, key));
+          const displayLength = pLen === '50m' ? '50米' : '25米';
+          chartSelect.appendChild(new Option(`${itemObj.name} (${displayLength})`, key));
         }
       });
 
@@ -953,7 +958,7 @@
               <div>
                 <h3 class="text-xl font-black text-slate-900">${r.eventName}</h3>
                 <span class="inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
-                  ${r.poolLength === '50m' ? '50m 長池' : '25m 短池'}
+                  ${r.poolLength === '50m' ? '50米 長池' : '25米 短池'}
                 </span>
               </div>
 
@@ -1035,6 +1040,7 @@
       }
     }
 
+    // 需求 1: 過濾邏輯（50米長池隱藏 100米個人混合式 以及 4 個 4x50米 接力項目）
     window.filterCategory = function(cat, btnEl) {
       if (cat) currentCategoryFilter = cat;
 
@@ -1054,9 +1060,16 @@
 
       let filtered = currentCategoryFilter === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === currentCategoryFilter);
       
-      // 50m 長池時依然隱藏 100m 個人混合式
+      // 50米 長池隱藏短池限定項目：100米個人混合式 以及 4x50米 接力系列
       if (currentPoolLength === '50m') {
-        filtered = filtered.filter(e => e.id !== '100m_im');
+        const disabledInLCM = [
+          '100m_im',
+          '4x50m_free_relay',
+          '4x50m_free_mixed_relay',
+          '4x50m_medley_relay',
+          '4x50m_medley_mixed_relay'
+        ];
+        filtered = filtered.filter(e => !disabledInLCM.includes(e.id));
       }
 
       filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
@@ -1250,6 +1263,8 @@
         resultDisplay = `<span class="text-3xl font-black tracking-tight font-mono" style="color: var(--theme-color, #0284c7);">${r.result}</span>`;
       }
 
+      const poolLengthText = r.poolLength === '50m' ? '50米' : '25米';
+
       let cardHtml = `
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
           ${showCompInHeader ? `
@@ -1264,7 +1279,7 @@
               ${getRankBadgeHtml(r.rank)}
               
               <div>
-                <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName} <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md ml-1">${r.poolLength}</span></h3>
+                <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName} <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md ml-1">${poolLengthText}</span></h3>
                 <p class="text-xs text-slate-400 font-medium">${r.stage || '賽事紀錄'}</p>
               </div>
             </div>
@@ -1486,6 +1501,7 @@
 
       const chartDataPoints = filtered.map(r => {
         const numericValue = timeToSeconds(r.result);
+        const displayPoolLength = r.poolLength === '50m' ? '50米' : '25米';
 
         return {
           x: r.date.replace(/-/g, '/'),
@@ -1494,12 +1510,14 @@
           competition: r.competition,
           stage: r.stage,
           rank: r.rank,
-          displayResult: `${r.eventName} (${r.poolLength}): ${r.result}`
+          displayResult: `${r.eventName} (${displayPoolLength}): ${r.result}`
         };
       });
 
+      const displayPoolLength = poolLength === '50m' ? '50米' : '25米';
+
       chartInstance.data.datasets = [{
-        label: `${itemObj.name} (${poolLength})`,
+        label: `${itemObj.name} (${displayPoolLength})`,
         data: chartDataPoints,
         borderColor: theme.primaryColor,
         backgroundColor: `${theme.primaryColor}22`,
