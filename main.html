@@ -130,14 +130,17 @@
       <!-- 1. 我的 PB 區塊 -->
       <section id="sec-pb" class="space-y-4">
         <div class="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 p-6 rounded-3xl shadow-lg text-white">
-          <div class="flex items-center justify-between border-b border-white/15 pb-3 mb-4">
-            <div class="flex items-center gap-2">
-              <span class="text-2xl">🏆</span>
-              <h2 class="text-xl font-black tracking-wide">個人最佳成績 (Personal Best)</h2>
+          <div class="flex items-center justify-between border-b border-white/15 pb-3 mb-4 gap-3">
+            <div class="flex items-center gap-3">
+              <span class="text-4xl md:text-5xl">🏆</span>
+              <div>
+                <h2 class="text-xl font-black tracking-wide leading-tight">個人最佳成績</h2>
+                <p class="text-xs md:text-sm font-semibold tracking-wider text-blue-200">Personal Best</p>
+              </div>
             </div>
-            <span id="pb-count-tag" class="text-xs font-bold bg-white/20 px-3 py-1 rounded-full border border-white/20">0 個項目</span>
+            <span id="pb-count-tag" class="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full border border-white/20 whitespace-nowrap flex-shrink-0">0 個項目</span>
           </div>
-          <p class="text-xs text-blue-200 font-medium">展示您在各田徑項目的歷史最高紀錄（排除犯規/未完賽紀錄）。</p>
+          <p class="text-xs text-blue-200 font-medium">展示您在各田徑項目的歷史最高紀錄</p>
         </div>
 
         <div id="pb-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -823,11 +826,17 @@
       const chartSelect = document.getElementById('chart-filter');
       const currentVal = chartSelect.value;
       chartSelect.innerHTML = '';
+
+      // 加入「全部項目」選項
+      chartSelect.appendChild(new Option('全部項目', 'all'));
+
       EVENTS_DB.forEach(item => {
         chartSelect.appendChild(new Option(item.name, item.id));
       });
-      if (EVENTS_DB.some(e => e.id === currentVal)) {
+      if (currentVal && (currentVal === 'all' || EVENTS_DB.some(e => e.id === currentVal))) {
         chartSelect.value = currentVal;
+      } else {
+        chartSelect.value = 'all';
       }
     }
 
@@ -939,7 +948,7 @@
               </div>
             </div>
 
-            <!-- 下半部：小字資訊統整大小為 text-xs，靠右逐行獨立展示 -->
+            <!-- 下半部：小字資訊統整字體大小為 text-xs，靠右逐行獨立展示 -->
             <div class="space-y-1 text-xs text-right text-slate-500 font-medium">
               <div class="text-slate-800 font-bold leading-snug break-words">${r.competition}</div>
               <div class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</div>
@@ -1370,19 +1379,21 @@
       if (el) el.classList.toggle('hidden');
     }
 
+    // 名次 Icon Badge HTML，若沒有名次則直接回傳空字串（不顯示無字圈圈）
     function getRankBadgeHtml(rankStr) {
       if (rankStr === '第1名') {
-        return `<div class="w-10 h-10 rounded-full bg-amber-400 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-300">1</div>`;
+        return `<div class="w-10 h-10 rounded-full bg-amber-400 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-300 flex-shrink-0">1</div>`;
       } else if (rankStr === '第2名') {
-        return `<div class="w-10 h-10 rounded-full bg-slate-300 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-slate-200">2</div>`;
+        return `<div class="w-10 h-10 rounded-full bg-slate-300 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-slate-200 flex-shrink-0">2</div>`;
       } else if (rankStr === '第3名') {
-        return `<div class="w-10 h-10 rounded-full bg-amber-700 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-600">3</div>`;
+        return `<div class="w-10 h-10 rounded-full bg-amber-700 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-600 flex-shrink-0">3</div>`;
       } else if (rankStr) {
         const num = rankStr.replace(/[^0-9]/g, '');
-        return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200">${num || '無'}</div>`;
-      } else {
-        return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 font-normal flex items-center justify-center text-xs border border-slate-200">無</div>`;
+        if (num) {
+          return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200 flex-shrink-0">${num}</div>`;
+        }
       }
+      return '';
     }
 
     function buildRecordCardHtml(r, showCompInHeader = true) {
@@ -1641,8 +1652,9 @@
       const selectedId = document.getElementById('chart-filter').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
+      // 當選擇「全部項目」時的過濾條件
       const filtered = records
-        .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
+        .filter(r => (selectedId === 'all' || r.eventId === selectedId) && (!r.status || r.status === 'NORMAL'))
         .sort((a, b) => {
           const dateDiff = new Date(a.date) - new Date(b.date);
           if (dateDiff !== 0) return dateDiff;
@@ -1659,10 +1671,11 @@
       chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
 
       const chartDataPoints = filtered.map(r => {
+        const itemInfo = EVENTS_DB.find(e => e.id === r.eventId);
         let numericValue = 0;
-        let unit = itemObj?.type === 'distance' ? '米' : (itemObj?.type === 'points' ? '分' : '秒');
+        let unit = itemInfo?.type === 'distance' ? '米' : (itemInfo?.type === 'points' ? '分' : '秒');
         
-        if (itemObj && itemObj.type === 'time' && typeof r.result === 'string') {
+        if (itemInfo && itemInfo.type === 'time' && typeof r.result === 'string') {
           const parts = r.result.split(':');
           if (parts.length === 2) {
             numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
@@ -1681,12 +1694,12 @@
           stage: r.stage,
           rank: r.rank,
           wind: r.wind,
-          displayResult: `${r.result} ${unit}`
+          displayResult: `${r.eventName}: ${r.result} ${unit}`
         };
       });
 
       chartInstance.data.datasets = [{
-        label: itemObj ? itemObj.name : '成績',
+        label: (selectedId === 'all' || !itemObj) ? '成績' : itemObj.name,
         data: chartDataPoints,
         borderColor: '#2563eb',
         backgroundColor: 'rgba(37, 99, 235, 0.15)',
@@ -1702,7 +1715,7 @@
         reverse: isTimeEvent,
         title: {
           display: true,
-          text: isTimeEvent ? '時間 (秒)' : (itemObj?.type === 'distance' ? '距離 (米)' : '分數')
+          text: selectedId === 'all' ? '成績數值' : (isTimeEvent ? '時間 (秒)' : (itemObj?.type === 'distance' ? '距離 (米)' : '分數'))
         }
       };
 
@@ -1724,3 +1737,4 @@
   </script>
 </body>
 </html>
+
