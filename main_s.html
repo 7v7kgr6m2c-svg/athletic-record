@@ -110,9 +110,10 @@
         </div>
       </div>
 
+      <!-- 需求 1: 修改為與 main_a.html 相同的切換按鈕 -->
       <button onclick="switchAthlete()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer">
-        <span>切換</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path><path d="m7 22-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path></svg>
+        <span>切換運動員</span>
       </button>
     </header>
 
@@ -185,7 +186,8 @@
 
       <!-- 4. 新增 / 編輯成績區塊 -->
       <section id="sec-form" class="hidden bg-white p-6 rounded-3xl shadow-sm">
-        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增游泳成績</h2>
+        <!-- 需求 2: 改為「新增成績」 -->
+        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績</h2>
         <form id="record-form" class="space-y-3" oninput="validateForm()">
           <input type="hidden" id="edit-record-id" value="">
           
@@ -204,21 +206,24 @@
             <input type="hidden" id="race-date" required>
           </div>
 
+          <!-- 需求 3: 泳姿類別中增加「接力」 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿類別</label>
-            <div class="grid grid-cols-6 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
+            <div class="grid grid-cols-7 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
               <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-cyan-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
               <button type="button" onclick="filterCategory('free', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">自由式</button>
               <button type="button" onclick="filterCategory('back', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">仰式</button>
               <button type="button" onclick="filterCategory('breast', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蛙式</button>
               <button type="button" onclick="filterCategory('fly', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蝶式</button>
               <button type="button" onclick="filterCategory('im', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">混合</button>
+              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">接力</button>
             </div>
           </div>
 
+          <!-- 需求 4: 監聽泳池規格，觸發選單過濾 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳池規格 <span class="text-red-500">*</span></label>
-            <select id="pool-length-select" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            <select id="pool-length-select" onchange="onPoolLengthChange()" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
               <option value="50m">50m 長池 (LCM)</option>
               <option value="25m">25m 短池 (SCM)</option>
             </select>
@@ -440,6 +445,7 @@
     let cropper = null;
     let currentGroupMode = 'all'; 
     let currentSelectedEventFilter = 'all';
+    let currentCategoryFilter = 'all';
 
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
@@ -762,7 +768,6 @@
         const canvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
         const croppedBase64 = canvas.toDataURL('image/jpeg', 0.8);
 
-        // 使用 Firebase Storage 上傳
         const storageRef = ref(storage, `avatars/${currentAthleteId}_${Date.now()}.jpg`);
         await uploadString(storageRef, croppedBase64, 'data_url');
         const downloadURL = await getDownloadURL(storageRef);
@@ -788,7 +793,7 @@
 
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跳)', 'DNF': 'DNF (未完賽)' };
 
-    // 游泳標準項目庫
+    // 需求 3: 游泳標準項目庫增加 relay 分類
     const EVENTS_DB = [
       { id: '50m_free', cat: 'free', name: '50米 自由式' },
       { id: '100m_free', cat: 'free', name: '100米 自由式' },
@@ -813,11 +818,11 @@
       { id: '200m_im', cat: 'im', name: '200米 個人混合式' },
       { id: '400m_im', cat: 'im', name: '400米 個人混合式' },
 
-      { id: '4x50m_free_relay', cat: 'free', name: '4x50米 自由式接力' },
-      { id: '4x100m_free_relay', cat: 'free', name: '4x100米 自由式接力' },
-      { id: '4x200m_free_relay', cat: 'free', name: '4x200米 自由式接力' },
-      { id: '4x50m_medley_relay', cat: 'im', name: '4x50米 混合式接力' },
-      { id: '4x100m_medley_relay', cat: 'im', name: '4x100米 混合式接力' }
+      { id: '4x50m_free_relay', cat: 'relay', name: '4x50米 自由式接力' },
+      { id: '4x100m_free_relay', cat: 'relay', name: '4x100米 自由式接力' },
+      { id: '4x200m_free_relay', cat: 'relay', name: '4x200米 自由式接力' },
+      { id: '4x50m_medley_relay', cat: 'relay', name: '4x50米 混合式接力' },
+      { id: '4x100m_medley_relay', cat: 'relay', name: '4x100米 混合式接力' }
     ];
 
     async function fetchRecordsFromFirestore() {
@@ -1025,26 +1030,41 @@
       }
     }
 
+    // 需求 4: 根據泳池長度與類別動態過濾項目選單
     window.filterCategory = function(cat, btnEl) {
-      document.querySelectorAll('.cat-btn').forEach(b => {
-        b.classList.remove('bg-white', 'text-cyan-600', 'shadow-xs');
-        b.classList.add('text-slate-600');
-      });
+      if (cat) currentCategoryFilter = cat;
+
       if (btnEl) {
+        document.querySelectorAll('.cat-btn').forEach(b => {
+          b.classList.remove('bg-white', 'text-cyan-600', 'shadow-xs');
+          b.classList.add('text-slate-600');
+        });
         btnEl.classList.add('bg-white', 'text-cyan-600', 'shadow-xs');
         btnEl.classList.remove('text-slate-600');
       }
 
       const selectEl = document.getElementById('event-select');
       const currentSelectedVal = selectEl.value;
+      const currentPoolLength = document.getElementById('pool-length-select').value;
       selectEl.innerHTML = '';
 
-      const filtered = cat === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === cat);
+      let filtered = currentCategoryFilter === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === currentCategoryFilter);
+      
+      // 需求 4: 如果選 50m 長池，剔除「100m_im」 (100米 個人混合式（短池）)
+      if (currentPoolLength === '50m') {
+        filtered = filtered.filter(e => e.id !== '100m_im');
+      }
+
       filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
 
       if (filtered.some(e => e.id === currentSelectedVal)) {
         selectEl.value = currentSelectedVal;
       }
+    }
+
+    // 需求 4 觸發函數：當泳池規格切換時重新整理項目列表
+    window.onPoolLengthChange = function() {
+      filterCategory(null, null);
     }
 
     function formatTimeStr(min, sec, ms) {
@@ -1107,7 +1127,8 @@
       if (!r) return;
 
       document.getElementById('edit-record-id').value = r.id;
-      document.getElementById('form-title').textContent = '編輯游泳成績';
+      // 需求 2: 保持統一為「新增成績/編輯成績」
+      document.getElementById('form-title').textContent = '編輯成績';
       document.getElementById('submit-btn').textContent = '更新紀錄';
       document.getElementById('cancel-edit-btn').classList.remove('hidden');
 
@@ -1161,12 +1182,14 @@
 
     window.cancelEditMode = function() {
       document.getElementById('edit-record-id').value = '';
-      document.getElementById('form-title').textContent = '新增游泳成績';
+      // 需求 2: 改為「新增成績」
+      document.getElementById('form-title').textContent = '新增成績';
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
       toggleStatusFields();
       setInitialTodayDate();
+      filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
 
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
