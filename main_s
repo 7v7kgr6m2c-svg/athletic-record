@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <!-- Viewport 鎖定 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+  <title>個人游泳成績記錄網</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <style>
+      /* 禁用手勢與雙擊縮放 */
+      html, body, input, select, textarea, button {
+          touch-action: manipulation;
+          -webkit-text-size-adjust: 100%;
+      }
+      
+      /* iOS 點擊輸入框時鎖定至少 16px */
+      input, select, textarea {
+          font-size: 16px !important;
+      }
+
+      .cropper-view-box, .cropper-face { border-radius: 50%; }
+      .cropper-container { touch-action: none; }
+
+      /* iOS Wheel Picker 自訂樣式 */
+      .scrollbar-none::-webkit-scrollbar { display: none; }
+      .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+      .picker-column { 
+          scroll-snap-type: y mandatory; 
+          scroll-behavior: smooth; 
+          touch-action: pan-y;
+          overscroll-behavior-x: none;
+          overflow-x: hidden !important;
+      }
+      .picker-item { 
+          height: 40px; 
+          line-height: 40px; 
+          scroll-snap-align: center; 
+          text-align: center; 
+          font-size: 16px; 
+          font-weight: 600; 
+          color: #64748b; 
+          transition: color 0.15s, transform 0.15s; 
+          user-select: none;
+      }
+      .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
+
+      /* Material You Tab 樣式 */
+      .m3-tab-btn {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 10px 16px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #475569;
+          border-radius: 9999px;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+          white-space: nowrap;
+          flex: 1;
+      }
+      .m3-tab-btn.active {
+          color: var(--theme-color, #0284c7);
+          background-color: var(--theme-bg-light, #e0f2fe);
+          font-weight: 700;
+      }
+  </style>
+  <script>
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function (e) { e.preventDefault(); });
+
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length > 1) { e.preventDefault(); }
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function (e) {
+      if (e.touches.length > 1) { e.preventDefault(); }
+    }, { passive: false });
+
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (e) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 select-none">
+
+  <div class="max-w-3xl mx-auto space-y-6">
+    <!-- 運動員資料 Header -->
+    <header id="main-header" class="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-800 p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300">
+      <div class="flex items-center gap-5">
+        <div class="relative group cursor-pointer w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/85 shadow-inner bg-black/20 flex-shrink-0 flex items-center justify-center" onclick="document.getElementById('header-avatar-input').click()">
+          <img id="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-[11px] font-bold text-white text-center p-1">更換頭像</div>
+        </div>
+        <input type="file" id="header-avatar-input" accept="image/*" class="hidden" onchange="handleHeaderFileSelect(event)">
+
+        <div class="space-y-1">
+          <h1 id="athlete-name" class="text-2xl md:text-3xl font-bold tracking-wide">載入中...</h1>
+          <p id="athlete-dob" class="text-xs md:text-sm text-white/90">出生日期: 載入中...</p>
+          <p id="athlete-age" class="text-xs md:text-sm text-white/90">年齡: 載入中...</p>
+          <p id="athlete-gender" class="text-xs md:text-sm text-white/80">性別: 載入中...</p>
+        </div>
+      </div>
+
+      <button onclick="switchAthlete()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer">
+        <span>切換</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    </header>
+
+    <!-- Material You 分頁導覽列 -->
+    <nav class="bg-white/80 backdrop-blur-md p-1.5 rounded-full shadow-sm border border-slate-200/80 flex gap-1 sticky top-3 z-30">
+      <button onclick="switchMainTab('pb')" id="main-tab-pb" class="m3-tab-btn active">我的 PB</button>
+      <button onclick="switchMainTab('history')" id="main-tab-history" class="m3-tab-btn">歷史記錄</button>
+      <button onclick="switchMainTab('chart')" id="main-tab-chart" class="m3-tab-btn">成績趨勢</button>
+      <button onclick="switchMainTab('form')" id="main-tab-form" class="m3-tab-btn">新增成績</button>
+    </nav>
+
+    <div class="space-y-6">
+
+      <!-- 1. 我的 PB 區塊 -->
+      <section id="sec-pb" class="space-y-4">
+        <div id="pb-banner" class="bg-gradient-to-br from-cyan-900 via-blue-800 to-indigo-950 p-6 rounded-3xl shadow-lg text-white transition-colors duration-300">
+          <div class="flex items-center justify-between border-b border-white/15 pb-3 mb-4 gap-3">
+            <div class="flex items-center gap-3">
+              <span class="text-4xl md:text-5xl">🏊‍♂️</span>
+              <div>
+                <h2 class="text-xl font-black tracking-wide leading-tight">個人游泳最佳成績</h2>
+                <p class="text-xs md:text-sm font-semibold tracking-wider text-cyan-100">Personal Best</p>
+              </div>
+            </div>
+            <span id="pb-count-tag" class="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full border border-white/20 whitespace-nowrap flex-shrink-0">0 個項目</span>
+          </div>
+          <p class="text-xs text-cyan-100 font-medium">展示您在各游泳項目的歷史最高紀錄</p>
+        </div>
+
+        <div id="pb-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- 動態渲染 PB 卡片 -->
+        </div>
+      </section>
+
+      <!-- 2. 歷史記錄區塊 -->
+      <section id="sec-history" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
+        <div class="flex justify-between items-center flex-wrap gap-2">
+          <h2 class="text-lg font-bold text-slate-900">游泳歷史記錄</h2>
+          
+          <div class="flex items-center gap-2">
+            <!-- 分類 Tab -->
+            <div class="flex bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
+              <button type="button" onclick="switchGroupMode('all')" id="tab-all" class="px-3 py-1.5 rounded-xl bg-white text-cyan-600 shadow-xs transition cursor-pointer">全部</button>
+              <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">賽事</button>
+              <button type="button" onclick="switchGroupMode('event')" id="tab-event" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">項目</button>
+            </div>
+
+            <!-- 編輯模式 toggle -->
+            <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition font-medium cursor-pointer">編輯記錄</button>
+          </div>
+        </div>
+
+        <!-- 項目快捷篩選列 -->
+        <div id="event-filter-bar" class="hidden flex flex-wrap gap-2 pt-1 pb-3 border-b border-slate-100"></div>
+
+        <!-- 卡片容器 -->
+        <div id="cards-container" class="space-y-4"></div>
+      </section>
+
+      <!-- 3. 成績趨勢區塊 -->
+      <section id="sec-chart" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
+        <div class="flex justify-between items-center border-b pb-3">
+          <h2 class="text-lg font-bold text-slate-900">成績趨勢</h2>
+          <select id="chart-filter" onchange="updateChart()" class="border rounded-xl h-9 px-3 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 font-medium"></select>
+        </div>
+        <div class="h-72">
+          <canvas id="progressChart"></canvas>
+        </div>
+      </section>
+
+      <!-- 4. 新增 / 編輯成績區塊 -->
+      <section id="sec-form" class="hidden bg-white p-6 rounded-3xl shadow-sm">
+        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增游泳成績</h2>
+        <form id="record-form" class="space-y-3" oninput="validateForm()">
+          <input type="hidden" id="edit-record-id" value="">
+          
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">賽事名稱 <span class="text-red-500">*</span></label>
+            <input type="text" id="competition" placeholder="例: 全港分齡游泳錦標賽" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+          </div>
+
+          <!-- 比賽日期 iOS 滾輪觸發位 -->
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
+            <div onclick="openIosWheelPicker('race')" class="flex-1 border rounded-xl h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-cyan-500 transition">
+              <span id="race-display-text" class="text-slate-800 font-medium">載入中...</span>
+              <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+            <input type="hidden" id="race-date" required>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿類別</label>
+            <div class="grid grid-cols-6 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
+              <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-cyan-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
+              <button type="button" onclick="filterCategory('free', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">自由式</button>
+              <button type="button" onclick="filterCategory('back', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">仰式</button>
+              <button type="button" onclick="filterCategory('breast', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蛙式</button>
+              <button type="button" onclick="filterCategory('fly', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蝶式</button>
+              <button type="button" onclick="filterCategory('im', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">混合</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳池規格 <span class="text-red-500">*</span></label>
+            <select id="pool-length-select" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+              <option value="50m">50m 長池 (LCM)</option>
+              <option value="25m">25m 短池 (SCM)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
+            <select id="event-select" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
+            <select id="status-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+              <option value="NORMAL">正常</option>
+              <option value="DQ">DQ (犯規)</option>
+              <option value="DNS">DNS (未起跳)</option>
+              <option value="DNF">DNF (未完賽)</option>
+            </select>
+          </div>
+
+          <div id="single-event-inputs" class="space-y-3">
+            <div class="flex items-center gap-3">
+              <label id="result-label" class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
+              
+              <div class="flex items-center gap-2 flex-wrap flex-1">
+                <div id="time-input-group" class="flex items-center gap-1">
+                  <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
+                  <span class="font-bold text-slate-500">:</span>
+                  <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
+                  <span class="font-bold text-slate-500">.</span>
+                  <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
+              <select id="stage-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                <option value="初賽">初賽</option>
+                <option value="準決賽">準決賽</option>
+                <option value="決賽">決賽</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
+              <select id="rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                <option value="">無名次</option>
+                <option value="第1名">第1名</option>
+                <option value="第2名">第2名</option>
+                <option value="第3名">第3名</option>
+                <option value="第4名">第4名</option>
+                <option value="第5名">第5名</option>
+                <option value="第6名">第6名</option>
+                <option value="第7名">第7名</option>
+                <option value="第8名">第8名</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-2">
+            <button type="submit" id="submit-btn" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-medium h-10 rounded-xl transition duration-200 shadow cursor-pointer">
+              儲存紀錄
+            </button>
+            <button type="button" id="cancel-edit-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-xl transition duration-200 cursor-pointer">
+              取消編輯
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- 5. 頁底登出按鈕 -->
+      <div class="pt-4 border-t border-slate-200">
+        <button id="btn-logout" class="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <span>登出帳戶</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- iOS 3D 日期滾輪 Modal -->
+  <div id="ios-wheel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 transition-opacity">
+      <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4">
+          <div class="flex justify-between items-center border-b pb-3">
+              <button type="button" onclick="closeIosWheelPicker()" class="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer">取消</button>
+              <span class="font-bold text-slate-800 text-base">選擇日期</span>
+              <button type="button" onclick="confirmIosWheelPicker()" class="text-cyan-600 hover:text-cyan-700 font-bold text-sm cursor-pointer">完成</button>
+          </div>
+
+          <div class="relative h-48 overflow-hidden my-2 select-none">
+              <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-slate-100/80 rounded-xl border-y border-slate-200/80 pointer-events-none -z-0"></div>
+
+              <div class="flex w-full h-full relative z-10 overflow-hidden">
+                  <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+                  <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+                  <div id="wheel-day" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- 圖片裁切 Modal -->
+  <div id="crop-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+          <h3 class="text-base font-bold text-slate-800 text-center">調整頭像位置與縮放</h3>
+          <div class="max-h-[50vh] overflow-hidden rounded-xl bg-black">
+              <img id="crop-image-target" src="" class="max-w-full block">
+          </div>
+          <div class="flex gap-3">
+              <button type="button" onclick="closeCropModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
+              <button type="button" onclick="confirmHeaderCrop()" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">完成裁切</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- 自訂 Alert / Confirm Modal -->
+  <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+          <div id="custom-alert-icon" class="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+          <p id="custom-alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+          <button onclick="closeCustomAlert()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+      </div>
+  </div>
+
+  <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+      <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+          <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">?</div>
+          <p id="custom-confirm-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+          <div class="flex gap-3">
+              <button onclick="resolveCustomConfirm(false)" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
+              <button onclick="resolveCustomConfirm(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">確定刪除</button>
+          </div>
+      </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
+        authDomain: "athletes-record.firebaseapp.com",
+        projectId: "athletes-record",
+        storageBucket: "athletes-record.appspot.com",
+        messagingSenderId: "259439207122",
+        appId: "1:259439207122:web:26d6211ac1379c936e030b",
+        measurementId: "G-F3ZH9YN0VT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const THEME_CONFIGS = {
+        blue: {
+            headerClass: 'bg-gradient-to-r from-cyan-600 to-blue-800',
+            pbBannerClass: 'bg-gradient-to-br from-cyan-900 via-blue-800 to-indigo-950',
+            primaryColor: '#0284c7',
+            lightBg: '#e0f2fe'
+        }
+    };
+
+    window.showAlert = function(msg, icon = 'i') {
+      document.getElementById('custom-alert-msg').textContent = msg;
+      const iconEl = document.getElementById('custom-alert-icon');
+      iconEl.textContent = icon;
+      if (icon === '✅') {
+        iconEl.className = 'w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+      } else if (icon === '❌' || icon === '⚠️') {
+        iconEl.className = 'w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+      } else {
+        iconEl.className = 'w-12 h-12 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+      }
+      document.getElementById('custom-alert-modal').classList.remove('hidden');
+    }
+
+    window.closeCustomAlert = function() {
+      document.getElementById('custom-alert-modal').classList.add('hidden');
+    }
+
+    let confirmResolver = null;
+    window.showConfirm = function(msg) {
+      document.getElementById('custom-confirm-msg').textContent = msg;
+      document.getElementById('custom-confirm-modal').classList.remove('hidden');
+      return new Promise((resolve) => {
+        confirmResolver = resolve;
+      });
+    }
+
+    window.resolveCustomConfirm = function(val) {
+      document.getElementById('custom-confirm-modal').classList.add('hidden');
+      if (confirmResolver) confirmResolver(val);
+    }
+
+    let currentAthleteId = localStorage.getItem('current_athlete_id');
+    let currentAthleteName = localStorage.getItem('current_athlete_name');
+    let currentAthleteDob = localStorage.getItem('current_athlete_dob');
+    let currentAthleteGender = localStorage.getItem('current_athlete_gender');
+    let currentAthleteAvatar = localStorage.getItem('current_athlete_avatar');
+
+    let athleteProfile = {
+      name: currentAthleteName || '運動員',
+      dob: currentAthleteDob || '',
+      gender: currentAthleteGender || '',
+      avatar: currentAthleteAvatar || '',
+      theme: 'blue'
+    };
+
+    let isHistoryEditMode = false;
+    let records = [];
+    let chartInstance = null;
+    let currentUser = null;
+    let cropper = null;
+    let currentGroupMode = 'all'; 
+    let currentSelectedEventFilter = 'all';
+
+    let selectedY = new Date().getFullYear();
+    let selectedM = new Date().getMonth() + 1;
+    let selectedD = new Date().getDate();
+    let isProgrammaticScrolling = false;
+    let isInitializingPicker = false;
+
+    const STAGE_ORDER = { '決賽': 3, '準決賽': 2, '初賽': 1 };
+
+    function applyTheme() {
+        const theme = THEME_CONFIGS.blue;
+        document.documentElement.style.setProperty('--theme-color', theme.primaryColor);
+        document.documentElement.style.setProperty('--theme-bg-light', theme.lightBg);
+    }
+
+    window.switchMainTab = function(tabName) {
+      const tabs = ['pb', 'history', 'chart', 'form'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`main-tab-${t}`);
+        const sec = document.getElementById(`sec-${t}`);
+        if (t === tabName) {
+          btn.classList.add('active');
+          sec.classList.remove('hidden');
+        } else {
+          btn.classList.remove('active');
+          sec.classList.add('hidden');
+        }
+      });
+
+      if (tabName === 'chart') {
+        setTimeout(() => updateChart(), 100);
+      }
+    }
+
+    function sortRecordsChronologically(recordArray) {
+      return [...recordArray].sort((a, b) => {
+        const dateDiff = new Date(b.date) - new Date(a.date);
+        if (dateDiff !== 0) return dateDiff;
+        if (a.competition !== b.competition) return a.competition.localeCompare(b.competition, 'zh-HK');
+        if (a.eventName !== b.eventName) return a.eventName.localeCompare(b.eventName, 'zh-HK');
+        const weightA = STAGE_ORDER[a.stage] || 0;
+        const weightB = STAGE_ORDER[b.stage] || 0;
+        return weightB - weightA; 
+      });
+    }
+
+    function setInitialTodayDate(dateStr = null) {
+      const targetDate = dateStr ? new Date(dateStr) : new Date();
+      selectedY = targetDate.getFullYear();
+      selectedM = targetDate.getMonth() + 1;
+      selectedD = targetDate.getDate();
+      const formatted = `${selectedY}-${String(selectedM).padStart(2, '0')}-${String(selectedD).padStart(2, '0')}`;
+      document.getElementById('race-date').value = formatted;
+      document.getElementById('race-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
+    }
+
+    window.openIosWheelPicker = function() {
+      const modal = document.getElementById('ios-wheel-modal');
+      modal.classList.remove('hidden');
+
+      const currentVal = document.getElementById('race-date').value;
+      if (currentVal && currentVal.includes('-')) {
+          const parts = currentVal.split('-');
+          selectedY = parseInt(parts[0], 10);
+          selectedM = parseInt(parts[1], 10);
+          selectedD = parseInt(parts[2], 10);
+      } else {
+          const now = new Date();
+          selectedY = now.getFullYear();
+          selectedM = now.getMonth() + 1;
+          selectedD = now.getDate();
+      }
+
+      isInitializingPicker = true;
+      isProgrammaticScrolling = true;
+
+      renderWheelYears();
+      renderWheelMonths();
+      renderWheelDays(false);
+
+      requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+              scrollWheelToValue('wheel-year', selectedY);
+              scrollWheelToValue('wheel-month', selectedM);
+              
+              setTimeout(() => {
+                  scrollWheelToValue('wheel-day', selectedD);
+                  setTimeout(() => {
+                      isProgrammaticScrolling = false;
+                      isInitializingPicker = false;
+                  }, 150);
+              }, 50);
+          });
+      });
+    }
+
+    window.closeIosWheelPicker = function() {
+      document.getElementById('ios-wheel-modal').classList.add('hidden');
+    }
+
+    window.confirmIosWheelPicker = function() {
+      const formatted = `${selectedY}-${String(selectedM).padStart(2, '0')}-${String(selectedD).padStart(2, '0')}`;
+      document.getElementById('race-date').value = formatted;
+      document.getElementById('race-display-text').textContent = `${selectedY}年${selectedM}月${selectedD}日`;
+      closeIosWheelPicker();
+    }
+
+    function renderWheelYears() {
+      const container = document.getElementById('wheel-year');
+      const nowY = new Date().getFullYear();
+      container.innerHTML = '<div class="h-20"></div>';
+      for (let y = nowY + 2; y >= nowY - 20; y--) {
+          const div = document.createElement('div');
+          div.className = 'picker-item';
+          div.dataset.val = y;
+          div.textContent = `${y}年`;
+          container.appendChild(div);
+      }
+      container.innerHTML += '<div class="h-20"></div>';
+      bindWheelScroll('wheel-year', (val) => { 
+        selectedY = val; 
+        if (!isInitializingPicker) renderWheelDays(true); 
+      });
+    }
+
+    function renderWheelMonths() {
+      const container = document.getElementById('wheel-month');
+      container.innerHTML = '<div class="h-20"></div>';
+      for (let m = 1; m <= 12; m++) {
+          const div = document.createElement('div');
+          div.className = 'picker-item';
+          div.dataset.val = m;
+          div.textContent = `${m}月`;
+          container.appendChild(div);
+      }
+      container.innerHTML += '<div class="h-20"></div>';
+      bindWheelScroll('wheel-month', (val) => { 
+        selectedM = val; 
+        if (!isInitializingPicker) renderWheelDays(true); 
+      });
+    }
+
+    function renderWheelDays(keepCurrentDay = true) {
+      const container = document.getElementById('wheel-day');
+      const daysCount = new Date(selectedY, selectedM, 0).getDate();
+      if (selectedD > daysCount) selectedD = daysCount;
+
+      container.innerHTML = '<div class="h-20"></div>';
+      for (let d = 1; d <= daysCount; d++) {
+          const div = document.createElement('div');
+          div.className = 'picker-item';
+          div.dataset.val = d;
+          div.textContent = `${d}日`;
+          container.appendChild(div);
+      }
+      container.innerHTML += '<div class="h-20"></div>';
+      bindWheelScroll('wheel-day', (val) => { selectedD = val; });
+
+      if (keepCurrentDay && !isInitializingPicker) {
+          scrollWheelToValue('wheel-day', selectedD);
+      }
+    }
+
+    function bindWheelScroll(elementId, onSelectCallback) {
+      const el = document.getElementById(elementId);
+      let timer = null;
+      el.onscroll = () => {
+          if (isProgrammaticScrolling) return;
+
+          clearTimeout(timer);
+          timer = setTimeout(() => {
+              const centerOffset = el.scrollTop + 80;
+              const items = el.querySelectorAll('.picker-item');
+              let closest = null;
+              let minDiff = Infinity;
+
+              items.forEach(item => {
+                  item.classList.remove('selected');
+                  const diff = Math.abs((item.offsetTop + 20) - centerOffset);
+                  if (diff < minDiff) {
+                      minDiff = diff;
+                      closest = item;
+                  }
+              });
+
+              if (closest) {
+                  closest.classList.add('selected');
+                  const val = parseInt(closest.dataset.val, 10);
+                  onSelectCallback(val);
+              }
+          }, 80);
+      };
+    }
+
+    function scrollWheelToValue(elementId, val) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const items = el.querySelectorAll('.picker-item');
+      items.forEach(item => {
+          if (parseInt(item.dataset.val, 10) === val) {
+              item.classList.add('selected');
+              const targetTop = item.offsetTop - 80;
+              el.scrollTop = targetTop;
+          } else {
+              item.classList.remove('selected');
+          }
+      });
+    }
+
+    async function initMainPage() {
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = 'index.html';
+          return;
+        }
+        currentUser = user;
+
+        if (!currentAthleteId) {
+          showAlert('未選擇運動員，將為您返回選擇頁面！', '⚠️');
+          setTimeout(() => { window.location.href = 'athletes.html'; }, 1500);
+          return;
+        }
+
+        initProfileUI();
+        applyTheme();
+        setInitialTodayDate();
+
+        filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+        await fetchRecordsFromFirestore();
+        initChart();
+
+        document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
+      });
+    }
+
+    window.switchAthlete = function() { window.location.href = 'select_sport.html'; }
+
+    function getAgeAtDate(dobString, targetDateString) {
+      if (!dobString || !targetDateString) return null;
+      const birthDate = new Date(dobString);
+      const targetDate = new Date(targetDateString);
+      if (isNaN(birthDate.getTime()) || isNaN(targetDate.getTime())) return null;
+      let age = targetDate.getFullYear() - birthDate.getFullYear();
+      const m = targetDate.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && targetDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age >= 0 ? age : null;
+    }
+
+    function calculateAge(dobString) {
+      const age = getAgeAtDate(dobString, new Date().toISOString().split('T')[0]);
+      return age !== null ? `${age} 歲` : '未填寫';
+    }
+
+    function initProfileUI() {
+      document.getElementById('athlete-name').textContent = athleteProfile.name;
+      document.getElementById('athlete-dob').textContent = `出生日期: ${athleteProfile.dob || '未填寫'}`;
+      document.getElementById('athlete-age').textContent = `年齡: ${calculateAge(athleteProfile.dob)}`;
+      document.getElementById('athlete-gender').textContent = `性別: ${athleteProfile.gender || '未指定'}`;
+
+      if (athleteProfile.avatar) {
+        document.getElementById('avatar-img').src = athleteProfile.avatar;
+      }
+    }
+
+    window.handleHeaderFileSelect = function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const cropImg = document.getElementById('crop-image-target');
+          cropImg.src = e.target.result;
+          document.getElementById('crop-modal').classList.remove('hidden');
+
+          if (cropper) cropper.destroy();
+          setTimeout(() => {
+            cropper = new Cropper(cropImg, {
+              aspectRatio: 1, viewMode: 1, dragMode: 'move', autoCropArea: 0.8,
+              restore: false, guides: false, center: true, highlight: false,
+              cropBoxMovable: true, cropBoxResizable: true, toggleDragModeOnDblclick: false,
+            });
+          }, 100);
+        };
+        reader.readAsDataURL(file);
+      }
+      event.target.value = '';
+    };
+
+    window.closeCropModal = function() {
+      document.getElementById('crop-modal').classList.add('hidden');
+      if (cropper) cropper.destroy();
+    };
+
+    window.confirmHeaderCrop = async function() {
+      if (!cropper) return;
+      const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
+      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+      document.getElementById('avatar-img').src = croppedBase64;
+      athleteProfile.avatar = croppedBase64;
+      localStorage.setItem('current_athlete_avatar', croppedBase64);
+      closeCropModal();
+
+      try {
+        const athleteRef = doc(db, "athletes", currentAthleteId);
+        await updateDoc(athleteRef, { avatar: croppedBase64 });
+        showAlert('頭像更新成功！', '✅');
+      } catch (err) {
+        showAlert('頭像更新失敗：' + err.message, '❌');
+      }
+    };
+
+    window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
+
+    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跳)', 'DNF': 'DNF (未完賽)' };
+
+    // 游泳標準項目庫
+    const EVENTS_DB = [
+      { id: '50m_free', cat: 'free', name: '50米 自由式' },
+      { id: '100m_free', cat: 'free', name: '100米 自由式' },
+      { id: '200m_free', cat: 'free', name: '200米 自由式' },
+      { id: '400m_free', cat: 'free', name: '400米 自由式' },
+      { id: '800m_free', cat: 'free', name: '800米 自由式' },
+      { id: '1500m_free', cat: 'free', name: '1500米 自由式' },
+      
+      { id: '50m_back', cat: 'back', name: '50米 仰式' },
+      { id: '100m_back', cat: 'back', name: '100米 仰式' },
+      { id: '200m_back', cat: 'back', name: '200米 仰式' },
+      
+      { id: '50m_breast', cat: 'breast', name: '50米 蛙式' },
+      { id: '100m_breast', cat: 'breast', name: '100米 蛙式' },
+      { id: '200m_breast', cat: 'breast', name: '200米 蛙式' },
+      
+      { id: '50m_fly', cat: 'fly', name: '50米 蝶式' },
+      { id: '100m_fly', cat: 'fly', name: '100米 蝶式' },
+      { id: '200m_fly', cat: 'fly', name: '200米 蝶式' },
+      
+      { id: '100m_im', cat: 'im', name: '100米 個人混合式 (短池)' },
+      { id: '200m_im', cat: 'im', name: '200米 個人混合式' },
+      { id: '400m_im', cat: 'im', name: '400米 個人混合式' },
+
+      { id: '4x50m_free_relay', cat: 'free', name: '4x50米 自由式接力' },
+      { id: '4x100m_free_relay', cat: 'free', name: '4x100米 自由式接力' },
+      { id: '4x200m_free_relay', cat: 'free', name: '4x200米 自由式接力' },
+      { id: '4x50m_medley_relay', cat: 'im', name: '4x50米 混合式接力' },
+      { id: '4x100m_medley_relay', cat: 'im', name: '4x100米 混合式接力' }
+    ];
+
+    async function fetchRecordsFromFirestore() {
+      try {
+        const q = query(collection(db, "swimming_records"), where("athlete_id", "==", currentAthleteId));
+        const querySnapshot = await getDocs(q);
+        records = [];
+        querySnapshot.forEach((docSnap) => {
+          const row = docSnap.data();
+          records.push({
+            id: docSnap.id, eventId: row.event_id, eventName: row.event_name,
+            poolLength: row.pool_length || '50m', competition: row.competition, 
+            date: row.date, status: row.status, stage: row.stage, rank: row.rank, 
+            result: row.result
+          });
+        });
+        
+        records = sortRecordsChronologically(records);
+        renderList();
+        renderPBPage();
+        updateChartDropdown();
+        updateChart();
+      } catch (err) {
+        showAlert('載入游泳歷史記錄失敗：' + err.message, '❌');
+      }
+    }
+
+    function updateChartDropdown() {
+      const chartSelect = document.getElementById('chart-filter');
+      const currentVal = chartSelect.value;
+      chartSelect.innerHTML = '';
+
+      const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
+      const activeEventKeys = new Set(validRecords.map(r => `${r.eventId}_${r.poolLength}`));
+
+      if (activeEventKeys.size === 0) {
+        chartSelect.appendChild(new Option('尚無有效成績項目', ''));
+        chartSelect.value = '';
+        return;
+      }
+
+      activeEventKeys.forEach(key => {
+        const [eId, pLen] = key.split('_');
+        const itemObj = EVENTS_DB.find(e => e.id === eId);
+        if (itemObj) {
+          chartSelect.appendChild(new Option(`${itemObj.name} (${pLen})`, key));
+        }
+      });
+
+      if (currentVal && activeEventKeys.has(currentVal)) {
+        chartSelect.value = currentVal;
+      } else {
+        chartSelect.value = Array.from(activeEventKeys)[0];
+      }
+    }
+
+    function renderPBPage() {
+      const pbContainer = document.getElementById('pb-cards-container');
+      const countTag = document.getElementById('pb-count-tag');
+      pbContainer.innerHTML = '';
+
+      const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
+
+      if (validRecords.length === 0) {
+        countTag.textContent = '0 個項目';
+        pbContainer.innerHTML = `
+          <div class="col-span-full bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
+            尚無有效的游泳成績紀錄可計算 PB
+          </div>`;
+        return;
+      }
+
+      const groups = {};
+      validRecords.forEach(r => {
+        const groupKey = `${r.eventId}_${r.poolLength}`;
+        if (!groups[groupKey]) groups[groupKey] = [];
+        groups[groupKey].push(r);
+      });
+
+      const pbList = [];
+
+      Object.keys(groups).forEach(key => {
+        const itemRecords = groups[key];
+        const [eId, pLen] = key.split('_');
+        const itemObj = EVENTS_DB.find(e => e.id === eId);
+        if (!itemObj) return;
+
+        let bestRecord = null;
+        let bestValue = null;
+
+        itemRecords.forEach(r => {
+          let numericValue = 0;
+          const parts = r.result.split(':');
+          if (parts.length === 2) {
+            numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+          } else {
+            numericValue = parseFloat(r.result) || 0;
+          }
+
+          if (bestValue === null || numericValue < bestValue) {
+            bestValue = numericValue;
+            bestRecord = r;
+          }
+        });
+
+        if (bestRecord) {
+          pbList.push({ itemObj, record: bestRecord, poolLength: pLen });
+        }
+      });
+
+      countTag.textContent = `${pbList.length} 個項目`;
+
+      pbList.forEach(pb => {
+        const r = pb.record;
+        const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
+        const ageText = ageNum !== null ? `${ageNum} 歲` : '-';
+
+        const cardHtml = `
+          <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition">
+            <div class="flex justify-between items-center gap-3 border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-xl font-black text-slate-900">${r.eventName}</h3>
+                <span class="inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                  ${r.poolLength === '50m' ? '50m 長池' : '25m 短池'}
+                </span>
+              </div>
+
+              <div class="text-right flex items-baseline gap-1">
+                <span class="text-3xl md:text-4xl font-black tracking-tight font-mono" style="color: var(--theme-color, #0284c7);">${r.result}</span>
+              </div>
+            </div>
+
+            <div class="space-y-1 text-xs text-right text-slate-500 font-medium">
+              <div class="text-slate-800 font-bold leading-snug break-words">${r.competition}</div>
+              <div class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</div>
+              <div class="text-slate-400">階段: ${r.stage || '初賽'} ${r.rank ? `(${r.rank})` : ''}</div>
+              <div class="text-slate-400">創紀錄時年齡: ${ageText}</div>
+            </div>
+          </div>
+        `;
+        pbContainer.innerHTML += cardHtml;
+      });
+    }
+
+    async function saveRecordToFirestore(record, editId) {
+      if (!currentUser || !currentUser.uid) {
+        showAlert("錯誤：尚未偵測到用戶登入資訊！", '❌');
+        return false;
+      }
+      if (!currentAthleteId) {
+        showAlert("錯誤：找不到運動員 ID！", '❌');
+        return false;
+      }
+
+      const dbPayload = {
+        athlete_id: currentAthleteId, 
+        user_id: currentUser.uid,
+        event_id: record.eventId, 
+        event_name: record.eventName,
+        pool_length: record.poolLength,
+        competition: record.competition, 
+        date: record.date,
+        status: record.status, 
+        stage: record.stage, 
+        rank: record.rank || '',
+        result: record.result, 
+        updated_at: serverTimestamp()
+      };
+
+      try {
+        if (editId) {
+          await updateDoc(doc(db, "swimming_records", editId), dbPayload);
+        } else {
+          dbPayload.created_at = serverTimestamp();
+          await addDoc(collection(db, "swimming_records"), dbPayload);
+        }
+        return true;
+      } catch (err) {
+        showAlert('Firestore 儲存失敗：' + err.code + '\n' + err.message, '❌');
+        return false;
+      }
+    }
+
+    async function deleteRecordFromFirestore(id) {
+      try {
+        await deleteDoc(doc(db, "swimming_records", id));
+        return true;
+      } catch (err) {
+        showAlert('刪除失敗：' + err.message, '❌');
+        return false;
+      }
+    }
+
+    window.validateForm = function() { return true; }
+
+    window.filterCategory = function(cat, btnEl) {
+      document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-cyan-600', 'shadow-xs');
+        b.classList.add('text-slate-600');
+      });
+      if (btnEl) {
+        btnEl.classList.add('bg-white', 'text-cyan-600', 'shadow-xs');
+        btnEl.classList.remove('text-slate-600');
+      }
+
+      const selectEl = document.getElementById('event-select');
+      const currentSelectedVal = selectEl.value;
+      selectEl.innerHTML = '';
+
+      const filtered = cat === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === cat);
+      filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
+
+      if (filtered.some(e => e.id === currentSelectedVal)) {
+        selectEl.value = currentSelectedVal;
+      }
+    }
+
+    function formatTimeStr(min, sec, ms) {
+      let s = parseInt(sec) || 0;
+      let mStr = parseInt(min) ? `${parseInt(min)}:` : '';
+      return `${mStr}${mStr ? String(s).padStart(2, '0') : s}.${String(parseInt(ms) || 0).padStart(2, '0')}`;
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const comp = document.getElementById('competition').value.trim();
+      const date = document.getElementById('race-date').value;
+
+      if (!comp) { showAlert("請填寫賽事名稱！", '⚠️'); return; }
+      if (!date) { showAlert("請選擇比賽日期！", '⚠️'); return; }
+
+      const editId = document.getElementById('edit-record-id').value;
+      const selectedId = document.getElementById('event-select').value;
+      const poolLength = document.getElementById('pool-length-select').value;
+      const status = document.getElementById('status-select').value;
+      const itemObj = EVENTS_DB.find(e => e.id === selectedId);
+
+      if (!itemObj) { showAlert("請選擇比賽項目！", '⚠️'); return; }
+
+      let record = {
+        eventId: selectedId, 
+        eventName: itemObj.name,
+        poolLength: poolLength,
+        competition: comp,
+        date: date,
+        status: status, 
+        stage: document.getElementById('stage-select').value,
+        rank: document.getElementById('rank-select').value
+      };
+
+      if (status === 'NORMAL') {
+        const sec = document.getElementById('time-sec').value.trim();
+        const ms = document.getElementById('time-ms').value.trim();
+        if (sec === '' || ms === '') {
+          showAlert("請輸入完整的秒數與毫秒！", '⚠️');
+          return;
+        }
+        record.result = formatTimeStr(document.getElementById('time-min').value, sec, ms);
+      } else {
+        record.result = status;
+      }
+
+      const success = await saveRecordToFirestore(record, editId);
+      if (success) {
+        showAlert(editId ? '成績紀錄更新成功！' : '成績紀錄儲存成功！', '✅');
+        cancelEditMode();
+        await fetchRecordsFromFirestore();
+        switchMainTab('history');
+      }
+    }
+
+    window.editRecord = function(id) {
+      const r = records.find(item => item.id === id);
+      if (!r) return;
+
+      document.getElementById('edit-record-id').value = r.id;
+      document.getElementById('form-title').textContent = '編輯游泳成績';
+      document.getElementById('submit-btn').textContent = '更新紀錄';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+      document.getElementById('competition').value = r.competition;
+      document.getElementById('pool-length-select').value = r.poolLength || '50m';
+      setInitialTodayDate(r.date);
+
+      const itemObj = EVENTS_DB.find(e => e.id === r.eventId);
+      if (itemObj) {
+        filterCategory(itemObj.cat);
+        document.getElementById('event-select').value = r.eventId;
+      }
+
+      document.getElementById('stage-select').value = r.stage || '初賽';
+      document.getElementById('status-select').value = r.status || 'NORMAL';
+      document.getElementById('rank-select').value = r.rank || '';
+
+      if (r.status === 'NORMAL' && r.result) {
+        const parts = r.result.split('.');
+        if (parts.length === 2) {
+          document.getElementById('time-ms').value = parts[1];
+          const minSec = parts[0].split(':');
+          if (minSec.length === 2) {
+            document.getElementById('time-min').value = minSec[0];
+            document.getElementById('time-sec').value = minSec[1];
+          } else {
+            document.getElementById('time-sec').value = minSec[0];
+          }
+        }
+      }
+
+      isHistoryEditMode = false;
+      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
+      renderList();
+
+      switchMainTab('form');
+    }
+
+    window.deleteRecord = async function(id) {
+      const confirmed = await showConfirm('確定要刪除這筆游泳紀錄嗎？');
+      if (confirmed) {
+        if (await deleteRecordFromFirestore(id)) {
+          showAlert('已成功刪除紀錄！', '✅');
+          await fetchRecordsFromFirestore();
+          if (document.getElementById('edit-record-id').value === id) cancelEditMode();
+        }
+      }
+    }
+
+    window.cancelEditMode = function() {
+      document.getElementById('edit-record-id').value = '';
+      document.getElementById('form-title').textContent = '新增游泳成績';
+      document.getElementById('submit-btn').textContent = '儲存紀錄';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+      document.getElementById('record-form').reset();
+      setInitialTodayDate();
+
+      isHistoryEditMode = false;
+      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
+      renderList();
+    }
+
+    window.toggleEditMode = function() {
+      isHistoryEditMode = !isHistoryEditMode;
+      document.getElementById('toggle-edit-mode-btn').textContent = isHistoryEditMode ? '完成編輯' : '編輯記錄';
+      renderList();
+    }
+
+    window.switchGroupMode = function(mode) {
+      currentGroupMode = mode;
+      currentSelectedEventFilter = 'all';
+      
+      ['all', 'comp', 'event'].forEach(m => {
+        const btn = document.getElementById(`tab-${m}`);
+        if (m === mode) {
+          btn.className = 'px-3 py-1.5 rounded-xl bg-white text-cyan-600 shadow-xs transition cursor-pointer';
+        } else {
+          btn.className = 'px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer';
+        }
+      });
+      renderList();
+    }
+
+    window.filterEventGroup = function(eventName) {
+      currentSelectedEventFilter = eventName;
+      renderList();
+    }
+
+    function getRankBadgeHtml(rankStr) {
+      if (rankStr === '第1名') {
+        return `<div class="w-10 h-10 rounded-full bg-amber-400 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-300 flex-shrink-0">1</div>`;
+      } else if (rankStr === '第2名') {
+        return `<div class="w-10 h-10 rounded-full bg-slate-300 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-slate-200 flex-shrink-0">2</div>`;
+      } else if (rankStr === '第3名') {
+        return `<div class="w-10 h-10 rounded-full bg-amber-700 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-600 flex-shrink-0">3</div>`;
+      } else if (rankStr) {
+        const num = rankStr.replace(/[^0-9]/g, '');
+        if (num) {
+          return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200 flex-shrink-0">${num}</div>`;
+        }
+      }
+      return '';
+    }
+
+    function buildRecordCardHtml(r, showCompInHeader = true) {
+      const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
+      const ageText = ageNum !== null ? `參賽年齡 ${ageNum} 歲` : '參賽年齡 -';
+
+      let resultDisplay = '';
+      if (r.status && r.status !== 'NORMAL') {
+        resultDisplay = `<span class="text-red-600 font-bold text-xl">${STATUS_MAP[r.status] || r.status}</span>`;
+      } else {
+        resultDisplay = `<span class="text-3xl font-black tracking-tight font-mono" style="color: var(--theme-color, #0284c7);">${r.result}</span>`;
+      }
+
+      let cardHtml = `
+        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
+          ${showCompInHeader ? `
+            <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
+              <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
+              <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
+            </div>
+          ` : ''}
+
+          <div class="p-4 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              ${getRankBadgeHtml(r.rank)}
+              
+              <div>
+                <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName} <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md ml-1">${r.poolLength}</span></h3>
+                <p class="text-xs text-slate-400 font-medium">${r.stage || '賽事紀錄'}</p>
+              </div>
+            </div>
+
+            <div class="text-right flex flex-col items-end">
+              <div>${resultDisplay}</div>
+              <span class="text-xs text-slate-400 font-medium">${ageText}</span>
+            </div>
+          </div>
+
+          ${isHistoryEditMode ? `
+            <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
+              <button onclick="editRecord('${r.id}')" class="text-xs font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 px-3 py-1.5 rounded-xl transition cursor-pointer">編輯此筆紀錄</button>
+              <button onclick="deleteRecord('${r.id}')" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition cursor-pointer">刪除此筆紀錄</button>
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      return cardHtml;
+    }
+
+    function renderList() {
+      const container = document.getElementById('cards-container');
+      const eventFilterBar = document.getElementById('event-filter-bar');
+      container.innerHTML = '';
+
+      if (records.length === 0) {
+        eventFilterBar.classList.add('hidden');
+        eventFilterBar.innerHTML = '';
+        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">目前尚無紀錄</div>`;
+        return;
+      }
+
+      const sortedRecords = sortRecordsChronologically(records);
+
+      if (currentGroupMode === 'all') {
+        eventFilterBar.classList.add('hidden');
+        sortedRecords.forEach(r => {
+          container.innerHTML += buildRecordCardHtml(r, true);
+        });
+
+      } else if (currentGroupMode === 'comp') {
+        eventFilterBar.classList.add('hidden');
+        const groups = {};
+        sortedRecords.forEach(r => {
+          if (!groups[r.competition]) groups[r.competition] = [];
+          groups[r.competition].push(r);
+        });
+
+        const sortedCompNames = Object.keys(groups).sort((a, b) => {
+          const dateA = new Date(groups[a][0].date);
+          const dateB = new Date(groups[b][0].date);
+          return dateB - dateA;
+        });
+
+        sortedCompNames.forEach(compName => {
+          const compRecords = groups[compName];
+          const latestDate = compRecords[0].date.replace(/-/g, '/');
+
+          let groupHtml = `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between border-b pb-1 pt-2">
+                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #0284c7);"></span>
+                  <span>${compName}</span>
+                </h3>
+                <span class="text-xs text-slate-400 font-mono">${latestDate}</span>
+              </div>
+              <div class="space-y-3">
+                ${compRecords.map(r => buildRecordCardHtml(r, false)).join('')}
+              </div>
+            </div>
+          `;
+          container.innerHTML += groupHtml;
+        });
+
+      } else if (currentGroupMode === 'event') {
+        const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))];
+
+        eventFilterBar.classList.remove('hidden');
+        let filterBarHtml = `
+          <button onclick="filterEventGroup('all')" 
+            class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
+              currentSelectedEventFilter === 'all' 
+                ? 'bg-cyan-600 text-white shadow-xs' 
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }">
+            全部項目 (${activeEventNames.length})
+          </button>
+        `;
+
+        activeEventNames.forEach(name => {
+          const count = sortedRecords.filter(r => r.eventName === name).length;
+          const isSelected = currentSelectedEventFilter === name;
+          filterBarHtml += `
+            <button onclick="filterEventGroup('${name}')" 
+              class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
+                isSelected 
+                  ? 'bg-cyan-600 text-white shadow-xs' 
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }">
+              ${name} (${count})
+            </button>
+          `;
+        });
+        eventFilterBar.innerHTML = filterBarHtml;
+
+        const groups = {};
+        sortedRecords.forEach(r => {
+          if (currentSelectedEventFilter !== 'all' && r.eventName !== currentSelectedEventFilter) {
+            return;
+          }
+          if (!groups[r.eventName]) groups[r.eventName] = [];
+          groups[r.eventName].push(r);
+        });
+
+        const sortedEventNames = Object.keys(groups);
+
+        if (sortedEventNames.length === 0) {
+          container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">該項目尚無紀錄</div>`;
+          return;
+        }
+
+        sortedEventNames.forEach(eventName => {
+          const eventRecords = groups[eventName];
+
+          let groupHtml = `
+            <div class="space-y-3">
+              <div class="border-b pb-1 pt-2">
+                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #0284c7);"></span>
+                  <span>${eventName}</span>
+                  <span class="text-xs font-normal text-slate-400">(${eventRecords.length} 筆紀錄)</span>
+                </h3>
+              </div>
+              <div class="space-y-3">
+                ${eventRecords.map(r => buildRecordCardHtml(r, true)).join('')}
+              </div>
+            </div>
+          `;
+          container.innerHTML += groupHtml;
+        });
+      }
+    }
+
+    function initChart() {
+      const ctx = document.getElementById('progressChart').getContext('2d');
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              mode: 'nearest',
+              intersect: true,
+              callbacks: {
+                title: function(tooltipItems) {
+                  const rawData = tooltipItems[0].raw;
+                  return `${rawData.date} - ${rawData.competition}`;
+                },
+                label: function(context) {
+                  const rawData = context.raw;
+                  let lines = [];
+                  
+                  let stageInfo = `階段: ${rawData.stage || '初賽'}`;
+                  if (rawData.rank) stageInfo += ` (${rawData.rank})`;
+                  lines.push(stageInfo);
+                  lines.push(`成績: ${rawData.displayResult}`);
+                  return lines;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+      
+      updateChartDropdown();
+      updateChart();
+    }
+
+    window.updateChart = function() {
+      if (!chartInstance) return;
+
+      const selectedKey = document.getElementById('chart-filter').value;
+      const theme = THEME_CONFIGS.blue;
+
+      if (!selectedKey) {
+        chartInstance.data.labels = [];
+        chartInstance.data.datasets = [];
+        chartInstance.update();
+        return;
+      }
+
+      const [selectedId, poolLength] = selectedKey.split('_');
+      const itemObj = EVENTS_DB.find(e => e.id === selectedId);
+      if (!itemObj) return;
+
+      const filtered = records
+        .filter(r => r.eventId === selectedId && r.poolLength === poolLength && (!r.status || r.status === 'NORMAL'))
+        .sort((a, b) => {
+          const dateDiff = new Date(a.date) - new Date(b.date);
+          if (dateDiff !== 0) return dateDiff;
+          if (a.competition !== b.competition) return a.competition.localeCompare(b.competition, 'zh-HK');
+          const weightA = STAGE_ORDER[a.stage] || 1;
+          const weightB = STAGE_ORDER[b.stage] || 1;
+          return weightA - weightB;
+        });
+
+      chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
+
+      const chartDataPoints = filtered.map(r => {
+        let numericValue = 0;
+        const parts = r.result.split(':');
+        if (parts.length === 2) {
+          numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+        } else {
+          numericValue = parseFloat(r.result) || 0;
+        }
+
+        return {
+          x: r.date.replace(/-/g, '/'),
+          y: numericValue,
+          date: r.date,
+          competition: r.competition,
+          stage: r.stage,
+          rank: r.rank,
+          displayResult: `${r.eventName} (${r.poolLength}): ${r.result}`
+        };
+      });
+
+      chartInstance.data.datasets = [{
+        label: `${itemObj.name} (${poolLength})`,
+        data: chartDataPoints,
+        borderColor: theme.primaryColor,
+        backgroundColor: `${theme.primaryColor}22`,
+        pointBackgroundColor: theme.primaryColor,
+        pointRadius: 6,
+        pointHoverRadius: 9,
+        fill: true,
+        tension: 0.3
+      }];
+
+      chartInstance.options.scales.y = {
+        reverse: true, // 游泳時間越短越好，反轉 Y 軸
+        title: {
+          display: true,
+          text: '時間 (秒)'
+        }
+      };
+
+      chartInstance.update();
+    }
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+        localStorage.clear();
+        showAlert('成功登出！', '✅');
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+      } catch (err) {
+        showAlert('登出失敗：' + err.message, '❌');
+      }
+    });
+
+    initMainPage();
+  </script>
+</body>
+</html>
