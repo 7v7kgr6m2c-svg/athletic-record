@@ -64,7 +64,7 @@
           flex: 1;
       }
       .m3-tab-btn.active {
-          color: var(--theme-color, #1e40af);
+          color: var(--theme-color, #2563eb);
           background-color: var(--theme-bg-light, #dbeafe);
           font-weight: 700;
       }
@@ -93,8 +93,23 @@
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 select-none">
 
   <div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- 自動資料遷移通知欄 -->
+    <div id="migration-banner" class="hidden bg-amber-500 text-white p-4 rounded-2xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📦</span>
+        <div>
+          <h3 class="font-bold text-sm md:text-base">偵測到舊版田徑紀錄 (records)</h3>
+          <p class="text-xs text-amber-100">點擊右側按鈕將舊資料轉移至全新資料庫架構 (track_records)</p>
+        </div>
+      </div>
+      <button onclick="startMigration()" id="migration-btn" class="bg-white text-amber-700 hover:bg-amber-50 font-bold px-4 py-2 rounded-xl text-xs md:text-sm shadow-sm transition whitespace-nowrap cursor-pointer">
+        開始資料遷移
+      </button>
+    </div>
+
     <!-- 運動員資料 Header -->
-    <header id="main-header" class="relative overflow-hidden bg-gradient-to-r from-blue-700 to-blue-900 p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300">
+    <header id="main-header" class="relative overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-800 p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300">
       <div class="flex items-center gap-5">
         <div class="relative group cursor-pointer w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/85 shadow-inner bg-black/20 flex-shrink-0 flex items-center justify-center" onclick="document.getElementById('header-avatar-input').click()">
           <img id="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="w-full h-full object-cover">
@@ -128,12 +143,12 @@
 
       <!-- 1. 我的 PB 區塊 -->
       <section id="sec-pb" class="space-y-4">
-        <div id="pb-banner" class="bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950 p-6 rounded-3xl shadow-lg text-white transition-colors duration-300">
+        <div id="pb-banner" class="bg-gradient-to-br from-blue-900 via-indigo-800 to-slate-900 p-6 rounded-3xl shadow-lg text-white transition-colors duration-300">
           <div class="flex items-center justify-between border-b border-white/15 pb-3 mb-4 gap-3">
             <div class="flex items-center gap-3">
               <span class="text-4xl md:text-5xl">🏆</span>
               <div>
-                <h2 class="text-xl font-black tracking-wide leading-tight">個人最佳成績</h2>
+                <h2 class="text-xl font-black tracking-wide leading-tight">個人田徑最佳成績</h2>
                 <p class="text-xs md:text-sm font-semibold tracking-wider text-blue-100">Personal Best</p>
               </div>
             </div>
@@ -150,13 +165,13 @@
       <!-- 2. 歷史記錄區塊 -->
       <section id="sec-history" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
         <div class="flex justify-between items-center flex-wrap gap-2">
-          <h2 class="text-lg font-bold text-slate-900">歷史記錄</h2>
+          <h2 class="text-lg font-bold text-slate-900">田徑歷史記錄</h2>
           
           <div class="flex items-center gap-2">
             <!-- 分類 Tab -->
             <div class="flex bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
               <button type="button" onclick="switchGroupMode('all')" id="tab-all" class="px-3 py-1.5 rounded-xl bg-white text-blue-600 shadow-xs transition cursor-pointer">全部</button>
-              <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">比賽</button>
+              <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">賽事</button>
               <button type="button" onclick="switchGroupMode('event')" id="tab-event" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">項目</button>
             </div>
 
@@ -185,13 +200,13 @@
 
       <!-- 4. 新增 / 編輯成績區塊 -->
       <section id="sec-form" class="hidden bg-white p-6 rounded-3xl shadow-sm">
-        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績</h2>
+        <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增田徑成績</h2>
         <form id="record-form" class="space-y-3" oninput="validateForm()">
           <input type="hidden" id="edit-record-id" value="">
           
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">賽事名稱 <span class="text-red-500">*</span></label>
-            <input type="text" id="competition" placeholder="例: 香港田徑系列賽" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <input type="text" id="competition" placeholder="例: 全港分齡田徑錦標賽" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
           </div>
 
           <!-- 比賽日期 iOS 滾輪觸發位 -->
@@ -205,25 +220,30 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目類別</label>
             <div class="grid grid-cols-5 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
               <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-blue-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
-              <button type="button" onclick="filterCategory('track', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">徑項</button>
-              <button type="button" onclick="filterCategory('field', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">田項</button>
-              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">接力</button>
-              <button type="button" onclick="filterCategory('combined', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">全能</button>
+              <button type="button" onclick="filterCategory('sprint', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">短跑</button>
+              <button type="button" onclick="filterCategory('distance', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">中長跑</button>
+              <button type="button" onclick="filterCategory('jump', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">跳躍</button>
+              <button type="button" onclick="filterCategory('throw', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">投擲</button>
             </div>
           </div>
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
-            <select id="event-select" onchange="onEventSelectChange()" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+            <select id="event-select" onchange="toggleUnitUI()" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
             </select>
           </div>
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
-            <select id="status-select" onchange="onStatusChange()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select id="status-select" onchange="toggleStatusUI()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="NORMAL">正常</option>
+              <option value="DQ">DQ (犯規)</option>
+              <option value="DNS">DNS (未起跑)</option>
+              <option value="DNF">DNF (未完賽)</option>
+              <option value="NM">NM (無成績)</option>
             </select>
           </div>
 
@@ -244,19 +264,23 @@
                   <input type="number" id="dist-m" min="0" placeholder="米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
                   <span class="font-bold text-slate-500">.</span>
                   <input type="number" id="dist-cm" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); validateForm();" class="w-20 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-blue-500">
+                  <span class="text-sm text-slate-500 font-medium ml-1">m</span>
+                </div>
+
+                <!-- 風速輸入 -->
+                <div id="wind-group" class="flex items-center gap-1 ml-auto">
+                  <span class="text-xs text-slate-500 font-medium">風速:</span>
+                  <input type="number" id="wind-val" step="0.1" placeholder="例: +1.2" class="w-20 border rounded-xl h-10 text-center bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500">
+                  <span class="text-xs text-slate-400">m/s</span>
                 </div>
               </div>
-            </div>
-
-            <div id="wind-container" class="flex items-center gap-3">
-              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">風速</label>
-              <input type="number" id="wind" step="0.1" placeholder="+1.2" oninput="validateForm()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
               <select id="stage-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="初賽">初賽</option>
+                <option value="複賽">複賽</option>
                 <option value="準決賽">準決賽</option>
                 <option value="決賽">決賽</option>
               </select>
@@ -265,33 +289,6 @@
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
               <select id="rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">無名次</option>
-                <option value="第1名">第1名</option>
-                <option value="第2名">第2名</option>
-                <option value="第3名">第3名</option>
-                <option value="第4名">第4名</option>
-                <option value="第5名">第5名</option>
-                <option value="第6名">第6名</option>
-                <option value="第7名">第7名</option>
-                <option value="第8名">第8名</option>
-              </select>
-            </div>
-          </div>
-
-          <div id="combined-event-inputs" class="hidden border-t pt-3 space-y-2">
-            <div class="flex justify-between items-center">
-              <label class="block text-sm font-bold text-blue-600">全能單項細項 <span class="text-red-500">*</span></label>
-              <span class="text-xs text-slate-400">依順序填寫，分數自動加總</span>
-            </div>
-            <div id="sub-events-container" class="space-y-2 text-xs"></div>
-            <div class="flex items-center gap-3 pt-2 border-t mt-2">
-              <label class="w-16 text-sm font-bold text-slate-700">總分</label>
-              <input type="number" id="total-score" placeholder="總分" class="w-28 border rounded-xl h-10 text-center bg-blue-50 font-bold text-blue-800" readonly>
-            </div>
-
-            <div class="flex items-center gap-3 pt-2">
-              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
-              <select id="combined-rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">無名次</option>
                 <option value="第1名">第1名</option>
                 <option value="第2名">第2名</option>
@@ -403,40 +400,10 @@
 
     const THEME_CONFIGS = {
         blue: {
-            headerClass: 'bg-gradient-to-r from-blue-700 to-blue-900',
-            pbBannerClass: 'bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-950',
+            headerClass: 'bg-gradient-to-r from-blue-600 to-indigo-800',
+            pbBannerClass: 'bg-gradient-to-br from-blue-900 via-indigo-800 to-slate-900',
             primaryColor: '#2563eb',
             lightBg: '#dbeafe'
-        },
-        emerald: {
-            headerClass: 'bg-gradient-to-r from-emerald-700 to-teal-900',
-            pbBannerClass: 'bg-gradient-to-br from-emerald-900 via-teal-800 to-emerald-950',
-            primaryColor: '#059669',
-            lightBg: '#d1fae5'
-        },
-        purple: {
-            headerClass: 'bg-gradient-to-r from-purple-700 to-indigo-900',
-            pbBannerClass: 'bg-gradient-to-br from-purple-900 via-indigo-800 to-purple-950',
-            primaryColor: '#9333ea',
-            lightBg: '#f3e8ff'
-        },
-        rose: {
-            headerClass: 'bg-gradient-to-r from-rose-700 to-red-900',
-            pbBannerClass: 'bg-gradient-to-br from-rose-900 via-red-800 to-rose-950',
-            primaryColor: '#e11d48',
-            lightBg: '#ffe4e6'
-        },
-        amber: {
-            headerClass: 'bg-gradient-to-r from-amber-600 to-orange-800',
-            pbBannerClass: 'bg-gradient-to-br from-amber-800 via-orange-800 to-amber-950',
-            primaryColor: '#d97706',
-            lightBg: '#fef3c7'
-        },
-        slate: {
-            headerClass: 'bg-gradient-to-r from-slate-700 to-slate-900',
-            pbBannerClass: 'bg-gradient-to-br from-slate-800 via-slate-900 to-black',
-            primaryColor: '#334155',
-            lightBg: '#e2e8f0'
         }
     };
 
@@ -477,14 +444,13 @@
     let currentAthleteDob = localStorage.getItem('current_athlete_dob');
     let currentAthleteGender = localStorage.getItem('current_athlete_gender');
     let currentAthleteAvatar = localStorage.getItem('current_athlete_avatar');
-    let currentAthleteTheme = localStorage.getItem('current_athlete_theme') || 'blue';
 
     let athleteProfile = {
       name: currentAthleteName || '運動員',
       dob: currentAthleteDob || '',
       gender: currentAthleteGender || '',
       avatar: currentAthleteAvatar || '',
-      theme: currentAthleteTheme
+      theme: 'blue'
     };
 
     let isHistoryEditMode = false;
@@ -501,29 +467,12 @@
     let isProgrammaticScrolling = false;
     let isInitializingPicker = false;
 
-    const STAGE_ORDER = { '決賽': 3, '準決賽': 2, '初賽': 1 };
+    const STAGE_ORDER = { '決賽': 4, '準決賽': 3, '複賽': 2, '初賽': 1 };
 
-    function applyTheme(themeKey) {
-        const theme = THEME_CONFIGS[themeKey] || THEME_CONFIGS.blue;
-        
-        // 1. 套用 Header 與 PB 區塊主題顏色
-        const header = document.getElementById('main-header');
-        const pbBanner = document.getElementById('pb-banner');
-        if (header) header.className = `relative overflow-hidden ${theme.headerClass} p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300`;
-        if (pbBanner) pbBanner.className = `${theme.pbBannerClass} p-6 rounded-3xl shadow-lg text-white transition-colors duration-300`;
-
-        // 2. 套用 Material You active CSS 變數
+    function applyTheme() {
+        const theme = THEME_CONFIGS.blue;
         document.documentElement.style.setProperty('--theme-color', theme.primaryColor);
         document.documentElement.style.setProperty('--theme-bg-light', theme.lightBg);
-
-        // 3. 更新 Chart 顏色
-        if (chartInstance) {
-            chartInstance.data.datasets.forEach(ds => {
-                ds.borderColor = theme.primaryColor;
-                ds.pointBackgroundColor = theme.primaryColor;
-            });
-            chartInstance.update();
-        }
     }
 
     window.switchMainTab = function(tabName) {
@@ -720,6 +669,44 @@
       });
     }
 
+    // 檢查並執行舊資料遷移 (from records to track_records)
+    async function checkAndPromptMigration() {
+      try {
+        const oldSnap = await getDocs(collection(db, "records"));
+        if (!oldSnap.empty) {
+          document.getElementById('migration-banner').classList.remove('hidden');
+        }
+      } catch(e) {
+        console.log("Migration check failed:", e);
+      }
+    }
+
+    window.startMigration = async function() {
+      const btn = document.getElementById('migration-btn');
+      btn.disabled = true;
+      btn.textContent = '遷移中...';
+
+      try {
+        const oldSnap = await getDocs(collection(db, "records"));
+        let count = 0;
+        
+        for (const docSnap of oldSnap.docs) {
+          const data = docSnap.data();
+          await addDoc(collection(db, "track_records"), data);
+          await deleteDoc(doc(db, "records", docSnap.id));
+          count++;
+        }
+
+        showAlert(`成功將 ${count} 筆舊紀錄遷移至 track_records！`, '✅');
+        document.getElementById('migration-banner').classList.add('hidden');
+        await fetchRecordsFromFirestore();
+      } catch (err) {
+        showAlert('資料遷移失敗：' + err.message, '❌');
+        btn.disabled = false;
+        btn.textContent = '重試遷移';
+      }
+    }
+
     async function initMainPage() {
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
@@ -735,10 +722,11 @@
         }
 
         initProfileUI();
-        applyTheme(athleteProfile.theme);
+        applyTheme();
         setInitialTodayDate();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+        await checkAndPromptMigration();
         await fetchRecordsFromFirestore();
         initChart();
 
@@ -746,7 +734,7 @@
       });
     }
 
-    window.switchAthlete = function() { window.location.href = 'athletes.html'; }
+    window.switchAthlete = function() { window.location.href = 'select_sport.html'; }
 
     function getAgeAtDate(dobString, targetDateString) {
       if (!dobString || !targetDateString) return null;
@@ -827,51 +815,38 @@
     window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跑)', 'DNF': 'DNF (未完賽)', 'NM': 'NM (無成績)' };
-    const SUB_EVENT_TYPES = {
-      '60米欄': 'time', '100米欄': 'time', '110米欄': 'time', '100米': 'time', '200米': 'time', '400米': 'time', '800米': 'time', '1500米': 'time',
-      '跳高': 'distance', '撐竿跳高': 'distance', '跳遠': 'distance', '推鉛球': 'distance', '擲鐵餅': 'distance', '擲標槍': 'distance'
-    };
 
+    // 田徑項目庫
     const EVENTS_DB = [
-      { id: '60m', cat: 'track', type: 'time', name: '60米 / m', hasWind: true },
-      { id: '100m', cat: 'track', type: 'time', name: '100米 / m', hasWind: true },
-      { id: '200m', cat: 'track', type: 'time', name: '200米 / m', hasWind: true },
-      { id: '400m', cat: 'track', type: 'time', name: '400米 / m', hasWind: false },
-      { id: '800m', cat: 'track', type: 'time', name: '800米 / m', hasWind: false },
-      { id: '1500m', cat: 'track', type: 'time', name: '1500米 / m', hasWind: false },
-      { id: '5000m', cat: 'track', type: 'time', name: '5000米 / m', hasWind: false },
-      { id: '10000m', cat: 'track', type: 'time', name: '10000米 / m', hasWind: false },
-      { id: '100mh', cat: 'track', type: 'time', name: '100米欄 / m Hurdles', hasWind: true },
-      { id: '110mh', cat: 'track', type: 'time', name: '110米欄 / m Hurdles', hasWind: true },
-      { id: '400mh', cat: 'track', type: 'time', name: '400米欄 / m Hurdles', hasWind: false },
-      { id: '3000m_steeple', cat: 'track', type: 'time', name: '3000米障礙賽 / m Steeplechase', hasWind: false },
-      { id: '4x100m', cat: 'relay', type: 'time', name: '4x100米接力 / Relay', hasWind: false },
-      { id: '4x400m', cat: 'relay', type: 'time', name: '4x400米接力 / Relay', hasWind: false },
-      { id: 'high_jump', cat: 'field', type: 'distance', name: '跳高 High Jump', hasWind: false },
-      { id: 'pole_vault', cat: 'field', type: 'distance', name: '撐竿跳高 Pole Vault', hasWind: false },
-      { id: 'long_jump', cat: 'field', type: 'distance', name: '跳遠 Long Jump', hasWind: true },
-      { id: 'triple_jump', cat: 'field', type: 'distance', name: '三級跳遠 Triple Jump', hasWind: true },
-      { id: 'shot_put', cat: 'field', type: 'distance', name: '推鉛球 Shot Put', hasWind: false },
-      { id: 'discus', cat: 'field', type: 'distance', name: '擲鐵餅 Discus Throw', hasWind: false },
-      { id: 'javelin', cat: 'field', type: 'distance', name: '擲標槍 Javelin Throw', hasWind: false },
-      { id: 'hammer', cat: 'field', type: 'distance', name: '擲鏈球 Hammer Throw', hasWind: false },
-      { id: 'pentathlon', cat: 'combined', type: 'points', name: '五項全能 Pentathlon', subs: ['60米欄', '跳高', '推鉛球', '跳遠', '800米'] },
-      { id: 'heptathlon', cat: 'combined', type: 'points', name: '七項全能 Heptathlon', subs: ['100米欄', '跳高', '推鉛球', '200米', '跳遠', '擲標槍', '800米'] },
-      { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能 Decathlon', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
+      { id: '100m', cat: 'sprint', name: '100米', unit: 'time' },
+      { id: '200m', cat: 'sprint', name: '200米', unit: 'time' },
+      { id: '400m', cat: 'sprint', name: '400米', unit: 'time' },
+      { id: '800m', cat: 'distance', name: '800米', unit: 'time' },
+      { id: '1500m', cat: 'distance', name: '1500米', unit: 'time' },
+      { id: '5000m', cat: 'distance', name: '5000米', unit: 'time' },
+      { id: '10000m', cat: 'distance', name: '10000米', unit: 'time' },
+      { id: '110m_hurdles', cat: 'sprint', name: '110米跨欄', unit: 'time' },
+      { id: '400m_hurdles', cat: 'sprint', name: '400米跨欄', unit: 'time' },
+      { id: 'long_jump', cat: 'jump', name: '跳遠', unit: 'dist' },
+      { id: 'high_jump', cat: 'jump', name: '跳高', unit: 'dist' },
+      { id: 'triple_jump', cat: 'jump', name: '三級跳遠', unit: 'dist' },
+      { id: 'shot_put', cat: 'throw', name: '鉛球', unit: 'dist' },
+      { id: 'discus', cat: 'throw', name: '鐵餅', unit: 'dist' },
+      { id: 'javelin', cat: 'throw', name: '標槍', unit: 'dist' }
     ];
 
     async function fetchRecordsFromFirestore() {
       try {
-        const q = query(collection(db, "records"), where("athlete_id", "==", currentAthleteId));
+        // 全新集合名稱: track_records
+        const q = query(collection(db, "track_records"), where("athlete_id", "==", currentAthleteId));
         const querySnapshot = await getDocs(q);
         records = [];
         querySnapshot.forEach((docSnap) => {
           const row = docSnap.data();
           records.push({
             id: docSnap.id, eventId: row.event_id, eventName: row.event_name,
-            competition: row.competition, date: row.date, status: row.status,
-            stage: row.stage, rank: row.rank, isCombined: row.is_combined,
-            type: row.type, result: row.result, wind: row.wind, subDetails: row.sub_details
+            competition: row.competition, date: row.date, status: row.status, 
+            stage: row.stage, rank: row.rank, result: row.result, wind: row.wind || ''
           });
         });
         
@@ -881,7 +856,7 @@
         updateChartDropdown();
         updateChart();
       } catch (err) {
-        showAlert('載入歷史記錄失敗：' + err.message, '❌');
+        showAlert('載入田徑歷史記錄失敗：' + err.message, '❌');
       }
     }
 
@@ -890,28 +865,26 @@
       const currentVal = chartSelect.value;
       chartSelect.innerHTML = '';
 
-      // 找出該運動員所有擁有「正常(NORMAL)」成績紀錄的 eventId 集合
       const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
       const activeEventIds = new Set(validRecords.map(r => r.eventId));
 
-      // 僅保留在紀錄中出現過且有有效成績的項目
-      const availableEvents = EVENTS_DB.filter(item => activeEventIds.has(item.id));
-
-      if (availableEvents.length === 0) {
+      if (activeEventIds.size === 0) {
         chartSelect.appendChild(new Option('尚無有效成績項目', ''));
         chartSelect.value = '';
         return;
       }
 
-      availableEvents.forEach(item => {
-        chartSelect.appendChild(new Option(item.name, item.id));
+      activeEventIds.forEach(eId => {
+        const itemObj = EVENTS_DB.find(e => e.id === eId);
+        if (itemObj) {
+          chartSelect.appendChild(new Option(itemObj.name, eId));
+        }
       });
 
-      // 保持當前選擇（若仍合法），否則預設選擇第一個有成績的項目
-      if (currentVal && availableEvents.some(e => e.id === currentVal)) {
+      if (currentVal && activeEventIds.has(currentVal)) {
         chartSelect.value = currentVal;
       } else {
-        chartSelect.value = availableEvents[0].id;
+        chartSelect.value = Array.from(activeEventIds)[0];
       }
     }
 
@@ -926,7 +899,7 @@
         countTag.textContent = '0 個項目';
         pbContainer.innerHTML = `
           <div class="col-span-full bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
-            尚無有效的成績紀錄可計算 PB
+            尚無有效的田徑成績紀錄可計算 PB
           </div>`;
         return;
       }
@@ -939,9 +912,9 @@
 
       const pbList = [];
 
-      Object.keys(groups).forEach(eventId => {
-        const itemRecords = groups[eventId];
-        const itemObj = EVENTS_DB.find(e => e.id === eventId);
+      Object.keys(groups).forEach(eId => {
+        const itemRecords = groups[eId];
+        const itemObj = EVENTS_DB.find(e => e.id === eId);
         if (!itemObj) return;
 
         let bestRecord = null;
@@ -949,31 +922,22 @@
 
         itemRecords.forEach(r => {
           let numericValue = 0;
-          if (r.type === 'time' && typeof r.result === 'string') {
+          if (itemObj.unit === 'time') {
             const parts = r.result.split(':');
             if (parts.length === 2) {
               numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
             } else {
               numericValue = parseFloat(r.result) || 0;
             }
+            if (bestValue === null || numericValue < bestValue) {
+              bestValue = numericValue;
+              bestRecord = r;
+            }
           } else {
-            numericValue = parseFloat(r.result) || 0;
-          }
-
-          if (bestValue === null) {
-            bestValue = numericValue;
-            bestRecord = r;
-          } else {
-            if (r.type === 'time') {
-              if (numericValue < bestValue) {
-                bestValue = numericValue;
-                bestRecord = r;
-              }
-            } else { 
-              if (numericValue > bestValue) {
-                bestValue = numericValue;
-                bestRecord = r;
-              }
+            numericValue = parseFloat(r.result.replace('m', '')) || 0;
+            if (bestValue === null || numericValue > bestValue) {
+              bestValue = numericValue;
+              bestRecord = r;
             }
           }
         });
@@ -987,33 +951,19 @@
 
       pbList.forEach(pb => {
         const r = pb.record;
-        const itemObj = pb.itemObj;
         const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
         const ageText = ageNum !== null ? `${ageNum} 歲` : '-';
-        const unit = itemObj.type === 'distance' ? '米' : (itemObj.type === 'points' ? '分' : '秒');
-
-        let windBadge = '';
-        if (r.wind !== null && r.wind !== undefined) {
-          const isLegal = r.wind <= 2.0;
-          const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-          windBadge = `
-            <span class="text-xs px-2.5 py-0.5 rounded-full font-bold border ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
-              風速 ${windStr} m/s ${!isLegal ? '(超風速)' : ''}
-            </span>
-          `;
-        }
 
         const cardHtml = `
           <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition">
             <div class="flex justify-between items-center gap-3 border-b border-slate-100 pb-3">
               <div>
-                <h3 class="text-2xl font-black text-slate-900">${r.eventName}</h3>
-                ${windBadge ? `<div class="mt-1">${windBadge}</div>` : ''}
+                <h3 class="text-xl font-black text-slate-900">${r.eventName}</h3>
+                ${r.wind ? `<span class="inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600">風速 ${r.wind} m/s</span>` : ''}
               </div>
 
               <div class="text-right flex items-baseline gap-1">
-                <span class="text-3xl md:text-4xl font-black tracking-tight font-mono" style="color: var(--theme-color, #1e3a8a);">${r.result}</span>
-                <span class="text-sm font-bold text-slate-500">${unit}</span>
+                <span class="text-3xl md:text-4xl font-black tracking-tight font-mono" style="color: var(--theme-color, #2563eb);">${r.result}</span>
               </div>
             </div>
 
@@ -1049,20 +999,18 @@
         status: record.status, 
         stage: record.stage, 
         rank: record.rank || '',
-        is_combined: record.isCombined, 
-        type: record.type,
         result: record.result, 
-        wind: (record.wind !== undefined && record.wind !== null) ? record.wind : null,
-        sub_details: record.subDetails || [], 
+        wind: record.wind || '',
         updated_at: serverTimestamp()
       };
 
       try {
+        // 全新集合名稱: track_records
         if (editId) {
-          await updateDoc(doc(db, "records", editId), dbPayload);
+          await updateDoc(doc(db, "track_records", editId), dbPayload);
         } else {
           dbPayload.created_at = serverTimestamp();
-          await addDoc(collection(db, "records"), dbPayload);
+          await addDoc(collection(db, "track_records"), dbPayload);
         }
         return true;
       } catch (err) {
@@ -1073,7 +1021,8 @@
 
     async function deleteRecordFromFirestore(id) {
       try {
-        await deleteDoc(doc(db, "records", id));
+        // 全新集合名稱: track_records
+        await deleteDoc(doc(db, "track_records", id));
         return true;
       } catch (err) {
         showAlert('刪除失敗：' + err.message, '❌');
@@ -1082,41 +1031,6 @@
     }
 
     window.validateForm = function() { return true; }
-
-    window.onStatusChange = function() {
-      const status = document.getElementById('status-select').value;
-      const selectedId = document.getElementById('event-select').value;
-      const itemObj = EVENTS_DB.find(e => e.id === selectedId);
-
-      if (itemObj && itemObj.subs) {
-        const container = document.getElementById('sub-events-container');
-        for (let div of container.children) {
-          const subSelect = div.querySelector('.sub-status');
-          const subInputs = div.querySelectorAll('input');
-          if (status === 'DQ' || status === 'DNS') {
-            subSelect.value = '';
-            subSelect.disabled = true;
-            subInputs.forEach(i => { i.value = ''; i.disabled = true; });
-          } else {
-            subSelect.disabled = false;
-            subInputs.forEach(i => i.disabled = false);
-          }
-        }
-      }
-    }
-
-    window.onSubStatusChange = function(selectEl) {
-      const row = selectEl.closest('.sub-item-row');
-      const inputs = row.querySelectorAll('input');
-      const val = selectEl.value;
-      inputs.forEach(i => {
-        if (!i.classList.contains('sub-pts')) {
-          i.disabled = (val !== 'NORMAL' && val !== '');
-          if (i.disabled) i.value = '';
-        }
-      });
-      calculateTotalScore();
-    }
 
     window.filterCategory = function(cat, btnEl) {
       document.querySelectorAll('.cat-btn').forEach(b => {
@@ -1137,83 +1051,42 @@
 
       if (filtered.some(e => e.id === currentSelectedVal)) {
         selectEl.value = currentSelectedVal;
-      } else {
-        onEventSelectChange();
       }
+      toggleUnitUI();
     }
 
-    window.onEventSelectChange = function() {
+    window.toggleUnitUI = function() {
       const selectedId = document.getElementById('event-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       if (!itemObj) return;
 
-      const singleDiv = document.getElementById('single-event-inputs');
-      const combinedDiv = document.getElementById('combined-event-inputs');
-      const container = document.getElementById('sub-events-container');
       const timeGroup = document.getElementById('time-input-group');
       const distGroup = document.getElementById('distance-input-group');
-      const windContainer = document.getElementById('wind-container');
-      const statusSelect = document.getElementById('status-select');
+      const windGroup = document.getElementById('wind-group');
 
-      container.innerHTML = '';
-      statusSelect.innerHTML = '';
-      statusSelect.appendChild(new Option('正常', 'NORMAL'));
-      statusSelect.appendChild(new Option('DQ (犯規)', 'DQ'));
-      statusSelect.appendChild(new Option('DNS (未起跑)', 'DNS'));
-      if (itemObj.cat === 'field') statusSelect.appendChild(new Option('NM (無成績)', 'NM'));
-      else statusSelect.appendChild(new Option('DNF (未完賽)', 'DNF'));
-
-      statusSelect.value = 'NORMAL';
-
-      if (itemObj.subs) {
-        singleDiv.classList.add('hidden');
-        combinedDiv.classList.remove('hidden');
-
-        itemObj.subs.forEach(subName => {
-          const subType = SUB_EVENT_TYPES[subName] || 'time';
-          const div = document.createElement('div');
-          div.className = 'sub-item-row bg-slate-50 p-2 rounded-xl border flex items-center justify-between gap-1';
-          div.dataset.subname = subName;
-          div.dataset.subtype = subType;
-          div.innerHTML = `
-            <span class="font-bold text-slate-700 whitespace-nowrap min-w-[56px]">${subName}</span>
-            <div class="flex items-center justify-between flex-1 gap-1">
-              <div class="flex items-center gap-0.5">
-                ${subType === 'time' ? 
-                  `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this)" class="sub-min w-10 border rounded-lg h-9 text-center bg-white"><span>:</span>
-                   <input type="number" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this)" class="sub-sec w-10 border rounded-lg h-9 text-center bg-white"><span>.</span>
-                   <input type="number" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this)" class="sub-ms w-10 border rounded-lg h-9 text-center bg-white">` :
-                  `<input type="number" min="0" placeholder="米" oninput="sanitizeDigit(this)" class="sub-m w-12 border rounded-lg h-9 text-center bg-white"><span>.</span>
-                   <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this)" class="sub-cm w-12 border rounded-lg h-9 text-center bg-white">`
-                }
-              </div>
-              <div class="flex items-center gap-1">
-                <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
-                  <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
-                </select>
-                <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-14 border rounded-lg h-9 bg-white font-bold text-center">
-              </div>
-            </div>`;
-          container.appendChild(div);
-        });
-        calculateTotalScore();
+      if (itemObj.unit === 'time') {
+        timeGroup.classList.remove('hidden');
+        distGroup.classList.add('hidden');
       } else {
-        singleDiv.classList.remove('hidden');
-        combinedDiv.classList.add('hidden');
-        if (itemObj.type === 'time') { timeGroup.classList.remove('hidden'); distGroup.classList.add('hidden'); }
-        else { distGroup.classList.remove('hidden'); timeGroup.classList.add('hidden'); }
-        if (itemObj.hasWind) windContainer.classList.remove('hidden'); else windContainer.classList.add('hidden');
+        timeGroup.classList.add('hidden');
+        distGroup.classList.remove('hidden');
       }
-      onStatusChange();
+
+      if (itemObj.cat === 'sprint' || itemObj.id === 'long_jump' || itemObj.id === 'triple_jump') {
+        windGroup.classList.remove('hidden');
+      } else {
+        windGroup.classList.add('hidden');
+      }
     }
 
-    window.calculateTotalScore = function() {
-      let total = 0;
-      document.querySelectorAll('.sub-pts').forEach(i => {
-        const v = parseFloat(i.value);
-        if (!isNaN(v) && !i.disabled) total += v;
-      });
-      document.getElementById('total-score').value = total;
+    window.toggleStatusUI = function() {
+      const status = document.getElementById('status-select').value;
+      const singleInputs = document.getElementById('single-event-inputs');
+      if (status === 'NORMAL') {
+        singleInputs.classList.remove('hidden');
+      } else {
+        singleInputs.classList.add('hidden');
+      }
     }
 
     function formatTimeStr(min, sec, ms) {
@@ -1223,7 +1096,7 @@
     }
 
     function formatDistStr(m, cm) {
-      return `${parseInt(m) || 0}.${String(parseInt(cm) || 0).padStart(2, '0')}`;
+      return `${parseInt(m) || 0}.${String(parseInt(cm) || 0).padStart(2, '0')}m`;
     }
 
     async function handleFormSubmit(e) {
@@ -1249,52 +1122,30 @@
         date: date,
         status: status, 
         stage: document.getElementById('stage-select').value,
-        rank: itemObj.subs ? document.getElementById('combined-rank-select').value : document.getElementById('rank-select').value,
-        isCombined: !!itemObj.subs, 
-        type: itemObj.type
+        rank: document.getElementById('rank-select').value,
+        wind: document.getElementById('wind-val').value.trim()
       };
 
-      if (itemObj.subs) {
-        if (status === 'NORMAL') {
-          let details = [];
-          document.querySelectorAll('.sub-item-row').forEach(div => {
-            const name = div.dataset.subname;
-            const pts = parseFloat(div.querySelector('.sub-pts').value) || 0;
-            const subType = div.dataset.subtype;
-            const subStatus = div.querySelector('.sub-status').value;
-            let valStr = subStatus === 'NORMAL' ? (subType === 'time' ? formatTimeStr(div.querySelector('.sub-min').value, div.querySelector('.sub-sec').value, div.querySelector('.sub-ms').value) : formatDistStr(div.querySelector('.sub-m').value, div.querySelector('.sub-cm').value)) : subStatus;
-            details.push({ name, val: valStr, type: subType, pts, status: subStatus });
-          });
-          record.result = parseFloat(document.getElementById('total-score').value) || 0;
-          record.subDetails = details;
+      if (status === 'NORMAL') {
+        if (itemObj.unit === 'time') {
+          const sec = document.getElementById('time-sec').value.trim();
+          const ms = document.getElementById('time-ms').value.trim();
+          if (sec === '' || ms === '') {
+            showAlert("請輸入完整的秒數與毫秒！", '⚠️');
+            return;
+          }
+          record.result = formatTimeStr(document.getElementById('time-min').value, sec, ms);
         } else {
-          record.result = status;
-          record.subDetails = [];
+          const m = document.getElementById('dist-m').value.trim();
+          const cm = document.getElementById('dist-cm').value.trim();
+          if (m === '' || cm === '') {
+            showAlert("請輸入完整的公尺與厘米！", '⚠️');
+            return;
+          }
+          record.result = formatDistStr(m, cm);
         }
       } else {
-        if (status === 'NORMAL') {
-          if (itemObj.type === 'time') {
-            const sec = document.getElementById('time-sec').value.trim();
-            const ms = document.getElementById('time-ms').value.trim();
-            if (sec === '' || ms === '') {
-              showAlert("請輸入完整的秒數與毫秒！", '⚠️');
-              return;
-            }
-            record.result = formatTimeStr(document.getElementById('time-min').value, sec, ms);
-          } else {
-            const m = document.getElementById('dist-m').value.trim();
-            const cm = document.getElementById('dist-cm').value.trim();
-            if (m === '' || cm === '') {
-              showAlert("請輸入完整的距離（米與厘米）！", '⚠️');
-              return;
-            }
-            record.result = formatDistStr(m, cm);
-          }
-          record.wind = itemObj.hasWind && document.getElementById('wind').value ? parseFloat(document.getElementById('wind').value) : null;
-        } else {
-          record.result = status;
-          record.wind = null;
-        }
+        record.result = status;
       }
 
       const success = await saveRecordToFirestore(record, editId);
@@ -1311,7 +1162,7 @@
       if (!r) return;
 
       document.getElementById('edit-record-id').value = r.id;
-      document.getElementById('form-title').textContent = '編輯成績';
+      document.getElementById('form-title').textContent = '編輯田徑成績';
       document.getElementById('submit-btn').textContent = '更新紀錄';
       document.getElementById('cancel-edit-btn').classList.remove('hidden');
 
@@ -1322,64 +1173,35 @@
       if (itemObj) {
         filterCategory(itemObj.cat);
         document.getElementById('event-select').value = r.eventId;
-        onEventSelectChange();
+        toggleUnitUI();
       }
 
       document.getElementById('stage-select').value = r.stage || '初賽';
       document.getElementById('status-select').value = r.status || 'NORMAL';
-      onStatusChange();
+      document.getElementById('rank-select').value = r.rank || '';
+      document.getElementById('wind-val').value = r.wind || '';
 
-      if (r.isCombined) {
-        document.getElementById('combined-rank-select').value = r.rank || '';
-        if (r.subDetails && r.subDetails.length > 0) {
-          const rows = document.querySelectorAll('.sub-item-row');
-          r.subDetails.forEach((sub, idx) => {
-            if (rows[idx]) {
-              rows[idx].querySelector('.sub-status').value = sub.status || 'NORMAL';
-              rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
-              if (sub.type === 'time' && sub.val.includes('.')) {
-                const parts = sub.val.split('.');
-                const minSec = parts[0].split(':');
-                if (minSec.length === 2) {
-                  rows[idx].querySelector('.sub-min').value = minSec[0];
-                  rows[idx].querySelector('.sub-sec').value = minSec[1];
-                } else {
-                  rows[idx].querySelector('.sub-sec').value = minSec[0];
-                }
-                rows[idx].querySelector('.sub-ms').value = parts[1];
-              } else if (sub.type === 'distance' && sub.val.includes('.')) {
-                const parts = sub.val.split('.');
-                rows[idx].querySelector('.sub-m').value = parts[0];
-                rows[idx].querySelector('.sub-cm').value = parts[1];
-              }
+      toggleStatusUI();
+
+      if (r.status === 'NORMAL' && r.result) {
+        if (itemObj && itemObj.unit === 'time') {
+          const parts = r.result.split('.');
+          if (parts.length === 2) {
+            document.getElementById('time-ms').value = parts[1];
+            const minSec = parts[0].split(':');
+            if (minSec.length === 2) {
+              document.getElementById('time-min').value = minSec[0];
+              document.getElementById('time-sec').value = minSec[1];
+            } else {
+              document.getElementById('time-sec').value = minSec[0];
             }
-          });
-          calculateTotalScore();
-        }
-      } else {
-        document.getElementById('rank-select').value = r.rank || '';
-        if (r.wind !== null && r.wind !== undefined) {
-          document.getElementById('wind').value = r.wind;
-        }
-        if (r.status === 'NORMAL' && r.result) {
-          if (r.type === 'time') {
-            const parts = r.result.split('.');
-            if (parts.length === 2) {
-              document.getElementById('time-ms').value = parts[1];
-              const minSec = parts[0].split(':');
-              if (minSec.length === 2) {
-                document.getElementById('time-min').value = minSec[0];
-                document.getElementById('time-sec').value = minSec[1];
-              } else {
-                document.getElementById('time-sec').value = minSec[0];
-              }
-            }
-          } else {
-            const parts = r.result.split('.');
-            if (parts.length === 2) {
-              document.getElementById('dist-m').value = parts[0];
-              document.getElementById('dist-cm').value = parts[1];
-            }
+          }
+        } else {
+          const clean = r.result.replace('m', '');
+          const parts = clean.split('.');
+          if (parts.length === 2) {
+            document.getElementById('dist-m').value = parts[0];
+            document.getElementById('dist-cm').value = parts[1];
           }
         }
       }
@@ -1392,7 +1214,7 @@
     }
 
     window.deleteRecord = async function(id) {
-      const confirmed = await showConfirm('確定要刪除這筆紀錄嗎？');
+      const confirmed = await showConfirm('確定要刪除這筆田徑紀錄嗎？');
       if (confirmed) {
         if (await deleteRecordFromFirestore(id)) {
           showAlert('已成功刪除紀錄！', '✅');
@@ -1404,12 +1226,12 @@
 
     window.cancelEditMode = function() {
       document.getElementById('edit-record-id').value = '';
-      document.getElementById('form-title').textContent = '新增成績';
+      document.getElementById('form-title').textContent = '新增田徑成績';
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
       setInitialTodayDate();
-      onEventSelectChange();
+      toggleStatusUI();
 
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
@@ -1442,11 +1264,6 @@
       renderList();
     }
 
-    window.toggleSubDetails = function(id) {
-      const el = document.getElementById(`sub-${id}`);
-      if (el) el.classList.toggle('hidden');
-    }
-
     function getRankBadgeHtml(rankStr) {
       if (rankStr === '第1名') {
         return `<div class="w-10 h-10 rounded-full bg-amber-400 text-white font-black flex items-center justify-center text-lg shadow-sm border-2 border-amber-300 flex-shrink-0">1</div>`;
@@ -1470,17 +1287,8 @@
       let resultDisplay = '';
       if (r.status && r.status !== 'NORMAL') {
         resultDisplay = `<span class="text-red-600 font-bold text-xl">${STATUS_MAP[r.status] || r.status}</span>`;
-      } else if (r.isCombined) {
-        resultDisplay = `<span class="text-3xl font-black tracking-tight font-mono" style="color: var(--theme-color, #1e3a8a);">${r.result}</span><span class="text-xs font-bold text-slate-500 ml-1">分</span>`;
       } else {
-        const unit = r.type === 'distance' ? '米' : '秒';
-        resultDisplay = `<span class="text-3xl font-black tracking-tight font-mono" style="color: var(--theme-color, #1e3a8a);">${r.result}</span><span class="text-xs font-bold text-slate-500 ml-1">${unit}</span>`;
-      }
-
-      let subInfoText = r.stage || '';
-      if (r.wind !== null && r.wind !== undefined) {
-        const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-        subInfoText += subInfoText ? ` · 風速 ${windStr}` : `風速 ${windStr}`;
+        resultDisplay = `<span class="text-3xl font-black tracking-tight font-mono" style="color: var(--theme-color, #2563eb);">${r.result}</span>`;
       }
 
       let cardHtml = `
@@ -1498,7 +1306,7 @@
               
               <div>
                 <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName}</h3>
-                <p class="text-xs text-slate-400 font-medium">${subInfoText || '賽事紀錄'}</p>
+                <p class="text-xs text-slate-400 font-medium">${r.stage || '賽事紀錄'} ${r.wind ? `| 風速 ${r.wind}m/s` : ''}</p>
               </div>
             </div>
 
@@ -1507,23 +1315,6 @@
               <span class="text-xs text-slate-400 font-medium">${ageText}</span>
             </div>
           </div>
-
-          ${r.isCombined && r.subDetails?.length > 0 ? `
-            <div class="px-4 pb-3 border-t border-slate-100 pt-2 bg-slate-50/50">
-              <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-                <span>查看全能單項細項 (${r.subDetails.length})</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-              </button>
-              <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                ${r.subDetails.map(sub => `
-                  <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between">
-                    <span class="font-bold text-slate-700">${sub.name}</span>
-                    <span class="font-mono">${sub.val} (${sub.pts}分)</span>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          ` : ''}
 
           ${isHistoryEditMode ? `
             <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
@@ -1684,27 +1475,18 @@
                 label: function(context) {
                   const rawData = context.raw;
                   let lines = [];
-                  
                   let stageInfo = `階段: ${rawData.stage || '初賽'}`;
                   if (rawData.rank) stageInfo += ` (${rawData.rank})`;
                   lines.push(stageInfo);
-                  
                   lines.push(`成績: ${rawData.displayResult}`);
-                  
-                  if (rawData.wind !== null && rawData.wind !== undefined) {
-                    const windStr = rawData.wind > 0 ? `+${rawData.wind}` : `${rawData.wind}`;
-                    lines.push(`風速: ${windStr}`);
-                  }
-                  
+                  if (rawData.wind) lines.push(`風速: ${rawData.wind} m/s`);
                   return lines;
                 }
               }
             }
           },
           scales: {
-            x: {
-              ticks: { font: { size: 11 } }
-            }
+            x: { ticks: { font: { size: 11 } } }
           }
         }
       });
@@ -1717,7 +1499,7 @@
       if (!chartInstance) return;
 
       const selectedId = document.getElementById('chart-filter').value;
-      const theme = THEME_CONFIGS[athleteProfile.theme] || THEME_CONFIGS.blue;
+      const theme = THEME_CONFIGS.blue;
 
       if (!selectedId) {
         chartInstance.data.labels = [];
@@ -1734,11 +1516,7 @@
         .sort((a, b) => {
           const dateDiff = new Date(a.date) - new Date(b.date);
           if (dateDiff !== 0) return dateDiff;
-
-          if (a.competition !== b.competition) {
-            return a.competition.localeCompare(b.competition, 'zh-HK');
-          }
-
+          if (a.competition !== b.competition) return a.competition.localeCompare(b.competition, 'zh-HK');
           const weightA = STAGE_ORDER[a.stage] || 1;
           const weightB = STAGE_ORDER[b.stage] || 1;
           return weightA - weightB;
@@ -1748,9 +1526,7 @@
 
       const chartDataPoints = filtered.map(r => {
         let numericValue = 0;
-        let unit = itemObj.type === 'distance' ? '米' : (itemObj.type === 'points' ? '分' : '秒');
-        
-        if (itemObj.type === 'time' && typeof r.result === 'string') {
+        if (itemObj.unit === 'time') {
           const parts = r.result.split(':');
           if (parts.length === 2) {
             numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
@@ -1758,7 +1534,7 @@
             numericValue = parseFloat(r.result) || 0;
           }
         } else {
-          numericValue = parseFloat(r.result) || 0;
+          numericValue = parseFloat(r.result.replace('m', '')) || 0;
         }
 
         return {
@@ -1769,7 +1545,7 @@
           stage: r.stage,
           rank: r.rank,
           wind: r.wind,
-          displayResult: `${r.eventName}: ${r.result} ${unit}`
+          displayResult: `${r.eventName}: ${r.result}`
         };
       });
 
@@ -1785,12 +1561,11 @@
         tension: 0.3
       }];
 
-      const isTimeEvent = itemObj.type === 'time';
       chartInstance.options.scales.y = {
-        reverse: isTimeEvent,
+        reverse: itemObj.unit === 'time', // 時間越短越好反轉，距離越遠越好不反轉
         title: {
           display: true,
-          text: isTimeEvent ? '時間 (秒)' : (itemObj.type === 'distance' ? '距離 (米)' : '分數')
+          text: itemObj.unit === 'time' ? '時間 (秒)' : '距離 (公尺)'
         }
       };
 
