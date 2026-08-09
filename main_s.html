@@ -224,7 +224,6 @@
             </div>
           </div>
 
-          <!-- 需求 2: 泳池規格選項更新為「50米」與「25米」 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳池規格 <span class="text-red-500">*</span></label>
             <select id="pool-length-select" onchange="onPoolLengthChange()" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
@@ -266,14 +265,16 @@
 
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
-              <select id="stage-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+              <!-- 新增 onchange 觸發動態切換名次欄位 -->
+              <select id="stage-select" onchange="toggleRankVisibility()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
                 <option value="初賽">初賽</option>
                 <option value="準決賽">準決賽</option>
                 <option value="決賽">決賽</option>
               </select>
             </div>
 
-            <div class="flex items-center gap-3">
+            <!-- 名次欄位預設包裹在 rank-input-group -->
+            <div id="rank-input-group" class="hidden flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
               <select id="rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
                 <option value="">無名次</option>
@@ -679,6 +680,7 @@
         setInitialTodayDate();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+        toggleRankVisibility();
         await fetchRecordsFromFirestore();
         initChart();
 
@@ -798,7 +800,6 @@
 
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跳)', 'DNF': 'DNF (未完賽)' };
 
-    // 需求 1: 項目庫擴充混合接力項目
     const EVENTS_DB = [
       { id: '50m_free', cat: 'free', name: '50米 自由式' },
       { id: '100m_free', cat: 'free', name: '100米 自由式' },
@@ -1040,7 +1041,20 @@
       }
     }
 
-    // 需求 1: 過濾邏輯（50米長池隱藏 100米個人混合式 以及 4 個 4x50米 接力項目）
+    // 當階段不是「決賽」時隱藏「名次」
+    window.toggleRankVisibility = function() {
+      const stage = document.getElementById('stage-select').value;
+      const rankGroup = document.getElementById('rank-input-group');
+      const rankSelect = document.getElementById('rank-select');
+
+      if (stage === '決賽') {
+        rankGroup.classList.remove('hidden');
+      } else {
+        rankGroup.classList.add('hidden');
+        rankSelect.value = ''; // 隱藏時清空選取的名次
+      }
+    }
+
     window.filterCategory = function(cat, btnEl) {
       if (cat) currentCategoryFilter = cat;
 
@@ -1060,7 +1074,6 @@
 
       let filtered = currentCategoryFilter === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === currentCategoryFilter);
       
-      // 50米 長池隱藏短池限定項目：100米個人混合式 以及 4x50米 接力系列
       if (currentPoolLength === '50m') {
         const disabledInLCM = [
           '100m_im',
@@ -1106,6 +1119,8 @@
 
       if (!itemObj) { showAlert("請選擇比賽項目！", '⚠️'); return; }
 
+      const stageVal = document.getElementById('stage-select').value;
+
       let record = {
         eventId: selectedId, 
         eventName: itemObj.name,
@@ -1113,8 +1128,8 @@
         competition: comp,
         date: date,
         status: status, 
-        stage: document.getElementById('stage-select').value,
-        rank: document.getElementById('rank-select').value
+        stage: stageVal,
+        rank: stageVal === '決賽' ? document.getElementById('rank-select').value : ''
       };
 
       if (status === 'NORMAL') {
@@ -1158,6 +1173,8 @@
       }
 
       document.getElementById('stage-select').value = r.stage || '初賽';
+      toggleRankVisibility();
+      
       document.getElementById('status-select').value = r.status || 'NORMAL';
       toggleStatusFields();
       document.getElementById('rank-select').value = r.rank || '';
@@ -1204,6 +1221,7 @@
       toggleStatusFields();
       setInitialTodayDate();
       filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+      toggleRankVisibility();
 
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
