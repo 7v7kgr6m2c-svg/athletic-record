@@ -179,8 +179,9 @@
       <section id="sec-chart" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b pb-3">
           <h2 class="text-lg font-bold text-slate-900">成績趨勢</h2>
-          <div class="flex gap-2">
-            <select id="chart-pool-filter" onchange="updateChart()" class="border rounded-xl h-9 px-2 bg-slate-50 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+          <!-- 調整選單順序：長短池選項放在項目選項上方/前開 -->
+          <div class="flex flex-col sm:flex-row gap-2">
+            <select id="chart-pool-filter" onchange="updateChartDropdown(); updateChart();" class="border rounded-xl h-9 px-2 bg-slate-50 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
               <option value="long">長池 (50m)</option>
               <option value="short">短池 (25m)</option>
             </select>
@@ -214,14 +215,15 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">池長 <span class="text-red-500">*</span></label>
-            <select id="pool-type-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <select id="pool-type-select" onchange="onPoolTypeChange()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
               <option value="long">長池 (50m)</option>
               <option value="short">短池 (25m)</option>
             </select>
           </div>
 
           <div class="flex items-center gap-3">
-            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿類別</label>
+            <!-- 「泳姿類別」修改為「泳姿」 -->
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿</label>
             <div class="grid grid-cols-6 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
               <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-sky-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
               <button type="button" onclick="filterCategory('free', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">自由泳</button>
@@ -471,6 +473,7 @@
     let currentGroupMode = 'all'; 
     let currentSelectedEventFilter = 'all';
     let currentPbPoolType = 'long';
+    let currentCategory = 'all';
 
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
@@ -481,6 +484,7 @@
     const STAGE_ORDER = { '決賽': 3, '準決賽': 2, '初賽': 1 };
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跑)', 'DNF': 'DNF (未完賽)' };
 
+    // 項目庫（隱藏任何接力項目；100im標記僅在短池適用）
     const EVENTS_DB = [
       { id: '50free', cat: 'free', name: '50米 自由泳' },
       { id: '100free', cat: 'free', name: '100米 自由泳' },
@@ -501,7 +505,7 @@
       { id: '100fly', cat: 'fly', name: '100米 蝶泳' },
       { id: '200fly', cat: 'fly', name: '200米 蝶泳' },
 
-      { id: '100im', cat: 'medley', name: '100米 個人混合泳' },
+      { id: '100im', cat: 'medley', name: '100米 個人混合泳', poolOnly: 'short' },
       { id: '200im', cat: 'medley', name: '200米 個人混合泳' },
       { id: '400im', cat: 'medley', name: '400米 個人混合泳' }
     ];
@@ -540,7 +544,10 @@
       });
 
       if (tabName === 'chart') {
-        setTimeout(() => updateChart(), 100);
+        setTimeout(() => {
+          updateChartDropdown();
+          updateChart();
+        }, 100);
       }
     }
 
@@ -866,7 +873,7 @@
       renderPBPage();
     }
 
-    function updateChartDropdown() {
+    window.updateChartDropdown = function() {
       const chartSelect = document.getElementById('chart-filter');
       const poolFilter = document.getElementById('chart-pool-filter').value;
       const currentVal = chartSelect.value;
@@ -875,7 +882,11 @@
       const validRecords = records.filter(r => (!r.status || r.status === 'NORMAL') && (r.poolType || 'long') === poolFilter);
       const activeEventIds = new Set(validRecords.map(r => r.eventId));
 
-      const availableEvents = EVENTS_DB.filter(item => activeEventIds.has(item.id));
+      // 過濾：如果在長池，排除限定短池的項目（例如100m個人混合泳）
+      const availableEvents = EVENTS_DB.filter(item => {
+        if (poolFilter === 'long' && item.poolOnly === 'short') return false;
+        return activeEventIds.has(item.id);
+      });
 
       if (availableEvents.length === 0) {
         chartSelect.appendChild(new Option('尚無有效成績項目', ''));
@@ -1044,21 +1055,32 @@
       }
     }
 
+    window.onPoolTypeChange = function() {
+      filterCategory(currentCategory);
+    }
+
     window.filterCategory = function(cat, btnEl) {
-      document.querySelectorAll('.cat-btn').forEach(b => {
-        b.classList.remove('bg-white', 'text-sky-600', 'shadow-xs');
-        b.classList.add('text-slate-600');
-      });
       if (btnEl) {
+        document.querySelectorAll('.cat-btn').forEach(b => {
+          b.classList.remove('bg-white', 'text-sky-600', 'shadow-xs');
+          b.classList.add('text-slate-600');
+        });
         btnEl.classList.add('bg-white', 'text-sky-600', 'shadow-xs');
         btnEl.classList.remove('text-slate-600');
       }
+      currentCategory = cat || 'all';
 
       const selectEl = document.getElementById('event-select');
       const currentSelectedVal = selectEl.value;
+      const currentPoolType = document.getElementById('pool-type-select').value;
       selectEl.innerHTML = '';
 
-      const filtered = cat === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === cat);
+      // 動態根據 poolType 與類別進行過濾：若為長池，隱藏限定短池的項目（例如100m個人混合泳）
+      const filtered = EVENTS_DB.filter(e => {
+        if (currentPoolType === 'long' && e.poolOnly === 'short') return false;
+        return currentCategory === 'all' || e.cat === currentCategory;
+      });
+
       filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
 
       if (filtered.some(e => e.id === currentSelectedVal)) {
