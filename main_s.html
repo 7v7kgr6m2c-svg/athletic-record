@@ -2,21 +2,18 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <!-- Viewport 鎖定 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-  <title>個人游泳成績記錄網</title>
+  <title>游泳個人成績紀錄網</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <style>
-      /* 禁用手勢與雙擊縮放 */
       html, body, input, select, textarea, button {
           touch-action: manipulation;
           -webkit-text-size-adjust: 100%;
       }
       
-      /* iOS 點擊輸入框時鎖定至少 16px */
       input, select, textarea {
           font-size: 16px !important;
       }
@@ -24,7 +21,6 @@
       .cropper-view-box, .cropper-face { border-radius: 50%; }
       .cropper-container { touch-action: none; }
 
-      /* iOS Wheel Picker 自訂樣式 */
       .scrollbar-none::-webkit-scrollbar { display: none; }
       .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
       .picker-column { 
@@ -47,7 +43,6 @@
       }
       .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
 
-      /* Material You Tab 樣式 */
       .m3-tab-btn {
           position: relative;
           display: flex;
@@ -93,8 +88,8 @@
 <body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8 select-none">
 
   <div class="max-w-3xl mx-auto space-y-6">
-    <!-- 運動員資料 Header -->
-    <header id="main-header" class="relative overflow-hidden bg-gradient-to-r from-cyan-600 to-blue-800 p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300">
+    <!-- Header -->
+    <header id="main-header" class="relative overflow-hidden bg-gradient-to-r from-sky-600 to-cyan-800 p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300">
       <div class="flex items-center gap-5">
         <div class="relative group cursor-pointer w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-white/85 shadow-inner bg-black/20 flex-shrink-0 flex items-center justify-center" onclick="document.getElementById('header-avatar-input').click()">
           <img id="avatar-img" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E" class="w-full h-full object-cover">
@@ -110,20 +105,19 @@
         </div>
       </div>
 
-      <!-- 右側切換膠囊按鈕 -->
       <div class="flex flex-col gap-2">
-        <button onclick="switchAthlete()" class="flex items-center justify-between gap-2 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-black/20 hover:bg-black/30 px-4 py-2 rounded-full border border-white/20 transition cursor-pointer whitespace-nowrap">
+        <button onclick="switchAthlete()" class="flex items-center justify-center gap-1 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-white/10 hover:bg-white/20 px-3.5 py-1.5 md:px-4 md:py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer whitespace-nowrap">
           <span>切換運動員</span>
-          <span class="text-xs">›</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
-        <button onclick="switchSport()" class="flex items-center justify-between gap-2 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-black/20 hover:bg-black/30 px-4 py-2 rounded-full border border-white/20 transition cursor-pointer whitespace-nowrap">
+        <button onclick="switchSport()" class="flex items-center justify-center gap-1 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-white/10 hover:bg-white/20 px-3.5 py-1.5 md:px-4 md:py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer whitespace-nowrap">
           <span>切換運動</span>
-          <span class="text-xs">›</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
       </div>
     </header>
 
-    <!-- Material You 分頁導覽列 -->
+    <!-- Navigation -->
     <nav class="bg-white/80 backdrop-blur-md p-1.5 rounded-full shadow-sm border border-slate-200/80 flex gap-1 sticky top-3 z-30">
       <button onclick="switchMainTab('pb')" id="main-tab-pb" class="m3-tab-btn active">我的 PB</button>
       <button onclick="switchMainTab('history')" id="main-tab-history" class="m3-tab-btn">歷史記錄</button>
@@ -133,20 +127,26 @@
 
     <div class="space-y-6">
 
-      <!-- 1. 我的 PB 區塊 -->
+      <!-- PB 區塊 -->
       <section id="sec-pb" class="space-y-4">
-        <div id="pb-banner" class="bg-gradient-to-br from-cyan-900 via-blue-800 to-indigo-950 p-6 rounded-3xl shadow-lg text-white transition-colors duration-300">
+        <div id="pb-banner" class="bg-gradient-to-br from-sky-900 via-sky-800 to-cyan-950 p-6 rounded-3xl shadow-lg text-white transition-colors duration-300">
           <div class="flex items-center justify-between border-b border-white/15 pb-3 mb-4 gap-3">
             <div class="flex items-center gap-3">
               <span class="text-4xl md:text-5xl">🏊‍♂️</span>
               <div>
-                <h2 class="text-xl font-black tracking-wide leading-tight">個人游泳最佳成績</h2>
-                <p class="text-xs md:text-sm font-semibold tracking-wider text-cyan-100">Personal Best</p>
+                <h2 class="text-xl font-black tracking-wide leading-tight">個人最佳成績</h2>
+                <p class="text-xs md:text-sm font-semibold tracking-wider text-sky-100">Personal Best</p>
               </div>
             </div>
             <span id="pb-count-tag" class="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full border border-white/20 whitespace-nowrap flex-shrink-0">0 個項目</span>
           </div>
-          <p class="text-xs text-cyan-100 font-medium">展示您在各游泳項目的歷史最高紀錄</p>
+          <p class="text-xs text-sky-100 font-medium">展示您在各游泳項目的歷史最高紀錄</p>
+        </div>
+
+        <!-- 水池規格切換選項 (長池 / 短池) -->
+        <div class="flex bg-slate-200 p-1 rounded-2xl text-xs font-bold">
+          <button type="button" onclick="switchPoolType('long')" id="pool-tab-long" class="flex-1 py-2 rounded-xl bg-white text-sky-600 shadow-xs transition cursor-pointer text-center">長池 (50m)</button>
+          <button type="button" onclick="switchPoolType('short')" id="pool-tab-short" class="flex-1 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer text-center">短池 (25m)</button>
         </div>
 
         <div id="pb-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,57 +154,58 @@
         </div>
       </section>
 
-      <!-- 2. 歷史記錄區塊 -->
+      <!-- 歷史記錄區塊 -->
       <section id="sec-history" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
         <div class="flex justify-between items-center flex-wrap gap-2">
-          <h2 class="text-lg font-bold text-slate-900">游泳歷史記錄</h2>
+          <h2 class="text-lg font-bold text-slate-900">歷史記錄</h2>
           
           <div class="flex items-center gap-2">
-            <!-- 分類 Tab -->
             <div class="flex bg-slate-100 p-1 rounded-2xl text-xs font-semibold">
-              <button type="button" onclick="switchGroupMode('all')" id="tab-all" class="px-3 py-1.5 rounded-xl bg-white text-cyan-600 shadow-xs transition cursor-pointer">全部</button>
-              <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">賽事</button>
+              <button type="button" onclick="switchGroupMode('all')" id="tab-all" class="px-3 py-1.5 rounded-xl bg-white text-sky-600 shadow-xs transition cursor-pointer">全部</button>
+              <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">比賽</button>
               <button type="button" onclick="switchGroupMode('event')" id="tab-event" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">項目</button>
             </div>
 
-            <!-- 編輯模式 toggle -->
             <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition font-medium cursor-pointer">編輯記錄</button>
           </div>
         </div>
 
-        <!-- 項目快捷篩選列 -->
         <div id="event-filter-bar" class="hidden flex flex-wrap gap-2 pt-1 pb-3 border-b border-slate-100"></div>
 
-        <!-- 卡片容器 -->
         <div id="cards-container" class="space-y-4"></div>
       </section>
 
-      <!-- 3. 成績趨勢區塊 -->
+      <!-- 成績趨勢區塊 -->
       <section id="sec-chart" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b pb-3">
           <h2 class="text-lg font-bold text-slate-900">成績趨勢</h2>
-          <select id="chart-filter" onchange="updateChart()" class="border rounded-xl h-9 px-3 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 font-medium"></select>
+          <div class="flex gap-2">
+            <select id="chart-pool-filter" onchange="updateChart()" class="border rounded-xl h-9 px-2 bg-slate-50 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+              <option value="long">長池 (50m)</option>
+              <option value="short">短池 (25m)</option>
+            </select>
+            <select id="chart-filter" onchange="updateChart()" class="border rounded-xl h-9 px-3 bg-slate-50 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium"></select>
+          </div>
         </div>
         <div class="h-72">
           <canvas id="progressChart"></canvas>
         </div>
       </section>
 
-      <!-- 4. 新增 / 編輯成績區塊 -->
+      <!-- 新增 / 編輯成績區塊 -->
       <section id="sec-form" class="hidden bg-white p-6 rounded-3xl shadow-sm">
         <h2 id="form-title" class="text-lg font-bold text-slate-900 mb-4 border-b pb-2">新增成績</h2>
-        <form id="record-form" class="space-y-3" oninput="validateForm()">
+        <form id="record-form" class="space-y-3">
           <input type="hidden" id="edit-record-id" value="">
           
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">賽事名稱 <span class="text-red-500">*</span></label>
-            <input type="text" id="competition" placeholder="例: 全港分齡游泳錦標賽" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+            <input type="text" id="competition" placeholder="例: 全港分齡游泳錦標賽" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
           </div>
 
-          <!-- 比賽日期 iOS 滾輪觸發位 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
-            <div onclick="openIosWheelPicker()" class="flex-1 border rounded-xl h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-cyan-500 transition">
+            <div onclick="openIosWheelPicker()" class="flex-1 border rounded-xl h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-sky-500 transition">
               <span id="race-display-text" class="text-slate-800 font-medium">載入中...</span>
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
@@ -212,86 +213,78 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿類別</label>
-            <div class="grid grid-cols-7 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
-              <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-cyan-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
-              <button type="button" onclick="filterCategory('free', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">自由式</button>
-              <button type="button" onclick="filterCategory('back', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">仰式</button>
-              <button type="button" onclick="filterCategory('breast', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蛙式</button>
-              <button type="button" onclick="filterCategory('fly', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蝶式</button>
-              <button type="button" onclick="filterCategory('im', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">混合</button>
-              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">接力</button>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-3">
-            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳池規格 <span class="text-red-500">*</span></label>
-            <select id="pool-length-select" onchange="onPoolLengthChange()" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
-              <option value="50m">50米 長池 (LCM)</option>
-              <option value="25m">25米 短池 (SCM)</option>
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">池長 <span class="text-red-500">*</span></label>
+            <select id="pool-type-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="long">長池 (50m)</option>
+              <option value="short">短池 (25m)</option>
             </select>
           </div>
 
           <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿類別</label>
+            <div class="grid grid-cols-6 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
+              <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-sky-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
+              <button type="button" onclick="filterCategory('free', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">自由泳</button>
+              <button type="button" onclick="filterCategory('back', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">仰泳</button>
+              <button type="button" onclick="filterCategory('breast', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蛙泳</button>
+              <button type="button" onclick="filterCategory('fly', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蝶泳</button>
+              <button type="button" onclick="filterCategory('medley', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">混合泳</button>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">項目</label>
-            <select id="event-select" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+            <select id="event-select" class="flex-1 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500" required>
             </select>
           </div>
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
-            <select id="status-select" onchange="toggleStatusFields()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            <select id="status-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
               <option value="NORMAL">正常</option>
               <option value="DQ">DQ (犯規)</option>
-              <option value="DNS">DNS (未起跳)</option>
+              <option value="DNS">DNS (未起跑)</option>
               <option value="DNF">DNF (未完賽)</option>
             </select>
           </div>
 
-          <div id="single-event-inputs" class="space-y-3">
-            <div class="flex items-center gap-3">
-              <label id="result-label" class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
-              
-              <div class="flex items-center gap-2 flex-wrap flex-1">
-                <div id="time-input-group" class="flex items-center gap-1">
-                  <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this);" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
-                  <span class="font-bold text-slate-500">:</span>
-                  <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this);" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
-                  <span class="font-bold text-slate-500">.</span>
-                  <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this);" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
-              <!-- 新增 onchange 觸發動態切換名次欄位 -->
-              <select id="stage-select" onchange="toggleRankVisibility()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                <option value="初賽">初賽</option>
-                <option value="準決賽">準決賽</option>
-                <option value="決賽">決賽</option>
-              </select>
-            </div>
-
-            <!-- 名次欄位預設包裹在 rank-input-group -->
-            <div id="rank-input-group" class="hidden flex items-center gap-3">
-              <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
-              <select id="rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                <option value="">無名次</option>
-                <option value="第1名">第1名</option>
-                <option value="第2名">第2名</option>
-                <option value="第3名">第3名</option>
-                <option value="第4名">第4名</option>
-                <option value="第5名">第5名</option>
-                <option value="第6名">第6名</option>
-                <option value="第7名">第7名</option>
-                <option value="第8名">第8名</option>
-              </select>
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
+            <div class="flex items-center gap-1">
+              <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this)" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-sky-500">
+              <span class="font-bold text-slate-500">:</span>
+              <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this)" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-sky-500">
+              <span class="font-bold text-slate-500">.</span>
+              <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this)" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-sky-500">
             </div>
           </div>
 
+          <div class="flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
+            <select id="stage-select" onchange="onStageChange()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="初賽">初賽</option>
+              <option value="準決賽">準決賽</option>
+              <option value="決賽">決賽</option>
+            </select>
+          </div>
+
+          <div id="rank-container" class="hidden flex items-center gap-3">
+            <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
+            <select id="rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="">無名次</option>
+              <option value="第1名">第1名</option>
+              <option value="第2名">第2名</option>
+              <option value="第3名">第3名</option>
+              <option value="第4名">第4名</option>
+              <option value="第5名">第5名</option>
+              <option value="第6名">第6名</option>
+              <option value="第7名">第7名</option>
+              <option value="第8名">第8名</option>
+            </select>
+          </div>
+
           <div class="flex gap-2 pt-2">
-            <button type="submit" id="submit-btn" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-medium h-10 rounded-xl transition duration-200 shadow cursor-pointer">
+            <button type="submit" id="submit-btn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-medium h-10 rounded-xl transition duration-200 shadow cursor-pointer">
               儲存紀錄
             </button>
             <button type="button" id="cancel-edit-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-xl transition duration-200 cursor-pointer">
@@ -301,7 +294,6 @@
         </form>
       </section>
 
-      <!-- 5. 頁底登出按鈕 -->
       <div class="pt-4 border-t border-slate-200">
         <button id="btn-logout" class="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -312,18 +304,16 @@
     </div>
   </div>
 
-  <!-- iOS 3D 日期滾輪 Modal -->
+  <!-- iOS Modal -->
   <div id="ios-wheel-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-end sm:items-center justify-center z-50 p-0 sm:p-4 transition-opacity">
       <div class="bg-white w-full max-w-sm rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl space-y-4">
           <div class="flex justify-between items-center border-b pb-3">
               <button type="button" onclick="closeIosWheelPicker()" class="text-slate-400 hover:text-slate-600 font-bold text-sm cursor-pointer">取消</button>
               <span class="font-bold text-slate-800 text-base">選擇日期</span>
-              <button type="button" onclick="confirmIosWheelPicker()" class="text-cyan-600 hover:text-cyan-700 font-bold text-sm cursor-pointer">完成</button>
+              <button type="button" onclick="confirmIosWheelPicker()" class="text-sky-600 hover:text-sky-700 font-bold text-sm cursor-pointer">完成</button>
           </div>
-
           <div class="relative h-48 overflow-hidden my-2 select-none">
               <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 h-10 bg-slate-100/80 rounded-xl border-y border-slate-200/80 pointer-events-none -z-0"></div>
-
               <div class="flex w-full h-full relative z-10 overflow-hidden">
                   <div id="wheel-year" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
                   <div id="wheel-month" class="picker-column flex-1 overflow-y-scroll overflow-x-hidden scrollbar-none py-20"></div>
@@ -333,7 +323,7 @@
       </div>
   </div>
 
-  <!-- 圖片裁切 Modal -->
+  <!-- Crop Modal -->
   <div id="crop-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md hidden flex flex-col items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
           <h3 class="text-base font-bold text-slate-800 text-center">調整頭像位置與縮放</h3>
@@ -342,20 +332,21 @@
           </div>
           <div class="flex gap-3">
               <button type="button" onclick="closeCropModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
-              <button type="button" id="confirm-crop-btn" onclick="confirmHeaderCrop()" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">完成裁切</button>
+              <button type="button" onclick="confirmHeaderCrop()" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">完成裁切</button>
           </div>
       </div>
   </div>
 
-  <!-- 自訂 Alert / Confirm Modal -->
+  <!-- Alert Modal -->
   <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
-          <div id="custom-alert-icon" class="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+          <div id="custom-alert-icon" class="w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
           <p id="custom-alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
-          <button onclick="closeCustomAlert()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+          <button onclick="closeCustomAlert()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
       </div>
   </div>
 
+  <!-- Confirm Modal -->
   <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
       <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
           <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">?</div>
@@ -370,8 +361,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
@@ -386,14 +376,43 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const storage = getStorage(app);
 
     const THEME_CONFIGS = {
         blue: {
-            headerClass: 'bg-gradient-to-r from-cyan-600 to-blue-800',
-            pbBannerClass: 'bg-gradient-to-br from-cyan-900 via-blue-800 to-indigo-950',
+            headerClass: 'bg-gradient-to-r from-sky-600 to-cyan-800',
+            pbBannerClass: 'bg-gradient-to-br from-sky-900 via-sky-800 to-cyan-950',
             primaryColor: '#0284c7',
             lightBg: '#e0f2fe'
+        },
+        emerald: {
+            headerClass: 'bg-gradient-to-r from-emerald-600 to-teal-800',
+            pbBannerClass: 'bg-gradient-to-br from-emerald-900 via-teal-800 to-emerald-950',
+            primaryColor: '#059669',
+            lightBg: '#d1fae5'
+        },
+        purple: {
+            headerClass: 'bg-gradient-to-r from-purple-600 to-indigo-800',
+            pbBannerClass: 'bg-gradient-to-br from-purple-900 via-indigo-800 to-purple-950',
+            primaryColor: '#9333ea',
+            lightBg: '#f3e8ff'
+        },
+        rose: {
+            headerClass: 'bg-gradient-to-r from-rose-600 to-red-800',
+            pbBannerClass: 'bg-gradient-to-br from-rose-900 via-red-800 to-rose-950',
+            primaryColor: '#e11d48',
+            lightBg: '#ffe4e6'
+        },
+        amber: {
+            headerClass: 'bg-gradient-to-r from-amber-600 to-orange-800',
+            pbBannerClass: 'bg-gradient-to-br from-amber-800 via-orange-800 to-amber-950',
+            primaryColor: '#d97706',
+            lightBg: '#fef3c7'
+        },
+        slate: {
+            headerClass: 'bg-gradient-to-r from-slate-600 to-slate-800',
+            pbBannerClass: 'bg-gradient-to-br from-slate-800 via-slate-900 to-black',
+            primaryColor: '#334155',
+            lightBg: '#e2e8f0'
         }
     };
 
@@ -406,7 +425,7 @@
       } else if (icon === '❌' || icon === '⚠️') {
         iconEl.className = 'w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
       } else {
-        iconEl.className = 'w-12 h-12 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+        iconEl.className = 'w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
       }
       document.getElementById('custom-alert-modal').classList.remove('hidden');
     }
@@ -434,13 +453,14 @@
     let currentAthleteDob = localStorage.getItem('current_athlete_dob');
     let currentAthleteGender = localStorage.getItem('current_athlete_gender');
     let currentAthleteAvatar = localStorage.getItem('current_athlete_avatar');
+    let currentAthleteTheme = localStorage.getItem('current_athlete_theme') || 'blue';
 
     let athleteProfile = {
       name: currentAthleteName || '運動員',
       dob: currentAthleteDob || '',
       gender: currentAthleteGender || '',
       avatar: currentAthleteAvatar || '',
-      theme: 'blue'
+      theme: currentAthleteTheme
     };
 
     let isHistoryEditMode = false;
@@ -450,7 +470,7 @@
     let cropper = null;
     let currentGroupMode = 'all'; 
     let currentSelectedEventFilter = 'all';
-    let currentCategoryFilter = 'all';
+    let currentPbPoolType = 'long';
 
     let selectedY = new Date().getFullYear();
     let selectedM = new Date().getMonth() + 1;
@@ -459,11 +479,50 @@
     let isInitializingPicker = false;
 
     const STAGE_ORDER = { '決賽': 3, '準決賽': 2, '初賽': 1 };
+    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跑)', 'DNF': 'DNF (未完賽)' };
 
-    function applyTheme() {
-        const theme = THEME_CONFIGS.blue;
+    const EVENTS_DB = [
+      { id: '50free', cat: 'free', name: '50米 自由泳' },
+      { id: '100free', cat: 'free', name: '100米 自由泳' },
+      { id: '200free', cat: 'free', name: '200米 自由泳' },
+      { id: '400free', cat: 'free', name: '400米 自由泳' },
+      { id: '800free', cat: 'free', name: '800米 自由泳' },
+      { id: '1500free', cat: 'free', name: '1500米 自由泳' },
+      
+      { id: '50back', cat: 'back', name: '50米 仰泳' },
+      { id: '100back', cat: 'back', name: '100米 仰泳' },
+      { id: '200back', cat: 'back', name: '200米 仰泳' },
+
+      { id: '50breast', cat: 'breast', name: '50米 蛙泳' },
+      { id: '100breast', cat: 'breast', name: '100米 蛙泳' },
+      { id: '200breast', cat: 'breast', name: '200米 蛙泳' },
+
+      { id: '50fly', cat: 'fly', name: '50米 蝶泳' },
+      { id: '100fly', cat: 'fly', name: '100米 蝶泳' },
+      { id: '200fly', cat: 'fly', name: '200米 蝶泳' },
+
+      { id: '100im', cat: 'medley', name: '100米 個人混合泳' },
+      { id: '200im', cat: 'medley', name: '200米 個人混合泳' },
+      { id: '400im', cat: 'medley', name: '400米 個人混合泳' }
+    ];
+
+    function applyTheme(themeKey) {
+        const theme = THEME_CONFIGS[themeKey] || THEME_CONFIGS.blue;
+        const header = document.getElementById('main-header');
+        const pbBanner = document.getElementById('pb-banner');
+        if (header) header.className = `relative overflow-hidden ${theme.headerClass} p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300`;
+        if (pbBanner) pbBanner.className = `${theme.pbBannerClass} p-6 rounded-3xl shadow-lg text-white transition-colors duration-300`;
+
         document.documentElement.style.setProperty('--theme-color', theme.primaryColor);
         document.documentElement.style.setProperty('--theme-bg-light', theme.lightBg);
+
+        if (chartInstance) {
+            chartInstance.data.datasets.forEach(ds => {
+                ds.borderColor = theme.primaryColor;
+                ds.pointBackgroundColor = theme.primaryColor;
+            });
+            chartInstance.update();
+        }
     }
 
     window.switchMainTab = function(tabName) {
@@ -674,34 +733,17 @@
           return;
         }
 
-        await fetchAthleteProfile();
         initProfileUI();
-        applyTheme();
+        applyTheme(athleteProfile.theme);
         setInitialTodayDate();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
-        toggleRankVisibility();
+        onStageChange();
         await fetchRecordsFromFirestore();
         initChart();
 
         document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
       });
-    }
-
-    async function fetchAthleteProfile() {
-      try {
-        const docRef = doc(db, "athletes", currentAthleteId);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          athleteProfile.name = data.name || currentAthleteName || '運動員';
-          athleteProfile.dob = data.dob || currentAthleteDob || '';
-          athleteProfile.gender = data.gender || currentAthleteGender || '';
-          athleteProfile.avatar = data.avatar || currentAthleteAvatar || '';
-        }
-      } catch (e) {
-        console.error("無法同步運動員最新資料：", e);
-      }
     }
 
     window.switchAthlete = function() { window.location.href = 'athletes.html'; }
@@ -766,86 +808,36 @@
 
     window.confirmHeaderCrop = async function() {
       if (!cropper) return;
-      
-      const confirmBtn = document.getElementById('confirm-crop-btn');
-      confirmBtn.disabled = true;
-      confirmBtn.textContent = "上傳中...";
+      const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
+      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+
+      document.getElementById('avatar-img').src = croppedBase64;
+      athleteProfile.avatar = croppedBase64;
+      localStorage.setItem('current_athlete_avatar', croppedBase64);
+      closeCropModal();
 
       try {
-        const canvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
-        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.8);
-
-        const storageRef = ref(storage, `avatars/${currentAthleteId}_${Date.now()}.jpg`);
-        await uploadString(storageRef, croppedBase64, 'data_url');
-        const downloadURL = await getDownloadURL(storageRef);
-
-        document.getElementById('avatar-img').src = downloadURL;
-        athleteProfile.avatar = downloadURL;
-        localStorage.setItem('current_athlete_avatar', downloadURL);
-
         const athleteRef = doc(db, "athletes", currentAthleteId);
-        await updateDoc(athleteRef, { avatar: downloadURL });
-        
-        closeCropModal();
+        await updateDoc(athleteRef, { avatar: croppedBase64 });
         showAlert('頭像更新成功！', '✅');
       } catch (err) {
         showAlert('頭像更新失敗：' + err.message, '❌');
-      } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = "完成裁切";
       }
     };
 
     window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
-    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跳)', 'DNF': 'DNF (未完賽)' };
-
-    const EVENTS_DB = [
-      { id: '50m_free', cat: 'free', name: '50米 自由式' },
-      { id: '100m_free', cat: 'free', name: '100米 自由式' },
-      { id: '200m_free', cat: 'free', name: '200米 自由式' },
-      { id: '400m_free', cat: 'free', name: '400米 自由式' },
-      { id: '800m_free', cat: 'free', name: '800米 自由式' },
-      { id: '1500m_free', cat: 'free', name: '1500米 自由式' },
-      
-      { id: '50m_back', cat: 'back', name: '50米 仰式' },
-      { id: '100m_back', cat: 'back', name: '100米 仰式' },
-      { id: '200m_back', cat: 'back', name: '200米 仰式' },
-      
-      { id: '50m_breast', cat: 'breast', name: '50米 蛙式' },
-      { id: '100m_breast', cat: 'breast', name: '100米 蛙式' },
-      { id: '200m_breast', cat: 'breast', name: '200米 蛙式' },
-      
-      { id: '50m_fly', cat: 'fly', name: '50米 蝶式' },
-      { id: '100m_fly', cat: 'fly', name: '100米 蝶式' },
-      { id: '200m_fly', cat: 'fly', name: '200米 蝶式' },
-      
-      { id: '100m_im', cat: 'im', name: '100米 個人混合式' },
-      { id: '200m_im', cat: 'im', name: '200米 個人混合式' },
-      { id: '400m_im', cat: 'im', name: '400米 個人混合式' },
-
-      { id: '4x50m_free_relay', cat: 'relay', name: '4x50米 自由式接力' },
-      { id: '4x50m_free_mixed_relay', cat: 'relay', name: '4x50米 自由式接力 (男女混合)' },
-      { id: '4x100m_free_relay', cat: 'relay', name: '4x100米 自由式接力' },
-      { id: '4x100m_free_mixed_relay', cat: 'relay', name: '4x100米 自由式接力 (男女混合)' },
-      { id: '4x200m_free_relay', cat: 'relay', name: '4x200米 自由式接力' },
-      { id: '4x50m_medley_relay', cat: 'relay', name: '4x50米 混合式接力' },
-      { id: '4x50m_medley_mixed_relay', cat: 'relay', name: '4x50米 混合式接力 (男女混合)' },
-      { id: '4x100m_medley_relay', cat: 'relay', name: '4x100米 混合式接力' },
-      { id: '4x100m_medley_mixed_relay', cat: 'relay', name: '4x100米 混合式接力 (男女混合)' }
-    ];
-
     async function fetchRecordsFromFirestore() {
       try {
-        const q = query(collection(db, "swimming_records"), where("athlete_id", "==", currentAthleteId));
+        const q = query(collection(db, "swim_records"), where("athlete_id", "==", currentAthleteId));
         const querySnapshot = await getDocs(q);
         records = [];
         querySnapshot.forEach((docSnap) => {
           const row = docSnap.data();
           records.push({
             id: docSnap.id, eventId: row.event_id, eventName: row.event_name,
-            poolLength: row.pool_length || '50m', competition: row.competition, 
-            date: row.date, status: row.status, stage: row.stage, rank: row.rank, 
+            competition: row.competition, date: row.date, status: row.status,
+            stage: row.stage, rank: row.rank, poolType: row.pool_type || 'long',
             result: row.result
           });
         });
@@ -856,47 +848,50 @@
         updateChartDropdown();
         updateChart();
       } catch (err) {
-        showAlert('載入游泳歷史記錄失敗：' + err.message, '❌');
+        showAlert('載入歷史記錄失敗：' + err.message, '❌');
       }
+    }
+
+    window.switchPoolType = function(type) {
+      currentPbPoolType = type;
+      const btnLong = document.getElementById('pool-tab-long');
+      const btnShort = document.getElementById('pool-tab-short');
+      if (type === 'long') {
+        btnLong.className = 'flex-1 py-2 rounded-xl bg-white text-sky-600 shadow-xs transition cursor-pointer text-center font-bold';
+        btnShort.className = 'flex-1 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer text-center font-semibold';
+      } else {
+        btnShort.className = 'flex-1 py-2 rounded-xl bg-white text-sky-600 shadow-xs transition cursor-pointer text-center font-bold';
+        btnLong.className = 'flex-1 py-2 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer text-center font-semibold';
+      }
+      renderPBPage();
     }
 
     function updateChartDropdown() {
       const chartSelect = document.getElementById('chart-filter');
+      const poolFilter = document.getElementById('chart-pool-filter').value;
       const currentVal = chartSelect.value;
       chartSelect.innerHTML = '';
 
-      const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
-      const activeEventKeys = new Set(validRecords.map(r => `${r.eventId}_${r.poolLength}`));
+      const validRecords = records.filter(r => (!r.status || r.status === 'NORMAL') && (r.poolType || 'long') === poolFilter);
+      const activeEventIds = new Set(validRecords.map(r => r.eventId));
 
-      if (activeEventKeys.size === 0) {
+      const availableEvents = EVENTS_DB.filter(item => activeEventIds.has(item.id));
+
+      if (availableEvents.length === 0) {
         chartSelect.appendChild(new Option('尚無有效成績項目', ''));
         chartSelect.value = '';
         return;
       }
 
-      activeEventKeys.forEach(key => {
-        const [eId, pLen] = key.split('_');
-        const itemObj = EVENTS_DB.find(e => e.id === eId);
-        if (itemObj) {
-          const displayLength = pLen === '50m' ? '50米' : '25米';
-          chartSelect.appendChild(new Option(`${itemObj.name} (${displayLength})`, key));
-        }
+      availableEvents.forEach(item => {
+        chartSelect.appendChild(new Option(item.name, item.id));
       });
 
-      if (currentVal && activeEventKeys.has(currentVal)) {
+      if (currentVal && availableEvents.some(e => e.id === currentVal)) {
         chartSelect.value = currentVal;
       } else {
-        chartSelect.value = Array.from(activeEventKeys)[0];
+        chartSelect.value = availableEvents[0].id;
       }
-    }
-
-    function timeToSeconds(timeStr) {
-      if (!timeStr) return Infinity;
-      const parts = timeStr.split(':');
-      if (parts.length === 2) {
-        return (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
-      }
-      return parseFloat(timeStr) || Infinity;
     }
 
     function renderPBPage() {
@@ -904,45 +899,52 @@
       const countTag = document.getElementById('pb-count-tag');
       pbContainer.innerHTML = '';
 
-      const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
+      const validRecords = records.filter(r => (!r.status || r.status === 'NORMAL') && (r.poolType || 'long') === currentPbPoolType);
 
       if (validRecords.length === 0) {
         countTag.textContent = '0 個項目';
         pbContainer.innerHTML = `
           <div class="col-span-full bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
-            尚無有效的游泳成績紀錄可計算 PB
+            尚無 ${currentPbPoolType === 'long' ? '長池' : '短池'} 的有效成績紀錄
           </div>`;
         return;
       }
 
       const groups = {};
       validRecords.forEach(r => {
-        const groupKey = `${r.eventId}_${r.poolLength}`;
-        if (!groups[groupKey]) groups[groupKey] = [];
-        groups[groupKey].push(r);
+        if (!groups[r.eventId]) groups[r.eventId] = [];
+        groups[r.eventId].push(r);
       });
 
       const pbList = [];
 
-      Object.keys(groups).forEach(key => {
-        const itemRecords = groups[key];
-        const [eId, pLen] = key.split('_');
-        const itemObj = EVENTS_DB.find(e => e.id === eId);
+      Object.keys(groups).forEach(eventId => {
+        const itemRecords = groups[eventId];
+        const itemObj = EVENTS_DB.find(e => e.id === eventId);
         if (!itemObj) return;
 
         let bestRecord = null;
-        let bestValue = Infinity;
+        let bestValue = null;
 
         itemRecords.forEach(r => {
-          const numericValue = timeToSeconds(r.result);
-          if (numericValue < bestValue) {
+          let numericValue = 0;
+          if (typeof r.result === 'string') {
+            const parts = r.result.split(':');
+            if (parts.length === 2) {
+              numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+            } else {
+              numericValue = parseFloat(r.result) || 0;
+            }
+          }
+
+          if (bestValue === null || numericValue < bestValue) {
             bestValue = numericValue;
             bestRecord = r;
           }
         });
 
         if (bestRecord) {
-          pbList.push({ itemObj, record: bestRecord, poolLength: pLen });
+          pbList.push({ itemObj, record: bestRecord });
         }
       });
 
@@ -957,9 +959,9 @@
           <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition">
             <div class="flex justify-between items-center gap-3 border-b border-slate-100 pb-3">
               <div>
-                <h3 class="text-xl font-black text-slate-900">${r.eventName}</h3>
-                <span class="inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
-                  ${r.poolLength === '50m' ? '50米 長池' : '25米 短池'}
+                <h3 class="text-2xl font-black text-slate-900">${r.eventName}</h3>
+                <span class="inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                  ${r.poolType === 'long' ? '長池 50m' : '短池 25m'}
                 </span>
               </div>
 
@@ -995,22 +997,22 @@
         user_id: currentUser.uid,
         event_id: record.eventId, 
         event_name: record.eventName,
-        pool_length: record.poolLength,
         competition: record.competition, 
         date: record.date,
         status: record.status, 
         stage: record.stage, 
         rank: record.rank || '',
+        pool_type: record.poolType,
         result: record.result, 
         updated_at: serverTimestamp()
       };
 
       try {
         if (editId) {
-          await updateDoc(doc(db, "swimming_records", editId), dbPayload);
+          await updateDoc(doc(db, "swim_records", editId), dbPayload);
         } else {
           dbPayload.created_at = serverTimestamp();
-          await addDoc(collection(db, "swimming_records"), dbPayload);
+          await addDoc(collection(db, "swim_records"), dbPayload);
         }
         return true;
       } catch (err) {
@@ -1021,7 +1023,7 @@
 
     async function deleteRecordFromFirestore(id) {
       try {
-        await deleteDoc(doc(db, "swimming_records", id));
+        await deleteDoc(doc(db, "swim_records", id));
         return true;
       } catch (err) {
         showAlert('刪除失敗：' + err.message, '❌');
@@ -1029,71 +1031,41 @@
       }
     }
 
-    window.validateForm = function() { return true; }
-
-    window.toggleStatusFields = function() {
-      const status = document.getElementById('status-select').value;
-      const singleEventInputs = document.getElementById('single-event-inputs');
-      if (status === 'NORMAL') {
-        singleEventInputs.classList.remove('hidden');
-      } else {
-        singleEventInputs.classList.add('hidden');
-      }
-    }
-
-    // 當階段不是「決賽」時隱藏「名次」
-    window.toggleRankVisibility = function() {
+    window.onStageChange = function() {
       const stage = document.getElementById('stage-select').value;
-      const rankGroup = document.getElementById('rank-input-group');
+      const rankContainer = document.getElementById('rank-container');
       const rankSelect = document.getElementById('rank-select');
 
       if (stage === '決賽') {
-        rankGroup.classList.remove('hidden');
+        rankContainer.classList.remove('hidden');
       } else {
-        rankGroup.classList.add('hidden');
-        rankSelect.value = ''; // 隱藏時清空選取的名次
+        rankContainer.classList.add('hidden');
+        rankSelect.value = '';
       }
     }
 
     window.filterCategory = function(cat, btnEl) {
-      if (cat) currentCategoryFilter = cat;
-
+      document.querySelectorAll('.cat-btn').forEach(b => {
+        b.classList.remove('bg-white', 'text-sky-600', 'shadow-xs');
+        b.classList.add('text-slate-600');
+      });
       if (btnEl) {
-        document.querySelectorAll('.cat-btn').forEach(b => {
-          b.classList.remove('bg-white', 'text-cyan-600', 'shadow-xs');
-          b.classList.add('text-slate-600');
-        });
-        btnEl.classList.add('bg-white', 'text-cyan-600', 'shadow-xs');
+        btnEl.classList.add('bg-white', 'text-sky-600', 'shadow-xs');
         btnEl.classList.remove('text-slate-600');
       }
 
       const selectEl = document.getElementById('event-select');
       const currentSelectedVal = selectEl.value;
-      const currentPoolLength = document.getElementById('pool-length-select').value;
       selectEl.innerHTML = '';
 
-      let filtered = currentCategoryFilter === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === currentCategoryFilter);
-      
-      if (currentPoolLength === '50m') {
-        const disabledInLCM = [
-          '100m_im',
-          '4x50m_free_relay',
-          '4x50m_free_mixed_relay',
-          '4x50m_medley_relay',
-          '4x50m_medley_mixed_relay'
-        ];
-        filtered = filtered.filter(e => !disabledInLCM.includes(e.id));
-      }
-
+      const filtered = cat === 'all' ? EVENTS_DB : EVENTS_DB.filter(e => e.cat === cat);
       filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
 
       if (filtered.some(e => e.id === currentSelectedVal)) {
         selectEl.value = currentSelectedVal;
+      } else if (filtered.length > 0) {
+        selectEl.value = filtered[0].id;
       }
-    }
-
-    window.onPoolLengthChange = function() {
-      filterCategory(null, null);
     }
 
     function formatTimeStr(min, sec, ms) {
@@ -1113,8 +1085,8 @@
 
       const editId = document.getElementById('edit-record-id').value;
       const selectedId = document.getElementById('event-select').value;
-      const poolLength = document.getElementById('pool-length-select').value;
       const status = document.getElementById('status-select').value;
+      const poolType = document.getElementById('pool-type-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
       if (!itemObj) { showAlert("請選擇比賽項目！", '⚠️'); return; }
@@ -1124,12 +1096,12 @@
       let record = {
         eventId: selectedId, 
         eventName: itemObj.name,
-        poolLength: poolLength,
         competition: comp,
         date: date,
         status: status, 
         stage: stageVal,
-        rank: stageVal === '決賽' ? document.getElementById('rank-select').value : ''
+        rank: stageVal === '決賽' ? document.getElementById('rank-select').value : '',
+        poolType: poolType
       };
 
       if (status === 'NORMAL') {
@@ -1163,8 +1135,8 @@
       document.getElementById('cancel-edit-btn').classList.remove('hidden');
 
       document.getElementById('competition').value = r.competition;
-      document.getElementById('pool-length-select').value = r.poolLength || '50m';
       setInitialTodayDate(r.date);
+      document.getElementById('pool-type-select').value = r.poolType || 'long';
 
       const itemObj = EVENTS_DB.find(e => e.id === r.eventId);
       if (itemObj) {
@@ -1173,10 +1145,8 @@
       }
 
       document.getElementById('stage-select').value = r.stage || '初賽';
-      toggleRankVisibility();
-      
+      onStageChange();
       document.getElementById('status-select').value = r.status || 'NORMAL';
-      toggleStatusFields();
       document.getElementById('rank-select').value = r.rank || '';
 
       if (r.status === 'NORMAL' && r.result) {
@@ -1188,7 +1158,6 @@
             document.getElementById('time-min').value = minSec[0];
             document.getElementById('time-sec').value = minSec[1];
           } else {
-            document.getElementById('time-min').value = '';
             document.getElementById('time-sec').value = minSec[0];
           }
         }
@@ -1202,7 +1171,7 @@
     }
 
     window.deleteRecord = async function(id) {
-      const confirmed = await showConfirm('確定要刪除這筆游泳紀錄嗎？');
+      const confirmed = await showConfirm('確定要刪除這筆紀錄嗎？');
       if (confirmed) {
         if (await deleteRecordFromFirestore(id)) {
           showAlert('已成功刪除紀錄！', '✅');
@@ -1218,10 +1187,8 @@
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
-      toggleStatusFields();
       setInitialTodayDate();
-      filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
-      toggleRankVisibility();
+      onStageChange();
 
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
@@ -1241,7 +1208,7 @@
       ['all', 'comp', 'event'].forEach(m => {
         const btn = document.getElementById(`tab-${m}`);
         if (m === mode) {
-          btn.className = 'px-3 py-1.5 rounded-xl bg-white text-cyan-600 shadow-xs transition cursor-pointer';
+          btn.className = 'px-3 py-1.5 rounded-xl bg-white text-sky-600 shadow-xs transition cursor-pointer';
         } else {
           btn.className = 'px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer';
         }
@@ -1267,7 +1234,7 @@
           return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200 flex-shrink-0">${num}</div>`;
         }
       }
-      return '';
+      return `<div class="w-10 h-10 flex-shrink-0"></div>`;
     }
 
     function buildRecordCardHtml(r, showCompInHeader = true) {
@@ -1281,7 +1248,8 @@
         resultDisplay = `<span class="text-3xl font-black tracking-tight font-mono" style="color: var(--theme-color, #0284c7);">${r.result}</span>`;
       }
 
-      const poolLengthText = r.poolLength === '50m' ? '50米' : '25米';
+      const poolTag = r.poolType === 'short' ? '短池 25m' : '長池 50m';
+      const stageInfo = `${r.stage || '初賽'} (${poolTag})`;
 
       let cardHtml = `
         <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -1292,25 +1260,27 @@
             </div>
           ` : ''}
 
-          <div class="p-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              ${getRankBadgeHtml(r.rank)}
-              
-              <div>
-                <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName} <span class="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded-md ml-1">${poolLengthText}</span></h3>
-                <p class="text-xs text-slate-400 font-medium">${r.stage || '賽事紀錄'}</p>
+          <div class="p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                ${getRankBadgeHtml(r.rank)}
+                <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${r.eventName}</h3>
+              </div>
+
+              <div class="text-right flex items-baseline">
+                ${resultDisplay}
               </div>
             </div>
 
-            <div class="text-right flex flex-col items-end">
-              <div>${resultDisplay}</div>
-              <span class="text-xs text-slate-400 font-medium">${ageText}</span>
+            <div class="flex justify-between items-center text-xs text-slate-400 font-medium pt-1">
+              <span>${stageInfo}</span>
+              <span>${ageText}</span>
             </div>
           </div>
 
           ${isHistoryEditMode ? `
             <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
-              <button onclick="editRecord('${r.id}')" class="text-xs font-bold text-cyan-600 bg-cyan-50 hover:bg-cyan-100 px-3 py-1.5 rounded-xl transition cursor-pointer">編輯此筆紀錄</button>
+              <button onclick="editRecord('${r.id}')" class="text-xs font-bold text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-xl transition cursor-pointer">編輯此筆紀錄</button>
               <button onclick="deleteRecord('${r.id}')" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition cursor-pointer">刪除此筆紀錄</button>
             </div>
           ` : ''}
@@ -1383,7 +1353,7 @@
           <button onclick="filterEventGroup('all')" 
             class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
               currentSelectedEventFilter === 'all' 
-                ? 'bg-cyan-600 text-white shadow-xs' 
+                ? 'bg-sky-600 text-white shadow-xs' 
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }">
             全部項目 (${activeEventNames.length})
@@ -1397,7 +1367,7 @@
             <button onclick="filterEventGroup('${name}')" 
               class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
                 isSelected 
-                  ? 'bg-cyan-600 text-white shadow-xs' 
+                  ? 'bg-sky-600 text-white shadow-xs' 
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }">
               ${name} (${count})
@@ -1472,13 +1442,16 @@
                   if (rawData.rank) stageInfo += ` (${rawData.rank})`;
                   lines.push(stageInfo);
                   lines.push(`成績: ${rawData.displayResult}`);
+                  
                   return lines;
                 }
               }
             }
           },
           scales: {
-            x: { ticks: { font: { size: 11 } } }
+            x: {
+              ticks: { font: { size: 11 } }
+            }
           }
         }
       });
@@ -1490,26 +1463,30 @@
     window.updateChart = function() {
       if (!chartInstance) return;
 
-      const selectedKey = document.getElementById('chart-filter').value;
-      const theme = THEME_CONFIGS.blue;
+      const selectedId = document.getElementById('chart-filter').value;
+      const poolFilter = document.getElementById('chart-pool-filter').value;
+      const theme = THEME_CONFIGS[athleteProfile.theme] || THEME_CONFIGS.blue;
 
-      if (!selectedKey) {
+      if (!selectedId) {
         chartInstance.data.labels = [];
         chartInstance.data.datasets = [];
         chartInstance.update();
         return;
       }
 
-      const [selectedId, poolLength] = selectedKey.split('_');
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
       if (!itemObj) return;
 
       const filtered = records
-        .filter(r => r.eventId === selectedId && r.poolLength === poolLength && (!r.status || r.status === 'NORMAL'))
+        .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL') && (r.poolType || 'long') === poolFilter)
         .sort((a, b) => {
           const dateDiff = new Date(a.date) - new Date(b.date);
           if (dateDiff !== 0) return dateDiff;
-          if (a.competition !== b.competition) return a.competition.localeCompare(b.competition, 'zh-HK');
+
+          if (a.competition !== b.competition) {
+            return a.competition.localeCompare(b.competition, 'zh-HK');
+          }
+
           const weightA = STAGE_ORDER[a.stage] || 1;
           const weightB = STAGE_ORDER[b.stage] || 1;
           return weightA - weightB;
@@ -1518,8 +1495,15 @@
       chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
 
       const chartDataPoints = filtered.map(r => {
-        const numericValue = timeToSeconds(r.result);
-        const displayPoolLength = r.poolLength === '50m' ? '50米' : '25米';
+        let numericValue = 0;
+        if (typeof r.result === 'string') {
+          const parts = r.result.split(':');
+          if (parts.length === 2) {
+            numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+          } else {
+            numericValue = parseFloat(r.result) || 0;
+          }
+        }
 
         return {
           x: r.date.replace(/-/g, '/'),
@@ -1528,14 +1512,12 @@
           competition: r.competition,
           stage: r.stage,
           rank: r.rank,
-          displayResult: `${r.eventName} (${displayPoolLength}): ${r.result}`
+          displayResult: `${r.eventName}: ${r.result}`
         };
       });
 
-      const displayPoolLength = poolLength === '50m' ? '50米' : '25米';
-
       chartInstance.data.datasets = [{
-        label: `${itemObj.name} (${displayPoolLength})`,
+        label: itemObj.name,
         data: chartDataPoints,
         borderColor: theme.primaryColor,
         backgroundColor: `${theme.primaryColor}22`,
@@ -1547,7 +1529,7 @@
       }];
 
       chartInstance.options.scales.y = {
-        reverse: true, // 游泳時間越短越好，反轉 Y 軸
+        reverse: true,
         title: {
           display: true,
           text: '時間 (秒)'
