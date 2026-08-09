@@ -7,7 +7,7 @@
     <title>運動紀錄系統 - 快捷登入</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 步驟二：引入 FirebaseUI CSS 與 Firebase Compat SDKs -->
+    <!-- FirebaseUI CSS 與 Firebase Compat SDKs -->
     <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -43,7 +43,7 @@
             box-sizing: border-box; 
         }
 
-        /* 優化 FirebaseUI 按鈕的圓角樣式以契合整體設計 */
+        /* 優化 FirebaseUI 樣式整合 */
         .firebaseui-card-content {
             padding: 0 !important;
         }
@@ -89,7 +89,7 @@
         <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">歡迎使用運動紀錄系統</h2>
         <p class="text-sm text-slate-500 mb-6 font-medium">請選擇登入方式以存取專屬管理系統</p>
 
-        <!-- 步驟三：FirebaseUI 渲染容器 -->
+        <!-- FirebaseUI 渲染容器 -->
         <div id="firebaseui-auth-container"></div>
     </div>
 
@@ -102,7 +102,6 @@
         </div>
     </div>
 
-    <!-- 步驟四：初始化 FirebaseUI -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
@@ -141,22 +140,19 @@
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
                     window.location.href = 'athletes.html';
-                    return false; // 避免預設自動重導向，改由上方手動控制
-                },
-                uiShown: function() {
-                    // UI 載入完畢後的處理（可留空）
+                    return false;
                 }
             },
+            // 停用平臺發起的密碼輔助快取，避免帳號連結衝突與循環提示
+            credentialHelper: firebaseui.auth.CredentialHelper.NONE,
             signInFlow: 'popup',
             signInSuccessUrl: 'athletes.html',
             signInOptions: [
-                // 1. Email / 密碼 登入方式
                 {
                     provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
                     signInMethod: firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
                     requireDisplayName: true
                 },
-                // 2. Google OAuth 登入方式
                 firebase.auth.GoogleAuthProvider.PROVIDER_ID
             ]
         };
