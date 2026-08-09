@@ -899,11 +899,9 @@
       const currentVal = chartSelect.value;
       chartSelect.innerHTML = '';
 
-      // 找出該運動員所有擁有「正常(NORMAL)」成績紀錄的 eventId 集合
       const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
       const activeEventIds = new Set(validRecords.map(r => r.eventId));
 
-      // 僅保留在紀錄中出現過且有有效成績的項目
       const availableEvents = EVENTS_DB.filter(item => activeEventIds.has(item.id));
 
       if (availableEvents.length === 0) {
@@ -916,7 +914,6 @@
         chartSelect.appendChild(new Option(item.name, item.id));
       });
 
-      // 保持當前選擇（若仍合法），否則預設選擇第一個有成績的項目
       if (currentVal && availableEvents.some(e => e.id === currentVal)) {
         chartSelect.value = currentVal;
       } else {
@@ -1487,7 +1484,8 @@
           return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200 flex-shrink-0">${num}</div>`;
         }
       }
-      return '';
+      // 無名次時補上相同尺寸的佔位區塊，確保文字對齊
+      return `<div class="w-10 h-10 flex-shrink-0"></div>`;
     }
 
     function buildRecordCardHtml(r, showCompInHeader = true) {
@@ -1519,19 +1517,21 @@
             </div>
           ` : ''}
 
-          <div class="p-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-              ${getRankBadgeHtml(r.rank)}
-              
-              <div>
-                <h3 class="text-base md:text-lg font-bold text-slate-800">${r.eventName}</h3>
-                <p class="text-xs text-slate-400 font-medium">${subInfoText || '賽事紀錄'}</p>
+          <div class="p-4 space-y-2">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                ${getRankBadgeHtml(r.rank)}
+                <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${r.eventName}</h3>
+              </div>
+
+              <div class="text-right flex items-baseline">
+                ${resultDisplay}
               </div>
             </div>
 
-            <div class="text-right flex flex-col items-end">
-              <div>${resultDisplay}</div>
-              <span class="text-xs text-slate-400 font-medium">${ageText}</span>
+            <div class="flex justify-between items-center text-xs text-slate-400 font-medium pt-1">
+              <span>${subInfoText || '賽事紀錄'}</span>
+              <span>${ageText}</span>
             </div>
           </div>
 
