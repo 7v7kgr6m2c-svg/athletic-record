@@ -23,33 +23,33 @@
             <p class="text-xs md:text-sm text-slate-500 font-medium">選擇您要管理或查看的運動種類</p>
         </div>
 
-        <div class="grid grid-cols-1 gap-4">
-            <!-- 田徑按鈕 -->
-            <button onclick="goToSport('main_a.html')" class="bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white p-6 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
+        <div class="grid grid-cols-1 gap-5">
+            <!-- 田徑按鈕（橙紅色跑道漸層，內襯加大） -->
+            <button onclick="goToSport('main_a.html')" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
                 <div class="flex items-center gap-4">
                     <span class="text-4xl">🏃</span>
-                    <div class="text-left">
-                        <h3 class="text-xl font-bold">田徑項目</h3>
-                        <p class="text-xs text-blue-100">Track & Field Records</p>
-                    </div>
+                    <h3 class="text-2xl font-bold flex items-baseline gap-2">
+                        <span>田徑</span>
+                        <span class="text-base font-medium opacity-90 font-sans">Track & Field</span>
+                    </h3>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </button>
 
-            <!-- 游泳按鈕 -->
-            <button onclick="goToSport('main_s.html')" class="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white p-6 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
+            <!-- 游泳按鈕（水藍色漸層，內襯加大） -->
+            <button onclick="goToSport('main_s.html')" class="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
                 <div class="flex items-center gap-4">
                     <span class="text-4xl">🏊</span>
-                    <div class="text-left">
-                        <h3 class="text-xl font-bold">游泳項目</h3>
-                        <p class="text-xs text-cyan-100">Swimming Records</p>
-                    </div>
+                    <h3 class="text-2xl font-bold flex items-baseline gap-2">
+                        <span>游泳</span>
+                        <span class="text-base font-medium opacity-90 font-sans">Swimming</span>
+                    </h3>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>
 
-        <button onclick="window.location.href='athletes.html'" class="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold py-3 rounded-2xl shadow-sm transition cursor-pointer">
+        <button onclick="window.location.href='athletes.html'" class="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold py-3.5 rounded-2xl shadow-sm transition cursor-pointer">
             返回運動員列表
         </button>
     </div>
