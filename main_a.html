@@ -262,14 +262,14 @@
 
             <div class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">階段 <span class="text-red-500">*</span></label>
-              <select id="stage-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select id="stage-select" onchange="onStageChange()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="初賽">初賽</option>
                 <option value="準決賽">準決賽</option>
                 <option value="決賽">決賽</option>
               </select>
             </div>
 
-            <div class="flex items-center gap-3">
+            <div id="rank-container" class="hidden flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">名次</label>
               <select id="rank-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">無名次</option>
@@ -746,6 +746,7 @@
         setInitialTodayDate();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
+        onStageChange();
         await fetchRecordsFromFirestore();
         initChart();
 
@@ -1091,6 +1092,19 @@
 
     window.validateForm = function() { return true; }
 
+    window.onStageChange = function() {
+      const stage = document.getElementById('stage-select').value;
+      const rankContainer = document.getElementById('rank-container');
+      const rankSelect = document.getElementById('rank-select');
+
+      if (stage === '決賽') {
+        rankContainer.classList.remove('hidden');
+      } else {
+        rankContainer.classList.add('hidden');
+        rankSelect.value = '';
+      }
+    }
+
     window.onStatusChange = function() {
       const status = document.getElementById('status-select').value;
       const selectedId = document.getElementById('event-select').value;
@@ -1213,6 +1227,7 @@
         if (itemObj.hasWind) windContainer.classList.remove('hidden'); else windContainer.classList.add('hidden');
       }
       onStatusChange();
+      onStageChange();
     }
 
     window.calculateTotalScore = function() {
@@ -1250,14 +1265,16 @@
 
       if (!itemObj) { showAlert("請選擇比賽項目！", '⚠️'); return; }
 
+      const stageVal = document.getElementById('stage-select').value;
+
       let record = {
         eventId: selectedId, 
         eventName: itemObj.name,
         competition: comp,
         date: date,
         status: status, 
-        stage: document.getElementById('stage-select').value,
-        rank: itemObj.subs ? document.getElementById('combined-rank-select').value : document.getElementById('rank-select').value,
+        stage: stageVal,
+        rank: itemObj.subs ? document.getElementById('combined-rank-select').value : (stageVal === '決賽' ? document.getElementById('rank-select').value : ''),
         isCombined: !!itemObj.subs, 
         type: itemObj.type
       };
@@ -1334,6 +1351,7 @@
       }
 
       document.getElementById('stage-select').value = r.stage || '初賽';
+      onStageChange();
       document.getElementById('status-select').value = r.status || 'NORMAL';
       onStatusChange();
 
@@ -1418,6 +1436,7 @@
       document.getElementById('record-form').reset();
       setInitialTodayDate();
       onEventSelectChange();
+      onStageChange();
 
       isHistoryEditMode = false;
       document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
