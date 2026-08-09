@@ -110,10 +110,17 @@
         </div>
       </div>
 
-      <button onclick="switchAthlete()" class="flex items-center gap-1 text-white/90 hover:text-white text-sm md:text-base font-medium bg-white/10 hover:bg-white/20 px-4 py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer">
-        <span>切換</span>
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </button>
+      <!-- 右側按鈕區塊：切換運動員 & 切換運動 -->
+      <div class="flex flex-col gap-2">
+        <button onclick="switchAthlete()" class="flex items-center justify-center gap-1 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-white/10 hover:bg-white/20 px-3.5 py-1.5 md:px-4 md:py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer whitespace-nowrap">
+          <span>切換運動員</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+        <button onclick="switchSport()" class="flex items-center justify-center gap-1 text-white/90 hover:text-white text-xs md:text-sm font-medium bg-white/10 hover:bg-white/20 px-3.5 py-1.5 md:px-4 md:py-2 rounded-2xl transition border border-white/10 shadow-sm cursor-pointer whitespace-nowrap">
+          <span>切換運動</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
     </header>
 
     <!-- Material You 分頁導覽列 -->
@@ -747,6 +754,7 @@
     }
 
     window.switchAthlete = function() { window.location.href = 'athletes.html'; }
+    window.switchSport = function() { window.location.href = 'select_sport.html'; }
 
     function getAgeAtDate(dobString, targetDateString) {
       if (!dobString || !targetDateString) return null;
