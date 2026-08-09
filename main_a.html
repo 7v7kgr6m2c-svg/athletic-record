@@ -213,11 +213,11 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
-            <div class="grid grid-cols-5 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
+            <!-- 改為 4 欄並移除接力 -->
+            <div class="grid grid-cols-4 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
               <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-blue-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
               <button type="button" onclick="filterCategory('track', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">徑項</button>
               <button type="button" onclick="filterCategory('field', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">田項</button>
-              <button type="button" onclick="filterCategory('relay', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">接力</button>
               <button type="button" onclick="filterCategory('combined', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">全能</button>
             </div>
           </div>
@@ -841,6 +841,7 @@
       '跳高': 'distance', '撐竿跳高': 'distance', '跳遠': 'distance', '推鉛球': 'distance', '擲鐵餅': 'distance', '擲標槍': 'distance'
     };
 
+    // 已移除所有接力項目 (4x100m, 4x400m)
     const EVENTS_DB = [
       { id: '60m', cat: 'track', type: 'time', name: '60米 / m', hasWind: true },
       { id: '100m', cat: 'track', type: 'time', name: '100米 / m', hasWind: true },
@@ -854,8 +855,6 @@
       { id: '110mh', cat: 'track', type: 'time', name: '110米欄 / m Hurdles', hasWind: true },
       { id: '400mh', cat: 'track', type: 'time', name: '400米欄 / m Hurdles', hasWind: false },
       { id: '3000m_steeple', cat: 'track', type: 'time', name: '3000米障礙賽 / m Steeplechase', hasWind: false },
-      { id: '4x100m', cat: 'relay', type: 'time', name: '4x100米接力 / Relay', hasWind: false },
-      { id: '4x400m', cat: 'relay', type: 'time', name: '4x400米接力 / Relay', hasWind: false },
       { id: 'high_jump', cat: 'field', type: 'distance', name: '跳高 High Jump', hasWind: false },
       { id: 'pole_vault', cat: 'field', type: 'distance', name: '撐竿跳高 Pole Vault', hasWind: false },
       { id: 'long_jump', cat: 'field', type: 'distance', name: '跳遠 Long Jump', hasWind: true },
@@ -1484,7 +1483,6 @@
           return `<div class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 font-bold flex items-center justify-center text-xs border border-slate-200 flex-shrink-0">${num}</div>`;
         }
       }
-      // 無名次時補上相同尺寸的佔位區塊，確保文字對齊
       return `<div class="w-10 h-10 flex-shrink-0"></div>`;
     }
 
