@@ -116,20 +116,6 @@
       </button>
     </header>
 
-    <!-- 資料遷移通知條 -->
-    <div id="migration-banner" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs">
-      <div class="flex items-center gap-3">
-        <span class="text-xl">⚠️</span>
-        <div>
-          <h4 class="text-xs font-bold text-amber-800">偵測到舊版數據結構</h4>
-          <p class="text-[11px] text-amber-700">點擊右側按鈕即可升級並將舊紀錄轉移至新資料庫。</p>
-        </div>
-      </div>
-      <button id="migration-btn" onclick="startMigration()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs whitespace-nowrap cursor-pointer">
-        升級資料
-      </button>
-    </div>
-
     <!-- Material You 分頁導覽列 -->
     <nav class="bg-white/80 backdrop-blur-md p-1.5 rounded-full shadow-sm border border-slate-200/80 flex gap-1 sticky top-3 z-30">
       <button onclick="switchMainTab('pb')" id="main-tab-pb" class="m3-tab-btn active">我的 PB</button>
@@ -520,14 +506,17 @@
     function applyTheme(themeKey) {
         const theme = THEME_CONFIGS[themeKey] || THEME_CONFIGS.blue;
         
+        // 1. 套用 Header 與 PB 區塊主題顏色
         const header = document.getElementById('main-header');
         const pbBanner = document.getElementById('pb-banner');
         if (header) header.className = `relative overflow-hidden ${theme.headerClass} p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300`;
         if (pbBanner) pbBanner.className = `${theme.pbBannerClass} p-6 rounded-3xl shadow-lg text-white transition-colors duration-300`;
 
+        // 2. 套用 Material You active CSS 變數
         document.documentElement.style.setProperty('--theme-color', theme.primaryColor);
         document.documentElement.style.setProperty('--theme-bg-light', theme.lightBg);
 
+        // 3. 更新 Chart 顏色
         if (chartInstance) {
             chartInstance.data.datasets.forEach(ds => {
                 ds.borderColor = theme.primaryColor;
@@ -750,7 +739,7 @@
         setInitialTodayDate();
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
-        await checkAndFetchRecords();
+        await fetchRecordsFromFirestore();
         initChart();
 
         document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
@@ -780,7 +769,7 @@
     function initProfileUI() {
       document.getElementById('athlete-name').textContent = athleteProfile.name;
       document.getElementById('athlete-dob').textContent = `出生日期: ${athleteProfile.dob || '未填寫'}`;
-      document.getElementById('athlete-[#athlete-age]').textContent = `年齡: ${calculateAge(athleteProfile.dob)}`;
+      document.getElementById('athlete-age').textContent = `年齡: ${calculateAge(athleteProfile.dob)}`;
       document.getElementById('athlete-gender').textContent = `性別: ${athleteProfile.gender || '未指定'}`;
 
       if (athleteProfile.avatar) {
@@ -871,66 +860,6 @@
       { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能 Decathlon', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
 
-    async function checkAndFetchRecords() {
-      try {
-        const oldQuery = query(collection(db, "records"), where("athlete_id", "==", currentAthleteId));
-        const oldSnap = await getDocs(oldQuery);
-
-        if (!oldSnap.empty) {
-          document.getElementById('migration-banner').classList.remove('hidden');
-        }
-
-        await fetchRecordsFromFirestore();
-      } catch (err) {
-        showAlert('檢查舊資料失敗：' + err.message, '❌');
-      }
-    }
-
-    window.startMigration = async function() {
-      const btn = document.getElementById('migration-btn');
-      btn.disabled = true;
-      btn.textContent = '遷移中...';
-
-      try {
-        const oldQuery = query(collection(db, "records"), where("athlete_id", "==", currentAthleteId));
-        const oldSnap = await getDocs(oldQuery);
-        let count = 0;
-
-        for (const docSnap of oldSnap.docs) {
-          const data = docSnap.data();
-          const normalizedData = {
-            athlete_id: data.athlete_id || currentAthleteId,
-            user_id: data.user_id || currentUser.uid,
-            event_id: data.event_id || data.eventId || '',
-            event_name: data.event_name || data.eventName || '',
-            competition: data.competition || '',
-            date: data.date || '',
-            status: data.status || 'NORMAL',
-            stage: data.stage || '初賽',
-            rank: data.rank || '',
-            is_combined: data.is_combined !== undefined ? data.is_combined : (data.isCombined || false),
-            type: data.type || 'time',
-            result: data.result || '',
-            wind: (data.wind !== undefined && data.wind !== null) ? data.wind : null,
-            sub_details: data.sub_details || data.subDetails || [],
-            updated_at: serverTimestamp()
-          };
-
-          await addDoc(collection(db, "track_records"), normalizedData);
-          await deleteDoc(doc(db, "records", docSnap.id));
-          count++;
-        }
-
-        showAlert(`成功將 ${count} 筆舊紀錄遷移至新資料庫！`, '✅');
-        document.getElementById('migration-banner').classList.add('hidden');
-        await fetchRecordsFromFirestore();
-      } catch (err) {
-        showAlert('資料遷移失敗：' + err.message, '❌');
-        btn.disabled = false;
-        btn.textContent = '重試遷移';
-      }
-    };
-
     async function fetchRecordsFromFirestore() {
       try {
         const q = query(collection(db, "track_records"), where("athlete_id", "==", currentAthleteId));
@@ -939,19 +868,10 @@
         querySnapshot.forEach((docSnap) => {
           const row = docSnap.data();
           records.push({
-            id: docSnap.id, 
-            eventId: row.event_id, 
-            eventName: row.event_name,
-            competition: row.competition, 
-            date: row.date, 
-            status: row.status,
-            stage: row.stage, 
-            rank: row.rank, 
-            isCombined: row.is_combined,
-            type: row.type, 
-            result: row.result, 
-            wind: row.wind, 
-            subDetails: row.sub_details
+            id: docSnap.id, eventId: row.event_id, eventName: row.event_name,
+            competition: row.competition, date: row.date, status: row.status,
+            stage: row.stage, rank: row.rank, isCombined: row.is_combined,
+            type: row.type, result: row.result, wind: row.wind, subDetails: row.sub_details
           });
         });
         
@@ -970,9 +890,11 @@
       const currentVal = chartSelect.value;
       chartSelect.innerHTML = '';
 
+      // 找出該運動員所有擁有「正常(NORMAL)」成績紀錄的 eventId 集合
       const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
       const activeEventIds = new Set(validRecords.map(r => r.eventId));
 
+      // 僅保留在紀錄中出現過且有有效成績的項目
       const availableEvents = EVENTS_DB.filter(item => activeEventIds.has(item.id));
 
       if (availableEvents.length === 0) {
@@ -985,6 +907,7 @@
         chartSelect.appendChild(new Option(item.name, item.id));
       });
 
+      // 保持當前選擇（若仍合法），否則預設選擇第一個有成績的項目
       if (currentVal && availableEvents.some(e => e.id === currentVal)) {
         chartSelect.value = currentVal;
       } else {
