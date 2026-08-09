@@ -197,7 +197,7 @@
           <!-- 比賽日期 iOS 滾輪觸發位 -->
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">比賽日期 <span class="text-red-500">*</span></label>
-            <div onclick="openIosWheelPicker('race')" class="flex-1 border rounded-xl h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-cyan-500 transition">
+            <div onclick="openIosWheelPicker()" class="flex-1 border rounded-xl h-10 px-3 flex items-center justify-between bg-slate-50 text-sm cursor-pointer hover:border-cyan-500 transition">
               <span id="race-display-text" class="text-slate-800 font-medium">載入中...</span>
               <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
@@ -232,7 +232,7 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
-            <select id="status-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+            <select id="status-select" onchange="toggleStatusFields()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500">
               <option value="NORMAL">正常</option>
               <option value="DQ">DQ (犯規)</option>
               <option value="DNS">DNS (未起跳)</option>
@@ -246,11 +246,11 @@
               
               <div class="flex items-center gap-2 flex-wrap flex-1">
                 <div id="time-input-group" class="flex items-center gap-1">
-                  <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
+                  <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this);" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
                   <span class="font-bold text-slate-500">:</span>
-                  <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
+                  <input type="number" id="time-sec" min="0" max="59" placeholder="秒" oninput="sanitizeDigit(this);" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
                   <span class="font-bold text-slate-500">.</span>
-                  <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this); validateForm();" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
+                  <input type="number" id="time-ms" min="0" max="99" placeholder="毫秒" oninput="sanitizeDigit(this);" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-cyan-500">
                 </div>
               </div>
             </div>
@@ -332,7 +332,7 @@
           </div>
           <div class="flex gap-3">
               <button type="button" onclick="closeCropModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-sm cursor-pointer">取消</button>
-              <button type="button" onclick="confirmHeaderCrop()" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">完成裁切</button>
+              <button type="button" id="confirm-crop-btn" onclick="confirmHeaderCrop()" class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer">完成裁切</button>
           </div>
       </div>
   </div>
@@ -360,7 +360,8 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
@@ -375,6 +376,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
     const THEME_CONFIGS = {
         blue: {
@@ -661,6 +663,7 @@
           return;
         }
 
+        await fetchAthleteProfile();
         initProfileUI();
         applyTheme();
         setInitialTodayDate();
@@ -671,6 +674,22 @@
 
         document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
       });
+    }
+
+    async function fetchAthleteProfile() {
+      try {
+        const docRef = doc(db, "athletes", currentAthleteId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          athleteProfile.name = data.name || currentAthleteName || '運動員';
+          athleteProfile.dob = data.dob || currentAthleteDob || '';
+          athleteProfile.gender = data.gender || currentAthleteGender || '';
+          athleteProfile.avatar = data.avatar || currentAthleteAvatar || '';
+        }
+      } catch (e) {
+        console.error("無法同步運動員最新資料：", e);
+      }
     }
 
     window.switchAthlete = function() { window.location.href = 'select_sport.html'; }
@@ -734,20 +753,34 @@
 
     window.confirmHeaderCrop = async function() {
       if (!cropper) return;
-      const canvas = cropper.getCroppedCanvas({ width: 150, height: 150 });
-      const croppedBase64 = canvas.toDataURL('image/jpeg', 0.6);
-
-      document.getElementById('avatar-img').src = croppedBase64;
-      athleteProfile.avatar = croppedBase64;
-      localStorage.setItem('current_athlete_avatar', croppedBase64);
-      closeCropModal();
+      
+      const confirmBtn = document.getElementById('confirm-crop-btn');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = "上傳中...";
 
       try {
+        const canvas = cropper.getCroppedCanvas({ width: 250, height: 250 });
+        const croppedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+        // 使用 Firebase Storage 上傳
+        const storageRef = ref(storage, `avatars/${currentAthleteId}_${Date.now()}.jpg`);
+        await uploadString(storageRef, croppedBase64, 'data_url');
+        const downloadURL = await getDownloadURL(storageRef);
+
+        document.getElementById('avatar-img').src = downloadURL;
+        athleteProfile.avatar = downloadURL;
+        localStorage.setItem('current_athlete_avatar', downloadURL);
+
         const athleteRef = doc(db, "athletes", currentAthleteId);
-        await updateDoc(athleteRef, { avatar: croppedBase64 });
+        await updateDoc(athleteRef, { avatar: downloadURL });
+        
+        closeCropModal();
         showAlert('頭像更新成功！', '✅');
       } catch (err) {
         showAlert('頭像更新失敗：' + err.message, '❌');
+      } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = "完成裁切";
       }
     };
 
@@ -841,6 +874,15 @@
       }
     }
 
+    function timeToSeconds(timeStr) {
+      if (!timeStr) return Infinity;
+      const parts = timeStr.split(':');
+      if (parts.length === 2) {
+        return (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+      }
+      return parseFloat(timeStr) || Infinity;
+    }
+
     function renderPBPage() {
       const pbContainer = document.getElementById('pb-cards-container');
       const countTag = document.getElementById('pb-count-tag');
@@ -873,18 +915,11 @@
         if (!itemObj) return;
 
         let bestRecord = null;
-        let bestValue = null;
+        let bestValue = Infinity;
 
         itemRecords.forEach(r => {
-          let numericValue = 0;
-          const parts = r.result.split(':');
-          if (parts.length === 2) {
-            numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
-          } else {
-            numericValue = parseFloat(r.result) || 0;
-          }
-
-          if (bestValue === null || numericValue < bestValue) {
+          const numericValue = timeToSeconds(r.result);
+          if (numericValue < bestValue) {
             bestValue = numericValue;
             bestRecord = r;
           }
@@ -979,6 +1014,16 @@
     }
 
     window.validateForm = function() { return true; }
+
+    window.toggleStatusFields = function() {
+      const status = document.getElementById('status-select').value;
+      const singleEventInputs = document.getElementById('single-event-inputs');
+      if (status === 'NORMAL') {
+        singleEventInputs.classList.remove('hidden');
+      } else {
+        singleEventInputs.classList.add('hidden');
+      }
+    }
 
     window.filterCategory = function(cat, btnEl) {
       document.querySelectorAll('.cat-btn').forEach(b => {
@@ -1078,6 +1123,7 @@
 
       document.getElementById('stage-select').value = r.stage || '初賽';
       document.getElementById('status-select').value = r.status || 'NORMAL';
+      toggleStatusFields();
       document.getElementById('rank-select').value = r.rank || '';
 
       if (r.status === 'NORMAL' && r.result) {
@@ -1089,6 +1135,7 @@
             document.getElementById('time-min').value = minSec[0];
             document.getElementById('time-sec').value = minSec[1];
           } else {
+            document.getElementById('time-min').value = '';
             document.getElementById('time-sec').value = minSec[0];
           }
         }
@@ -1118,6 +1165,7 @@
       document.getElementById('submit-btn').textContent = '儲存紀錄';
       document.getElementById('cancel-edit-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
+      toggleStatusFields();
       setInitialTodayDate();
 
       isHistoryEditMode = false;
@@ -1413,13 +1461,7 @@
       chartInstance.data.labels = filtered.map(r => r.date.replace(/-/g, '/'));
 
       const chartDataPoints = filtered.map(r => {
-        let numericValue = 0;
-        const parts = r.result.split(':');
-        if (parts.length === 2) {
-          numericValue = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
-        } else {
-          numericValue = parseFloat(r.result) || 0;
-        }
+        const numericValue = timeToSeconds(r.result);
 
         return {
           x: r.date.replace(/-/g, '/'),
