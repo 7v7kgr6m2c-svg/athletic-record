@@ -868,6 +868,13 @@
       { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能 Decathlon', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
 
+    // 項目順序對照表，用於全域排序
+    const EVENTS_ORDER = EVENTS_DB.reduce((map, item, idx) => {
+      map[item.id] = idx;
+      map[item.name] = idx;
+      return map;
+    }, {});
+
     async function fetchRecordsFromFirestore() {
       try {
         const q = query(collection(db, "track_records"), where("athlete_id", "==", currentAthleteId));
@@ -986,6 +993,13 @@
         if (bestRecord) {
           pbList.push({ itemObj, record: bestRecord });
         }
+      });
+
+      // 依據 EVENTS_DB 的項目順序進行排序（60米最先，十項全能最後）
+      pbList.sort((a, b) => {
+        const orderA = EVENTS_ORDER[a.itemObj.id] ?? 999;
+        const orderB = EVENTS_ORDER[b.itemObj.id] ?? 999;
+        return orderA - orderB;
       });
 
       countTag.textContent = `${pbList.length} 個項目`;
@@ -1600,7 +1614,13 @@
         });
 
         sortedCompNames.forEach(compName => {
-          const compRecords = groups[compName];
+          // 同賽事內的項目按 EVENTS_DB 順序排列
+          const compRecords = groups[compName].sort((a, b) => {
+            const orderA = EVENTS_ORDER[a.eventId] ?? 999;
+            const orderB = EVENTS_ORDER[b.eventId] ?? 999;
+            return orderA - orderB;
+          });
+
           const latestDate = compRecords[0].date.replace(/-/g, '/');
 
           let groupHtml = `
@@ -1621,7 +1641,12 @@
         });
 
       } else if (currentGroupMode === 'event') {
-        const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))];
+        // 依據 EVENTS_DB 的順序排列項目過濾按鈕
+        const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))].sort((a, b) => {
+          const orderA = EVENTS_ORDER[a] ?? 999;
+          const orderB = EVENTS_ORDER[b] ?? 999;
+          return orderA - orderB;
+        });
 
         eventFilterBar.classList.remove('hidden');
         let filterBarHtml = `
@@ -1660,7 +1685,12 @@
           groups[r.eventName].push(r);
         });
 
-        const sortedEventNames = Object.keys(groups);
+        // 依據 EVENTS_DB 的順序排列項目群組標題
+        const sortedEventNames = Object.keys(groups).sort((a, b) => {
+          const orderA = EVENTS_ORDER[a] ?? 999;
+          const orderB = EVENTS_ORDER[b] ?? 999;
+          return orderA - orderB;
+        });
 
         if (sortedEventNames.length === 0) {
           container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">該項目尚無紀錄</div>`;
