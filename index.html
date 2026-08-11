@@ -35,17 +35,18 @@
 <body class="bg-slate-100 text-slate-800 font-sans h-[100dvh] w-vw flex items-center justify-center p-4 sm:p-6">
 
     <!-- 置中卡片容器 -->
-    <div class="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-5 sm:space-y-6 border border-slate-100 text-center my-auto">
+    <div class="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-xl space-y-4 sm:space-y-5 border border-slate-100 text-center my-auto">
         <!-- Brand Logo & Title -->
-        <div class="space-y-2 sm:space-y-3">
+        <div class="space-y-1 sm:space-y-2">
             <div class="flex items-center justify-center pt-1">
-                <img src="logo.png" alt="Track & Wave Logo" class="h-32 sm:h-40 object-contain mx-auto pointer-events-none">
+                <!-- 品牌 Logo 圖片再放大一倍 (h-64 至 h-80) -->
+                <img src="logo.png" alt="Track & Wave Logo" class="h-64 sm:h-80 object-contain mx-auto pointer-events-none">
             </div>
             <p class="text-xs sm:text-sm text-slate-400 font-medium">歡迎使用 Track & Wave 運動數據管理系統</p>
         </div>
 
         <!-- 登入表單 -->
-        <div class="space-y-3.5 sm:space-y-4 text-left pt-1">
+        <div class="space-y-3 sm:space-y-3.5 text-left pt-1">
             <div>
                 <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">電子郵件 (Email)</label>
                 <input type="email" id="email-input" class="w-full px-4 py-3 sm:py-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm sm:text-base bg-slate-50 transition" placeholder="your@email.com">
@@ -60,7 +61,7 @@
             </button>
         </div>
 
-        <div class="relative flex py-1 items-center">
+        <div class="relative flex py-0.5 items-center">
             <div class="flex-grow border-t border-slate-200"></div>
             <span class="flex-shrink mx-3 text-slate-400 text-xs sm:text-sm font-bold">或</span>
             <div class="flex-grow border-t border-slate-200"></div>
