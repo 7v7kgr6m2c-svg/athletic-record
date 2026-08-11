@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>運動紀錄系統 - 登入</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>Track & Wave - 登入</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         html, body {
@@ -18,28 +18,32 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen p-4 flex items-center justify-center select-none">
 
-    <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl space-y-6 border border-slate-100 text-center">
-        <!-- 標題與圖示 -->
+    <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl space-y-5 border border-slate-100 text-center">
+        <!-- Brand Logo & Title -->
         <div class="space-y-2">
-            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto text-white shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            <div class="flex items-center justify-center pt-2">
+                <!-- Track & Wave 視覺元素 -->
+                <div class="flex items-center gap-1">
+                    <span class="text-2xl font-black text-slate-800 tracking-tight">Track</span>
+                    <span class="text-2xl font-black text-orange-500">&</span>
+                    <span class="text-2xl font-black text-sky-600 tracking-tight">Wave</span>
+                </div>
             </div>
-            <h2 class="text-xl font-black text-slate-900 tracking-tight">歡迎使用運動紀錄系統</h2>
-            <p class="text-xs text-slate-400 font-medium">請選擇登入方式以存取專屬管理系統</p>
+            <p class="text-xs text-slate-400 font-medium">歡迎使用 Track & Wave 運動數據管理系統</p>
         </div>
 
         <!-- 登入表單 -->
-        <div class="space-y-4 text-left">
+        <div class="space-y-3.5 text-left pt-1">
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">電子郵件 (Email)</label>
-                <input type="email" id="email-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50" placeholder="your@email.com">
+                <input type="email" id="email-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-slate-50 transition" placeholder="your@email.com">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">密碼 (Password)</label>
-                <input type="password" id="password-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50" placeholder="••••••••">
+                <input type="password" id="password-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm bg-slate-50 transition" placeholder="••••••••">
             </div>
 
-            <button type="button" id="btn-email-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow transition text-sm cursor-pointer">
+            <button type="button" id="btn-email-login" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3.5 rounded-xl shadow transition text-sm cursor-pointer mt-1">
                 Email 密碼登入
             </button>
         </div>
@@ -60,9 +64,9 @@
     <!-- 自訂 Alert Modal -->
     <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl space-y-4 text-center">
-            <div id="alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+            <div id="alert-icon" class="w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
             <p id="alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
-            <button onclick="closeAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+            <button onclick="closeAlert()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
         </div>
     </div>
 
@@ -119,7 +123,6 @@
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // 成功登入後 onAuthStateChanged 會自動跳轉
             } catch (err) {
                 console.error('登入失敗：', err);
                 if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
