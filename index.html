@@ -2,107 +2,74 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport 鎖定 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
-    <title>運動紀錄系統 - 快捷登入</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>運動紀錄系統 - 登入</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- FirebaseUI CSS 與 Firebase Compat SDKs -->
-    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
-
     <style>
-        /* 禁用手勢與雙擊縮放，全版面鎖定禁止滑動 */
         html, body {
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             height: 100%;
             overflow: hidden;
             margin: 0;
         }
-
-        /* 強制輸入框字級降至最低 16px */
-        input, select, textarea {
-            font-size: 16px !important;
-        }
-
-        .login-card { 
-            width: 100%; 
-            max-width: 440px; 
-            padding: 40px 32px; 
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 28px; 
-            box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.05); 
-            text-align: center; 
-            box-sizing: border-box; 
-        }
-
-        /* 優化 FirebaseUI 樣式整合 */
-        .firebaseui-card-content {
-            padding: 0 !important;
-        }
-        .firebaseui-container {
-            max-width: 100% !important;
-            background-color: transparent !important;
-            box-shadow: none !important;
-        }
+        input { font-size: 16px !important; }
     </style>
-    <script>
-      // 全方位攔截 iOS Safari 手勢與雙擊縮放
-      document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
-      document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
-      document.addEventListener('gestureend', function (e) { e.preventDefault(); });
-
-      document.addEventListener('touchstart', function (e) {
-        if (e.touches.length > 1) { e.preventDefault(); }
-      }, { passive: false });
-
-      document.addEventListener('touchmove', function (e) {
-        if (e.touches.length > 1) { e.preventDefault(); }
-      }, { passive: false });
-
-      let lastTouchEnd = 0;
-      document.addEventListener('touchend', function (e) {
-        const now = (new Date()).getTime();
-        if (now - lastTouchEnd <= 300) { e.preventDefault(); }
-        lastTouchEnd = now;
-      }, false);
-    </script>
 </head>
-<body class="h-screen w-screen flex items-center justify-center select-none p-6 overflow-hidden">
+<body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen p-4 flex items-center justify-center select-none">
 
-    <div class="login-card">
-        <!-- 精美視覺 Icon -->
-        <div class="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
-                <line x1="4" y1="22" x2="4" y2="15"></line>
-            </svg>
+    <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl space-y-6 border border-slate-100 text-center">
+        <!-- 標題與圖示 -->
+        <div class="space-y-2">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto text-white shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            </div>
+            <h2 class="text-xl font-black text-slate-900 tracking-tight">歡迎使用運動紀錄系統</h2>
+            <p class="text-xs text-slate-400 font-medium">請選擇登入方式以存取專屬管理系統</p>
         </div>
 
-        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">歡迎使用運動紀錄系統</h2>
-        <p class="text-sm text-slate-500 mb-6 font-medium">請選擇登入方式以存取專屬管理系統</p>
+        <!-- 登入表單 -->
+        <div class="space-y-4 text-left">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">電子郵件 (Email)</label>
+                <input type="email" id="email-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50" placeholder="your@email.com">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">密碼 (Password)</label>
+                <input type="password" id="password-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50" placeholder="••••••••">
+            </div>
 
-        <!-- FirebaseUI 渲染容器 -->
-        <div id="firebaseui-auth-container"></div>
+            <button type="button" id="btn-email-login" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow transition text-sm cursor-pointer">
+                Email 密碼登入
+            </button>
+        </div>
+
+        <div class="relative flex py-1 items-center">
+            <div class="flex-grow border-t border-slate-200"></div>
+            <span class="flex-shrink mx-3 text-slate-400 text-xs font-bold">或</span>
+            <div class="flex-grow border-t border-slate-200"></div>
+        </div>
+
+        <!-- Google 快捷登入 -->
+        <button type="button" id="btn-google-login" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3.5 rounded-xl shadow-xs transition flex items-center justify-center gap-3 text-sm cursor-pointer">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <span>使用 Google 帳戶快捷登入</span>
+        </button>
     </div>
 
-    <!-- 自訂 Modal -->
-    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
-            <div id="custom-alert-icon" class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">❌</div>
-            <p id="custom-alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
-            <button onclick="closeCustomAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+    <!-- 自訂 Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl space-y-4 text-center">
+            <div id="alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+            <p id="alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+            <button onclick="closeAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
         const firebaseConfig = {
             apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
             authDomain: "athletes-record.firebaseapp.com",
@@ -113,52 +80,68 @@
             measurementId: "G-F3ZH9YN0VT"
         };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-        window.showAlert = function(msg) {
-            document.getElementById('custom-alert-msg').textContent = msg;
-            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        function showAlert(msg, isSuccess = false) {
+            document.getElementById('alert-msg').textContent = msg;
+            const iconEl = document.getElementById('alert-icon');
+            if (isSuccess) {
+                iconEl.textContent = '✅';
+                iconEl.className = 'w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+            } else {
+                iconEl.textContent = '⚠️';
+                iconEl.className = 'w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+            }
+            document.getElementById('alert-modal').classList.remove('hidden');
         }
 
-        window.closeCustomAlert = function() {
-            document.getElementById('custom-alert-modal').classList.add('hidden');
+        window.closeAlert = function() {
+            document.getElementById('alert-modal').classList.add('hidden');
         }
 
-        // 自動監聽登入狀態轉頁
-        firebase.auth().onAuthStateChanged((user) => {
+        // 自動轉址：若已登入則跳轉至運動員頁面
+        onAuthStateChanged(auth, (user) => {
             if (user) {
                 window.location.href = 'athletes.html';
             }
         });
 
-        // 初始化 FirebaseUI 實例
-        const ui = new firebaseui.auth.AuthUI(firebase.auth());
+        // 1. 原生 Email + 密碼 登入
+        document.getElementById('btn-email-login').addEventListener('click', async () => {
+            const email = document.getElementById('email-input').value.trim();
+            const password = document.getElementById('password-input').value;
 
-        // FirebaseUI 設定檔
-        const uiConfig = {
-            callbacks: {
-                signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                    window.location.href = 'athletes.html';
-                    return false;
+            if (!email || !password) {
+                showAlert('請輸入 Email 與密碼！');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // 成功登入後 onAuthStateChanged 會自動跳轉
+            } catch (err) {
+                console.error('登入失敗：', err);
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                    showAlert('Email 或密碼不正確，請重新檢查！');
+                } else if (err.code === 'auth/invalid-email') {
+                    showAlert('請輸入有效的 Email 格式！');
+                } else {
+                    showAlert('登入失敗：' + err.message);
                 }
-            },
-            // 停用平臺發起的密碼輔助快取，避免帳號連結衝突與循環提示
-            credentialHelper: firebaseui.auth.CredentialHelper.NONE,
-            signInFlow: 'popup',
-            signInSuccessUrl: 'athletes.html',
-            signInOptions: [
-                {
-                    provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
-                    signInMethod: firebase.auth.EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD,
-                    requireDisplayName: true
-                },
-                firebase.auth.GoogleAuthProvider.PROVIDER_ID
-            ]
-        };
+            }
+        });
 
-        // 啟動 FirebaseUI
-        ui.start('#firebaseui-auth-container', uiConfig);
+        // 2. Google 快捷登入
+        document.getElementById('btn-google-login').addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (err) {
+                console.error('Google 登入失敗：', err);
+                showAlert('Google 登入失敗：' + err.message);
+            }
+        });
     </script>
 </body>
 </html>
