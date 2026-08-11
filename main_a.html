@@ -553,7 +553,11 @@
         const dateDiff = new Date(b.date) - new Date(a.date);
         if (dateDiff !== 0) return dateDiff;
         if (a.competition !== b.competition) return a.competition.localeCompare(b.competition, 'zh-HK');
-        if (a.eventName !== b.eventName) return a.eventName.localeCompare(b.eventName, 'zh-HK');
+        
+        const nameA = getCleanEventName(a);
+        const nameB = getCleanEventName(b);
+        if (nameA !== nameB) return nameA.localeCompare(nameB, 'zh-HK');
+        
         const weightA = STAGE_ORDER[a.stage] || 0;
         const weightB = STAGE_ORDER[b.stage] || 0;
         return weightB - weightA; 
@@ -863,6 +867,17 @@
       { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
 
+    // 項目名稱正規化：優先從 EVENTS_DB 抓取純中文名稱，否則去除斜線與英文後綴
+    function getCleanEventName(record) {
+      if (!record) return '';
+      const itemObj = EVENTS_DB.find(e => e.id === record.eventId);
+      if (itemObj) return itemObj.name;
+      if (record.eventName) {
+        return record.eventName.split('/')[0].trim();
+      }
+      return '';
+    }
+
     const EVENTS_ORDER = EVENTS_DB.reduce((map, item, idx) => {
       map[item.id] = idx;
       map[item.name] = idx;
@@ -1000,6 +1015,7 @@
       pbList.forEach(pb => {
         const r = pb.record;
         const itemObj = pb.itemObj;
+        const cleanName = getCleanEventName(r);
         const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
         const ageText = ageNum !== null ? `${ageNum} 歲` : '-';
         const unit = itemObj.type === 'distance' ? '米' : (itemObj.type === 'points' ? '分' : '秒');
@@ -1019,7 +1035,7 @@
           <div class="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition">
             <div class="flex justify-between items-center gap-3 border-b border-slate-100 pb-3">
               <div>
-                <h3 class="text-2xl font-black text-slate-900">${r.eventName}</h3>
+                <h3 class="text-2xl font-black text-slate-900">${cleanName}</h3>
                 ${windBadge ? `<div class="mt-1">${windBadge}</div>` : ''}
               </div>
 
@@ -1496,6 +1512,7 @@
     function buildRecordCardHtml(r, showCompInHeader = true) {
       const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
       const ageText = ageNum !== null ? `參賽年齡 ${ageNum} 歲` : '參賽年齡 -';
+      const cleanName = getCleanEventName(r);
 
       let resultDisplay = '';
       if (r.status && r.status !== 'NORMAL') {
@@ -1527,7 +1544,7 @@
               <div class="space-y-1">
                 <div class="flex items-center gap-3">
                   ${getRankBadgeHtml(r.rank)}
-                  <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${r.eventName}</h3>
+                  <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${cleanName}</h3>
                 </div>
                 <div class="pl-[52px] text-xs text-slate-400 font-medium">
                   <span>${subInfoText || '賽事紀錄'}</span>
@@ -1636,7 +1653,7 @@
         });
 
       } else if (currentGroupMode === 'event') {
-        const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))].sort((a, b) => {
+        const activeEventNames = [...new Set(sortedRecords.map(r => getCleanEventName(r)))].sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
@@ -1655,7 +1672,7 @@
         `;
 
         activeEventNames.forEach(name => {
-          const count = sortedRecords.filter(r => r.eventName === name).length;
+          const count = sortedRecords.filter(r => getCleanEventName(r) === name).length;
           const isSelected = currentSelectedEventFilter === name;
           filterBarHtml += `
             <button onclick="filterEventGroup('${name}')" 
@@ -1672,11 +1689,12 @@
 
         const groups = {};
         sortedRecords.forEach(r => {
-          if (currentSelectedEventFilter !== 'all' && r.eventName !== currentSelectedEventFilter) {
+          const cleanName = getCleanEventName(r);
+          if (currentSelectedEventFilter !== 'all' && cleanName !== currentSelectedEventFilter) {
             return;
           }
-          if (!groups[r.eventName]) groups[r.eventName] = [];
-          groups[r.eventName].push(r);
+          if (!groups[cleanName]) groups[cleanName] = [];
+          groups[cleanName].push(r);
         });
 
         const sortedEventNames = Object.keys(groups).sort((a, b) => {
@@ -1820,7 +1838,7 @@
           stage: r.stage,
           rank: r.rank,
           wind: r.wind,
-          displayResult: `${r.eventName}: ${r.result} ${unit}`
+          displayResult: `${itemObj.name}: ${r.result} ${unit}`
         };
       });
 
