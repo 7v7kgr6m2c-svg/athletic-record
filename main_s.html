@@ -179,7 +179,6 @@
       <section id="sec-chart" class="hidden bg-white p-6 rounded-3xl shadow-sm space-y-4">
         <div class="flex justify-between items-center border-b pb-3">
           <h2 class="text-lg font-bold text-slate-900">成績趨勢</h2>
-          <!-- 調整選單順序：長短池選項放在項目選項上方/前開 -->
           <div class="flex flex-col sm:flex-row gap-2">
             <select id="chart-pool-filter" onchange="updateChartDropdown(); updateChart();" class="border rounded-xl h-9 px-2 bg-slate-50 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
               <option value="long">長池 (50m)</option>
@@ -222,13 +221,12 @@
           </div>
 
           <div class="flex items-center gap-3">
-            <!-- 「泳姿類別」修改為「泳姿」 -->
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">泳姿</label>
             <div class="grid grid-cols-6 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
               <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-sky-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
               <button type="button" onclick="filterCategory('free', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">自由泳</button>
-              <button type="button" onclick="filterCategory('back', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">仰泳</button>
               <button type="button" onclick="filterCategory('breast', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蛙泳</button>
+              <button type="button" onclick="filterCategory('back', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">仰泳</button>
               <button type="button" onclick="filterCategory('fly', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">蝶泳</button>
               <button type="button" onclick="filterCategory('medley', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">混合泳</button>
             </div>
@@ -484,31 +482,60 @@
     const STAGE_ORDER = { '決賽': 3, '準決賽': 2, '初賽': 1 };
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跑)', 'DNF': 'DNF (未完賽)' };
 
-    // 項目庫（隱藏任何接力項目；100im標記僅在短池適用）
+    // 泳姿權重與項目庫定義（按短距離優先，相同距離依: 自由泳>蛙泳>仰泳>蝶泳>混合泳）
+    const STROKE_ORDER = { 'free': 1, 'breast': 2, 'back': 3, 'fly': 4, 'medley': 5 };
+
     const EVENTS_DB = [
-      { id: '50free', cat: 'free', name: '50米 自由泳' },
-      { id: '100free', cat: 'free', name: '100米 自由泳' },
-      { id: '200free', cat: 'free', name: '200米 自由泳' },
-      { id: '400free', cat: 'free', name: '400米 自由泳' },
-      { id: '800free', cat: 'free', name: '800米 自由泳' },
-      { id: '1500free', cat: 'free', name: '1500米 自由泳' },
-      
-      { id: '50back', cat: 'back', name: '50米 仰泳' },
-      { id: '100back', cat: 'back', name: '100米 仰泳' },
-      { id: '200back', cat: 'back', name: '200米 仰泳' },
+      // 50m
+      { id: '50free', cat: 'free', distance: 50, name: '50米 自由泳' },
+      { id: '50breast', cat: 'breast', distance: 50, name: '50米 蛙泳' },
+      { id: '50back', cat: 'back', distance: 50, name: '50米 仰泳' },
+      { id: '50fly', cat: 'fly', distance: 50, name: '50米 蝶泳' },
 
-      { id: '50breast', cat: 'breast', name: '50米 蛙泳' },
-      { id: '100breast', cat: 'breast', name: '100米 蛙泳' },
-      { id: '200breast', cat: 'breast', name: '200米 蛙泳' },
+      // 100m
+      { id: '100free', cat: 'free', distance: 100, name: '100米 自由泳' },
+      { id: '100breast', cat: 'breast', distance: 100, name: '100米 蛙泳' },
+      { id: '100back', cat: 'back', distance: 100, name: '100米 仰泳' },
+      { id: '100fly', cat: 'fly', distance: 100, name: '100米 蝶泳' },
+      { id: '100im', cat: 'medley', distance: 100, name: '100米 個人混合泳', poolOnly: 'short' },
 
-      { id: '50fly', cat: 'fly', name: '50米 蝶泳' },
-      { id: '100fly', cat: 'fly', name: '100米 蝶泳' },
-      { id: '200fly', cat: 'fly', name: '200米 蝶泳' },
+      // 200m
+      { id: '200free', cat: 'free', distance: 200, name: '200米 自由泳' },
+      { id: '200breast', cat: 'breast', distance: 200, name: '200米 蛙泳' },
+      { id: '200back', cat: 'back', distance: 200, name: '200米 仰泳' },
+      { id: '200fly', cat: 'fly', distance: 200, name: '200米 蝶泳' },
+      { id: '200im', cat: 'medley', distance: 200, name: '200米 個人混合泳' },
 
-      { id: '100im', cat: 'medley', name: '100米 個人混合泳', poolOnly: 'short' },
-      { id: '200im', cat: 'medley', name: '200米 個人混合泳' },
-      { id: '400im', cat: 'medley', name: '400米 個人混合泳' }
+      // 400m
+      { id: '400free', cat: 'free', distance: 400, name: '400米 自由泳' },
+      { id: '400im', cat: 'medley', distance: 400, name: '400米 個人混合泳' },
+
+      // 800m
+      { id: '800free', cat: 'free', distance: 800, name: '800米 自由泳' },
+
+      // 1500m
+      { id: '1500free', cat: 'free', distance: 1500, name: '1500米 自由泳' }
     ];
+
+    // 項目通用排序比較函數
+    function compareEvents(a, b) {
+      const eventA = typeof a === 'string' ? EVENTS_DB.find(e => e.id === a || e.name === a) : a;
+      const eventB = typeof b === 'string' ? EVENTS_DB.find(e => e.id === b || e.name === b) : b;
+
+      if (!eventA && !eventB) return 0;
+      if (!eventA) return 1;
+      if (!eventB) return -1;
+
+      // Priority 1: 距離短為先
+      if (eventA.distance !== eventB.distance) {
+        return eventA.distance - eventB.distance;
+      }
+
+      // Priority 2: 先 (自由泳 > 蛙泳 > 仰泳 > 蝶泳 > 混合泳)
+      const orderA = STROKE_ORDER[eventA.cat] || 99;
+      const orderB = STROKE_ORDER[eventB.cat] || 99;
+      return orderA - orderB;
+    }
 
     function applyTheme(themeKey) {
         const theme = THEME_CONFIGS[themeKey] || THEME_CONFIGS.blue;
@@ -882,11 +909,11 @@
       const validRecords = records.filter(r => (!r.status || r.status === 'NORMAL') && (r.poolType || 'long') === poolFilter);
       const activeEventIds = new Set(validRecords.map(r => r.eventId));
 
-      // 過濾：如果在長池，排除限定短池的項目（例如100m個人混合泳）
+      // 按照排序規則過濾與排列選單項目
       const availableEvents = EVENTS_DB.filter(item => {
         if (poolFilter === 'long' && item.poolOnly === 'short') return false;
         return activeEventIds.has(item.id);
-      });
+      }).sort(compareEvents);
 
       if (availableEvents.length === 0) {
         chartSelect.appendChild(new Option('尚無有效成績項目', ''));
@@ -958,6 +985,9 @@
           pbList.push({ itemObj, record: bestRecord });
         }
       });
+
+      // 依據規例進行 PB 卡片排序：短距離為先 > (自由泳>蛙泳>仰泳>蝶泳>混合泳)
+      pbList.sort((a, b) => compareEvents(a.itemObj, b.itemObj));
 
       countTag.textContent = `${pbList.length} 個項目`;
 
@@ -1075,11 +1105,11 @@
       const currentPoolType = document.getElementById('pool-type-select').value;
       selectEl.innerHTML = '';
 
-      // 動態根據 poolType 與類別進行過濾：若為長池，隱藏限定短池的項目（例如100m個人混合泳）
+      // 依據類別與池長進行過濾，並按照排序規例排列
       const filtered = EVENTS_DB.filter(e => {
         if (currentPoolType === 'long' && e.poolOnly === 'short') return false;
         return currentCategory === 'all' || e.cat === currentCategory;
-      });
+      }).sort(compareEvents);
 
       filtered.forEach(item => { selectEl.appendChild(new Option(item.name, item.id)); });
 
@@ -1371,7 +1401,9 @@
         });
 
       } else if (currentGroupMode === 'event') {
-        const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))];
+        // 將出現過的項目依據規例進行排序
+        const activeEvents = EVENTS_DB.filter(e => sortedRecords.some(r => r.eventId === e.id))
+                                      .sort(compareEvents);
 
         eventFilterBar.classList.remove('hidden');
         let filterBarHtml = `
@@ -1381,21 +1413,21 @@
                 ? 'bg-sky-600 text-white shadow-xs' 
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }">
-            全部項目 (${activeEventNames.length})
+            全部項目 (${activeEvents.length})
           </button>
         `;
 
-        activeEventNames.forEach(name => {
-          const count = sortedRecords.filter(r => r.eventName === name).length;
-          const isSelected = currentSelectedEventFilter === name;
+        activeEvents.forEach(item => {
+          const count = sortedRecords.filter(r => r.eventId === item.id).length;
+          const isSelected = currentSelectedEventFilter === item.name;
           filterBarHtml += `
-            <button onclick="filterEventGroup('${name}')" 
+            <button onclick="filterEventGroup('${item.name}')" 
               class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
                 isSelected 
                   ? 'bg-sky-600 text-white shadow-xs' 
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }">
-              ${name} (${count})
+              ${item.name} (${count})
             </button>
           `;
         });
@@ -1410,7 +1442,12 @@
           groups[r.eventName].push(r);
         });
 
-        const sortedEventNames = Object.keys(groups);
+        // 歷史紀錄之項目分組標題亦依據規例進行排序
+        const sortedEventNames = Object.keys(groups).sort((nameA, nameB) => {
+          const objA = EVENTS_DB.find(e => e.name === nameA);
+          const objB = EVENTS_DB.find(e => e.name === nameB);
+          return compareEvents(objA, objB);
+        });
 
         if (sortedEventNames.length === 0) {
           container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">該項目尚無紀錄</div>`;
