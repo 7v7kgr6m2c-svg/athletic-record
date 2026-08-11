@@ -36,13 +36,13 @@
 
     <!-- 置中卡片容器 -->
     <div class="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-xl space-y-4 sm:space-y-5 border border-slate-100 text-center my-auto">
-        <!-- Brand Logo & Title -->
-        <div class="space-y-1 sm:space-y-2">
-            <div class="flex items-center justify-center pt-1">
-                <!-- 品牌 Logo 圖片再放大一倍 (h-64 至 h-80) -->
-                <img src="logo.png" alt="Track & Wave Logo" class="h-64 sm:h-80 object-contain mx-auto pointer-events-none">
+        <!-- Brand Logo & Title (已將 Logo 主體與下方文字間距盡量縮小) -->
+        <div class="space-y-0 flex flex-col items-center">
+            <div class="flex items-center justify-center p-0 m-0">
+                <!-- 品牌 Logo 圖片 -->
+                <img src="logo.png" alt="Track & Wave Logo" class="h-64 sm:h-80 object-contain mx-auto pointer-events-none block">
             </div>
-            <p class="text-xs sm:text-sm text-slate-400 font-medium">歡迎使用 Track & Wave 運動數據管理系統</p>
+            <p class="text-xs sm:text-sm text-slate-400 font-medium -mt-2 p-0">歡迎使用 Track & Wave 運動數據管理系統</p>
         </div>
 
         <!-- 登入表單 -->
