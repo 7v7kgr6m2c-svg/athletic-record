@@ -141,7 +141,7 @@
               <span class="text-4xl md:text-5xl">🏆</span>
               <div>
                 <h2 class="text-xl font-black tracking-wide leading-tight">個人最佳成績</h2>
-                <p class="text-xs md:text-sm font-semibold tracking-wider text-blue-100">Personal Best</p>
+                <p class="text-xs md:text-sm font-semibold tracking-wider text-blue-100">個人最佳紀錄</p>
               </div>
             </div>
             <span id="pb-count-tag" class="text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full border border-white/20 whitespace-nowrap flex-shrink-0">0 個項目</span>
@@ -837,7 +837,6 @@
       '跳高': 'distance', '撐竿跳高': 'distance', '跳遠': 'distance', '推鉛球': 'distance', '擲鐵餅': 'distance', '擲標槍': 'distance'
     };
 
-    // 所有項目名稱均調整為純中文
     const EVENTS_DB = [
       { id: '60m', cat: 'track', type: 'time', name: '60米', hasWind: true },
       { id: '100m', cat: 'track', type: 'time', name: '100米', hasWind: true },
@@ -864,7 +863,6 @@
       { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
 
-    // 項目順序對照表，用於全域排序
     const EVENTS_ORDER = EVENTS_DB.reduce((map, item, idx) => {
       map[item.id] = idx;
       map[item.name] = idx;
@@ -1012,7 +1010,7 @@
           const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
           windBadge = `
             <span class="text-xs px-2.5 py-0.5 rounded-full font-bold border ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
-              風速 ${windStr} m/s ${!isLegal ? '(超風速)' : ''}
+              風速 ${windStr} 米/秒 ${!isLegal ? '(超風速)' : ''}
             </span>
           `;
         }
@@ -1512,7 +1510,7 @@
       let subInfoText = r.stage || '';
       if (r.wind !== null && r.wind !== undefined) {
         const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-        subInfoText += subInfoText ? ` · 風速 ${windStr}` : `風速 ${windStr}`;
+        subInfoText += subInfoText ? ` · 風速 ${windStr} 米/秒` : `風速 ${windStr} 米/秒`;
       }
 
       let cardHtml = `
@@ -1552,12 +1550,15 @@
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
               </button>
               <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                ${r.subDetails.map(sub => `
+                ${r.subDetails.map(sub => {
+                  const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
+                  const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
+                  return `
                   <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between">
                     <span class="font-bold text-slate-700">${sub.name}</span>
-                    <span class="font-mono">${sub.val} (${sub.pts}分)</span>
+                    <span class="font-mono">${valDisplay} (${sub.pts}分)</span>
                   </div>
-                `).join('')}
+                `}).join('')}
               </div>
             </div>
           ` : ''}
@@ -1743,7 +1744,7 @@
                   
                   if (rawData.wind !== null && rawData.wind !== undefined) {
                     const windStr = rawData.wind > 0 ? `+${rawData.wind}` : `${rawData.wind}`;
-                    lines.push(`風速: ${windStr}`);
+                    lines.push(`風速: ${windStr} 米/秒`);
                   }
                   
                   return lines;
