@@ -213,7 +213,6 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">類別</label>
-            <!-- 改為 4 欄並移除接力 -->
             <div class="grid grid-cols-4 p-1 bg-slate-100 rounded-xl text-xs font-medium text-center flex-1 h-10 items-center box-border border border-transparent">
               <button type="button" onclick="filterCategory('all', this)" class="cat-btn rounded-lg bg-white text-blue-600 shadow-xs transition h-full flex items-center justify-center cursor-pointer">全部</button>
               <button type="button" onclick="filterCategory('track', this)" class="cat-btn rounded-lg text-slate-600 hover:text-slate-900 transition h-full flex items-center justify-center cursor-pointer">徑項</button>
@@ -513,17 +512,14 @@
     function applyTheme(themeKey) {
         const theme = THEME_CONFIGS[themeKey] || THEME_CONFIGS.blue;
         
-        // 1. 套用 Header 與 PB 區塊主題顏色
         const header = document.getElementById('main-header');
         const pbBanner = document.getElementById('pb-banner');
         if (header) header.className = `relative overflow-hidden ${theme.headerClass} p-6 rounded-3xl shadow-md text-white flex items-center justify-between transition-colors duration-300`;
         if (pbBanner) pbBanner.className = `${theme.pbBannerClass} p-6 rounded-3xl shadow-lg text-white transition-colors duration-300`;
 
-        // 2. 套用 Material You active CSS 變數
         document.documentElement.style.setProperty('--theme-color', theme.primaryColor);
         document.documentElement.style.setProperty('--theme-bg-light', theme.lightBg);
 
-        // 3. 更新 Chart 顏色
         if (chartInstance) {
             chartInstance.data.datasets.forEach(ds => {
                 ds.borderColor = theme.primaryColor;
@@ -841,31 +837,31 @@
       '跳高': 'distance', '撐竿跳高': 'distance', '跳遠': 'distance', '推鉛球': 'distance', '擲鐵餅': 'distance', '擲標槍': 'distance'
     };
 
-    // 已移除所有接力項目 (4x100m, 4x400m)
+    // 所有項目名稱均調整為純中文
     const EVENTS_DB = [
-      { id: '60m', cat: 'track', type: 'time', name: '60米 / m', hasWind: true },
-      { id: '100m', cat: 'track', type: 'time', name: '100米 / m', hasWind: true },
-      { id: '200m', cat: 'track', type: 'time', name: '200米 / m', hasWind: true },
-      { id: '400m', cat: 'track', type: 'time', name: '400米 / m', hasWind: false },
-      { id: '800m', cat: 'track', type: 'time', name: '800米 / m', hasWind: false },
-      { id: '1500m', cat: 'track', type: 'time', name: '1500米 / m', hasWind: false },
-      { id: '5000m', cat: 'track', type: 'time', name: '5000米 / m', hasWind: false },
-      { id: '10000m', cat: 'track', type: 'time', name: '10000米 / m', hasWind: false },
-      { id: '100mh', cat: 'track', type: 'time', name: '100米欄 / m Hurdles', hasWind: true },
-      { id: '110mh', cat: 'track', type: 'time', name: '110米欄 / m Hurdles', hasWind: true },
-      { id: '400mh', cat: 'track', type: 'time', name: '400米欄 / m Hurdles', hasWind: false },
-      { id: '3000m_steeple', cat: 'track', type: 'time', name: '3000米障礙賽 / m Steeplechase', hasWind: false },
-      { id: 'high_jump', cat: 'field', type: 'distance', name: '跳高 High Jump', hasWind: false },
-      { id: 'pole_vault', cat: 'field', type: 'distance', name: '撐竿跳高 Pole Vault', hasWind: false },
-      { id: 'long_jump', cat: 'field', type: 'distance', name: '跳遠 Long Jump', hasWind: true },
-      { id: 'triple_jump', cat: 'field', type: 'distance', name: '三級跳遠 Triple Jump', hasWind: true },
-      { id: 'shot_put', cat: 'field', type: 'distance', name: '推鉛球 Shot Put', hasWind: false },
-      { id: 'discus', cat: 'field', type: 'distance', name: '擲鐵餅 Discus Throw', hasWind: false },
-      { id: 'javelin', cat: 'field', type: 'distance', name: '擲標槍 Javelin Throw', hasWind: false },
-      { id: 'hammer', cat: 'field', type: 'distance', name: '擲鏈球 Hammer Throw', hasWind: false },
-      { id: 'pentathlon', cat: 'combined', type: 'points', name: '五項全能 Pentathlon', subs: ['60米欄', '跳高', '推鉛球', '跳遠', '800米'] },
-      { id: 'heptathlon', cat: 'combined', type: 'points', name: '七項全能 Heptathlon', subs: ['100米欄', '跳高', '推鉛球', '200米', '跳遠', '擲標槍', '800米'] },
-      { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能 Decathlon', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
+      { id: '60m', cat: 'track', type: 'time', name: '60米', hasWind: true },
+      { id: '100m', cat: 'track', type: 'time', name: '100米', hasWind: true },
+      { id: '200m', cat: 'track', type: 'time', name: '200米', hasWind: true },
+      { id: '400m', cat: 'track', type: 'time', name: '400米', hasWind: false },
+      { id: '800m', cat: 'track', type: 'time', name: '800米', hasWind: false },
+      { id: '1500m', cat: 'track', type: 'time', name: '1500米', hasWind: false },
+      { id: '5000m', cat: 'track', type: 'time', name: '5000米', hasWind: false },
+      { id: '10000m', cat: 'track', type: 'time', name: '10000米', hasWind: false },
+      { id: '100mh', cat: 'track', type: 'time', name: '100米欄', hasWind: true },
+      { id: '110mh', cat: 'track', type: 'time', name: '110米欄', hasWind: true },
+      { id: '400mh', cat: 'track', type: 'time', name: '400米欄', hasWind: false },
+      { id: '3000m_steeple', cat: 'track', type: 'time', name: '3000米障礙賽', hasWind: false },
+      { id: 'high_jump', cat: 'field', type: 'distance', name: '跳高', hasWind: false },
+      { id: 'pole_vault', cat: 'field', type: 'distance', name: '撐竿跳高', hasWind: false },
+      { id: 'long_jump', cat: 'field', type: 'distance', name: '跳遠', hasWind: true },
+      { id: 'triple_jump', cat: 'field', type: 'distance', name: '三級跳遠', hasWind: true },
+      { id: 'shot_put', cat: 'field', type: 'distance', name: '推鉛球', hasWind: false },
+      { id: 'discus', cat: 'field', type: 'distance', name: '擲鐵餅', hasWind: false },
+      { id: 'javelin', cat: 'field', type: 'distance', name: '擲標槍', hasWind: false },
+      { id: 'hammer', cat: 'field', type: 'distance', name: '擲鏈球', hasWind: false },
+      { id: 'pentathlon', cat: 'combined', type: 'points', name: '五項全能', subs: ['60米欄', '跳高', '推鉛球', '跳遠', '800米'] },
+      { id: 'heptathlon', cat: 'combined', type: 'points', name: '七項全能', subs: ['100米欄', '跳高', '推鉛球', '200米', '跳遠', '擲標槍', '800米'] },
+      { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
 
     // 項目順序對照表，用於全域排序
@@ -995,7 +991,6 @@
         }
       });
 
-      // 依據 EVENTS_DB 的項目順序進行排序（60米最先，十項全能最後）
       pbList.sort((a, b) => {
         const orderA = EVENTS_ORDER[a.itemObj.id] ?? 999;
         const orderB = EVENTS_ORDER[b.itemObj.id] ?? 999;
@@ -1614,7 +1609,6 @@
         });
 
         sortedCompNames.forEach(compName => {
-          // 同賽事內的項目按 EVENTS_DB 順序排列
           const compRecords = groups[compName].sort((a, b) => {
             const orderA = EVENTS_ORDER[a.eventId] ?? 999;
             const orderB = EVENTS_ORDER[b.eventId] ?? 999;
@@ -1641,7 +1635,6 @@
         });
 
       } else if (currentGroupMode === 'event') {
-        // 依據 EVENTS_DB 的順序排列項目過濾按鈕
         const activeEventNames = [...new Set(sortedRecords.map(r => r.eventName))].sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
@@ -1685,7 +1678,6 @@
           groups[r.eventName].push(r);
         });
 
-        // 依據 EVENTS_DB 的順序排列項目群組標題
         const sortedEventNames = Object.keys(groups).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
