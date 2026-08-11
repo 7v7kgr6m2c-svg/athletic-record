@@ -10,20 +10,22 @@
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
             height: 100%;
-            overflow: hidden;
+            width: 100%;
             margin: 0;
+            padding: 0;
+            overflow: hidden;
         }
         input { font-size: 16px !important; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen p-4 flex items-center justify-center select-none">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen w-screen flex items-center justify-center p-4 select-none">
 
-    <div class="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl space-y-6 border border-slate-100 text-center">
+    <!-- 置中容器卡片：加入 mx-auto 與 my-auto 確保雙向絕對居中 -->
+    <div class="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl space-y-6 border border-slate-100 text-center mx-auto my-auto">
         <!-- Brand Logo & Title -->
         <div class="space-y-3">
             <div class="flex items-center justify-center pt-1">
-                <!-- 品牌 Logo 圖片已進一步放大為 h-40 (160px) -->
-                <img src="logo.png" alt="Track & Wave Logo" class="h-40 object-contain">
+                <img src="logo.png" alt="Track & Wave Logo" class="h-40 object-contain mx-auto">
             </div>
             <p class="text-xs md:text-sm text-slate-400 font-medium">歡迎使用 Track & Wave 運動數據管理系統</p>
         </div>
