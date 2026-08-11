@@ -2,30 +2,44 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <!-- 1. 徹底禁止使用者縮放 viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Track & Wave - 登入</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* 2. CSS 強制鎖定畫面，禁止任何滑動與橡皮筋回彈效果 */
         html, body {
-            touch-action: manipulation;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100vw;
+            height: 100dvh;
+            overflow: hidden !important;
+            touch-action: none !important; /* 禁止多點觸控滑動/手勢 */
+            -webkit-user-select: none;
+            user-select: none;
             -webkit-text-size-adjust: 100%;
             margin: 0;
             padding: 0;
-            width: 100%;
-            min-height: 100dvh;
         }
-        input { font-size: 16px !important; }
+        
+        /* 確保輸入框點擊時不會觸發 iOS 自動放大 */
+        input { 
+            font-size: 16px !important; 
+            touch-action: manipulation;
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-[100dvh] w-full flex items-center justify-center p-4 sm:p-6 select-none overflow-y-auto">
+<body class="bg-slate-100 text-slate-800 font-sans h-[100dvh] w-vw flex items-center justify-center p-4 sm:p-6">
 
     <!-- 置中卡片容器 -->
     <div class="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-5 sm:space-y-6 border border-slate-100 text-center my-auto">
         <!-- Brand Logo & Title -->
         <div class="space-y-2 sm:space-y-3">
             <div class="flex items-center justify-center pt-1">
-                <!-- 手機上標誌大小會自動調整 (h-32 到 h-40) -->
-                <img src="logo.png" alt="Track & Wave Logo" class="h-32 sm:h-40 object-contain mx-auto">
+                <img src="logo.png" alt="Track & Wave Logo" class="h-32 sm:h-40 object-contain mx-auto pointer-events-none">
             </div>
             <p class="text-xs sm:text-sm text-slate-400 font-medium">歡迎使用 Track & Wave 運動數據管理系統</p>
         </div>
@@ -67,6 +81,32 @@
             <button onclick="closeAlert()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
         </div>
     </div>
+
+    <!-- 3. JS 阻止 Safari/iOS 的手勢與滑動行為 -->
+    <script>
+        // 阻止滑動（touchmove）預設行為
+        document.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        // 阻止 iOS 雙指放大手勢 (Pinch to Zoom)
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        });
+
+        // 阻止 iOS 連點兩下放大
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                // 如果點擊的是輸入框或按鈕則放行，其餘區域阻擋
+                if (!['INPUT', 'BUTTON', 'A'].includes(e.target.tagName)) {
+                    e.preventDefault();
+                }
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
