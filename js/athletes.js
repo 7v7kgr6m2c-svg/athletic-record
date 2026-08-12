@@ -114,10 +114,11 @@ async function loadAthletes() {
   }
 }
 
-// 建立運動員卡片（含側滑按鈕與觸控邏輯）
+// 建立運動員卡片（採用原生 Tailwind 雙層定位，解決邊界溢出問題）
 function createAthleteCard(id, data) {
   const wrapper = document.createElement('div');
-  wrapper.className = "swipe-container mb-4 shadow-sm border border-slate-200/60";
+  // 外層：強制 relative 與 overflow-hidden，將 absolute 子元素嚴格封鎖在卡片內部
+  wrapper.className = "relative overflow-hidden rounded-3xl mb-4 shadow-sm border border-slate-200/60 select-none";
 
   const themeColors = {
     blue: 'bg-blue-600',
@@ -128,14 +129,14 @@ function createAthleteCard(id, data) {
   const bgClass = themeColors[data.theme] || 'bg-blue-600';
 
   wrapper.innerHTML = `
-    <!-- 背景操作按鈕層 -->
-    <div class="swipe-actions">
-      <button class="swipe-btn-color btn-change-color" type="button">更換顏色</button>
-      <button class="swipe-btn-delete btn-delete" type="button">刪除</button>
+    <!-- 背景操作按鈕層 (絕對定位於卡片右側，預設被 z-10 前景遮住) -->
+    <div class="absolute inset-y-0 right-0 flex items-center z-0">
+      <button class="btn-change-color h-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 flex items-center justify-center transition cursor-pointer" type="button">更換顏色</button>
+      <button class="btn-delete h-full bg-red-600 hover:bg-red-700 text-white font-bold px-5 flex items-center justify-center transition cursor-pointer" type="button">刪除</button>
     </div>
 
-    <!-- 前景卡片內容層 -->
-    <div class="swipe-content ${bgClass} p-5 rounded-3xl text-white flex items-center justify-between cursor-pointer">
+    <!-- 前景卡片內容層 (相對定位 z-10 覆蓋按鈕，受觸控滑動偏移) -->
+    <div class="swipe-content relative z-10 ${bgClass} p-5 rounded-3xl text-white flex items-center justify-between cursor-pointer transition-transform duration-200 ease-out">
       <div class="flex items-center gap-4">
         <img src="${data.avatar || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'1.5\'%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\'/%3E%3Ccircle cx=\'12\' cy=\'7\' r=\'4\'/%3E%3C/svg%3E'}" class="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-sm flex-shrink-0">
         <div>
@@ -160,9 +161,11 @@ function createAthleteCard(id, data) {
   let isSwiping = false;
   const maxSwipe = -160;
 
+  // 滑動手勢操控
   swipeContent.addEventListener('touchstart', (e) => {
     startX = e.touches[0].clientX;
     isSwiping = true;
+    swipeContent.style.transition = 'none';
   }, { passive: true });
 
   swipeContent.addEventListener('touchmove', (e) => {
@@ -171,21 +174,30 @@ function createAthleteCard(id, data) {
     if (diffX < 0 && diffX >= maxSwipe) {
       swipeContent.style.transform = `translateX(${diffX}px)`;
       currentX = diffX;
+    } else if (diffX > 0 && currentX < 0) {
+      const newX = currentX + diffX;
+      swipeContent.style.transform = `translateX(${Math.min(0, newX)}px)`;
     }
   }, { passive: true });
 
   swipeContent.addEventListener('touchend', () => {
     isSwiping = false;
+    swipeContent.style.transition = 'transform 0.2s ease-out';
     if (currentX < maxSwipe / 2) {
       swipeContent.style.transform = `translateX(${maxSwipe}px)`;
+      currentX = maxSwipe;
     } else {
       swipeContent.style.transform = `translateX(0px)`;
+      currentX = 0;
     }
   });
 
+  // 卡片點擊事件
   swipeContent.addEventListener('click', () => {
-    if (swipeContent.style.transform && swipeContent.style.transform !== 'translateX(0px)') {
+    if (currentX !== 0) {
+      swipeContent.style.transition = 'transform 0.2s ease-out';
       swipeContent.style.transform = `translateX(0px)`;
+      currentX = 0;
       return;
     }
     localStorage.setItem('current_athlete_id', id);
@@ -267,12 +279,10 @@ function confirmDeleteAthlete(id, name) {
 
 // 全域頁面載入初始化
 document.addEventListener('DOMContentLoaded', () => {
-  // Alert 關閉事件
   document.getElementById('btn-close-custom-alert')?.addEventListener('click', () => {
     document.getElementById('custom-alert-modal').classList.add('hidden');
   });
 
-  // Auth 驗證狀態
   onAuthStateChanged(auth, (user) => {
     if (!user) {
       window.location.href = 'index.html';
@@ -280,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     currentUser = user;
 
-    // 若使用者用 Google 登入，顯示綁定密碼按鈕
     const btnOpenLinkModal = document.getElementById('btn-open-link-modal');
     if (btnOpenLinkModal && currentUser.providerData.some(p => p.providerId === 'google.com')) {
       btnOpenLinkModal.classList.remove('hidden');
@@ -289,13 +298,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loadAthletes();
   });
 
-  // 登出按鈕
   document.getElementById('btn-logout')?.addEventListener('click', async () => {
     await signOut(auth);
     window.location.href = 'index.html';
   });
 
-  // iOS 日期選擇器初始化
   datePicker = new IOSDatePicker({
     wheelYear: 'wheel-year',
     wheelMonth: 'wheel-month',
@@ -316,7 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ios-wheel-modal').classList.add('hidden');
   });
 
-  // 頭像裁切邏輯
   const avatarInput = document.getElementById('athlete-avatar');
   const avatarTrigger = document.getElementById('avatar-click-trigger');
   const cropModal = document.getElementById('crop-modal');
@@ -370,12 +376,10 @@ document.addEventListener('DOMContentLoaded', () => {
     cropper.destroy();
   });
 
-  // 新增 Modal 控制
   const closeAddModal = () => document.getElementById('add-modal').classList.add('hidden');
   document.getElementById('btn-close-add-modal')?.addEventListener('click', closeAddModal);
   document.getElementById('btn-close-add-modal-x')?.addEventListener('click', closeAddModal);
 
-  // 表單送出 (新增運動員)
   document.getElementById('add-athlete-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!currentUser) return;
@@ -402,7 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 修改主題顏色 Modal 事件
   document.getElementById('btn-close-color-modal')?.addEventListener('click', () => {
     document.getElementById('change-color-modal').classList.add('hidden');
   });
@@ -421,7 +424,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 綁定 / 重設密碼 Modal 事件
   document.getElementById('btn-close-link-modal')?.addEventListener('click', () => {
     document.getElementById('link-password-modal').classList.add('hidden');
   });
