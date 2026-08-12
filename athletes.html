@@ -7,27 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <style>
-        html, body {
-            touch-action: manipulation;
-            -webkit-text-size-adjust: 100%;
-            height: 100%;
-            overflow: hidden;
-            margin: 0;
-        }
-        input, select, textarea { font-size: 16px !important; }
-        .swipe-container { position: relative; overflow: hidden; border-radius: 1.5rem; touch-action: pan-y; }
-        .swipe-content { transition: transform 0.2s ease-out; will-change: transform; }
-        .cropper-view-box, .cropper-face { border-radius: 50%; }
-        .cropper-container { touch-action: none; }
-        .scrollbar-none::-webkit-scrollbar { display: none; }
-        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
-        .picker-column { scroll-snap-type: y mandatory; scroll-behavior: smooth; touch-action: pan-y; overscroll-behavior-x: none; overflow-x: hidden !important; }
-        .picker-item { height: 40px; line-height: 40px; scroll-snap-align: center; text-align: center; font-size: 16px; font-weight: 600; color: #64748b; transition: color 0.15s, transform 0.15s; user-select: none; }
-        .picker-item.selected { color: #0f172a; font-weight: 700; transform: scale(1.1); }
-        .color-option { width: 36px; height: 36px; border-radius: 50%; cursor: pointer; transition: transform 0.2s, border-width 0.2s; }
-        .color-option.active { transform: scale(1.15); outline: 3px solid #2563eb; outline-offset: 2px; }
-    </style>
+    
+    <!-- 引入模組化 CSS -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/picker.css">
+    <link rel="stylesheet" href="css/cropper-custom.css">
+    <script src="js/prevent-gestures.js"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen p-4 md:p-8 flex items-center justify-center select-none overflow-hidden">
 
@@ -102,7 +87,7 @@
                     <div class="flex items-center gap-3">
                         <label class="w-24 text-sm md:text-base font-bold text-slate-700 whitespace-nowrap">出生日期 <span class="text-red-500">*</span></label>
                         <div id="trigger-dob-picker" class="flex-1 border border-slate-300 rounded-xl h-11 px-3 flex items-center justify-between bg-slate-50 text-sm md:text-base cursor-pointer hover:border-blue-500 transition">
-                            <span id="dob-display-text" class="text-slate-800 font-medium">載入中...</span>
+                            <span id="dob-display-text" class="text-slate-800 font-medium">請選擇日期</span>
                             <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                         </div>
                         <input type="hidden" id="athlete-dob" required>
@@ -177,7 +162,7 @@
         </div>
     </div>
 
-    <!-- Alert Modal -->
+    <!-- Custom Alert Modal -->
     <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div id="custom-alert-icon" class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
@@ -186,7 +171,7 @@
         </div>
     </div>
 
-    <!-- Confirm Modal -->
+    <!-- Custom Confirm Modal -->
     <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">?</div>
@@ -198,6 +183,7 @@
         </div>
     </div>
 
+    <!-- 獨立邏輯腳本 -->
     <script type="module" src="js/athletes.js"></script>
 </body>
 </html>
