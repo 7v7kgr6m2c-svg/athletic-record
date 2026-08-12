@@ -168,9 +168,18 @@ function renderSlots(athletes) {
                 }
             });
 
+            // 當點擊運動員卡片時：
             swipeContent.addEventListener('click', () => {
+                // 1. 記住運動員 ID
                 localStorage.setItem('current_athlete_id', athlete.id);
+    
+                // 2. 記住運動員名字
                 localStorage.setItem('current_athlete_name', athlete.name);
+    
+                // 3. 記住運動員頭像 (如果沒有頭像，就存空字串 '')
+                localStorage.setItem('current_athlete_avatar', athlete.avatar || '');
+    
+                // 4. 跳轉到選擇運動頁面 (或成績頁面)
                 window.location.href = 'select_sport.html';
             });
 
