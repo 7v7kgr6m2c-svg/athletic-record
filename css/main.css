@@ -1,0 +1,40 @@
+/* 全域鎖定與觸發優化 */
+html, body {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+}
+
+/* 防止 iOS 輸入框聚焦時頁面放大 */
+input, select, textarea {
+    font-size: 16px !important;
+}
+
+/* 運動員列表卡片滑動選單與主題色選取 */
+.swipe-container { 
+    position: relative; 
+    overflow: hidden; 
+    border-radius: 1.5rem; 
+    touch-action: pan-y; 
+}
+
+.swipe-content { 
+    transition: transform 0.2s ease-out; 
+    will-change: transform; 
+}
+
+.color-option {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s, border-width 0.2s;
+}
+
+.color-option.active {
+    transform: scale(1.15);
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
+}
