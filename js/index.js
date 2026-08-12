@@ -6,33 +6,27 @@ import {
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-document.addEventListener('DOMContentLoaded', () => {
-    let hasRedirected = false;
+let isRedirecting = false;
 
-    // 監聽 Firebase 驗證狀態
+document.addEventListener('DOMContentLoaded', () => {
+    // 監聽 Firebase 驗證狀態 (只在確認登入時執行一次轉址)
     onAuthStateChanged(auth, (user) => {
-        // 只有在「確定已登入」且「尚未執行過轉址」時才跳轉
-        if (user && !hasRedirected) {
-            hasRedirected = true;
+        if (user && !isRedirecting) {
+            isRedirecting = true;
             window.location.replace('athletes.html');
         }
     });
 
-    // 彈窗關閉按鈕
+    // Modal 關閉
     const closeBtn = document.getElementById('alert-close-btn');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', closeAlert);
-    }
+    if (closeBtn) closeBtn.addEventListener('click', closeAlert);
 
-    // Email 密碼登入
+    // Email 登入
     const emailLoginBtn = document.getElementById('btn-email-login');
     if (emailLoginBtn) {
         emailLoginBtn.addEventListener('click', async () => {
-            const emailInput = document.getElementById('email-input');
-            const passwordInput = document.getElementById('password-input');
-
-            const email = emailInput ? emailInput.value.trim() : '';
-            const password = passwordInput ? passwordInput.value : '';
+            const email = document.getElementById('email-input')?.value.trim();
+            const password = document.getElementById('password-input')?.value;
 
             if (!email || !password) {
                 showAlert('請輸入 Email 與密碼！');
@@ -41,22 +35,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // 成功後 onAuthStateChanged 會自動處理轉址
             } catch (err) {
-                console.error('登入失敗：', err);
+                console.error('Email 登入失敗：', err);
                 showAlert('登入失敗：' + (err.message || '帳號或密碼錯誤'));
             }
         });
     }
 
-    // Google 帳號登入
+    // Google 登入
     const googleLoginBtn = document.getElementById('btn-google-login');
     if (googleLoginBtn) {
         googleLoginBtn.addEventListener('click', async () => {
             const provider = new GoogleAuthProvider();
             try {
                 await signInWithPopup(auth, provider);
-                // 成功後 onAuthStateChanged 會自動處理轉址
             } catch (err) {
                 console.error('Google 登入失敗：', err);
                 showAlert('Google 登入失敗：' + err.message);
