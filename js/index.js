@@ -1,82 +1,82 @@
 import { auth } from './firebase-config.js';
-import { 
-    signInWithEmailAndPassword, 
-    GoogleAuthProvider, 
-    signInWithRedirect, 
-    getRedirectResult,
-    onAuthStateChanged 
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-let hasRedirected = false;
+// iOS 手勢與滑動鎖定
+document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+document.addEventListener('gesturestart', (e) => e.preventDefault());
 
-// 1. 監聽 Firebase 驗證狀態 (登入成功後自動轉址至 athletes.html)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        if (!['INPUT', 'BUTTON', 'A'].includes(e.target.tagName)) {
+            e.preventDefault();
+        }
+    }
+    lastTouchEnd = now;
+}, false);
+
+// 彈窗顯示
+function showAlert(msg, isSuccess = false) {
+    const alertMsg = document.getElementById('alert-msg');
+    const iconEl = document.getElementById('alert-icon');
+    if (alertMsg) alertMsg.textContent = msg;
+    if (iconEl) {
+        if (isSuccess) {
+            iconEl.textContent = '✅';
+            iconEl.className = 'w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+        } else {
+            iconEl.textContent = '⚠️';
+            iconEl.className = 'w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold';
+        }
+    }
+    document.getElementById('alert-modal')?.classList.remove('hidden');
+}
+
+document.getElementById('btn-close-alert')?.addEventListener('click', () => {
+    document.getElementById('alert-modal')?.classList.add('hidden');
+});
+
+// 防重複跳轉標記
+let isRedirecting = false;
 onAuthStateChanged(auth, (user) => {
-    if (user && !hasRedirected) {
-        hasRedirected = true;
+    if (user && !isRedirecting) {
+        isRedirecting = true;
         window.location.replace('athletes.html');
     }
 });
 
-// 2. 頁面初始化：捕捉從 Google 登入頁面重定向回來的結果
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const result = await getRedirectResult(auth);
-        if (result && result.user) {
-            console.log("Google 重定向登入成功：", result.user);
-            // 登入成功後，onAuthStateChanged 會自動觸發轉址
-        }
-    } catch (err) {
-        console.error('Google 重定向登入失敗：', err);
-        if (err.code === 'auth/unauthorized-domain') {
-            window.showAlert('登入失敗：未授權的網域，請至 Firebase Console 新增 Authorized Domain。');
-        } else {
-            window.showAlert('Google 登入失敗：' + (err.message || '無法完成認證'));
-        }
-    }
-});
-
-// 3. 顯示與關閉 Alert Modal (掛載至 window 供全域調用)
-window.showAlert = function(msg) {
-    const msgEl = document.getElementById('alert-msg');
-    const modalEl = document.getElementById('alert-modal');
-    if (msgEl) msgEl.textContent = msg;
-    if (modalEl) modalEl.classList.remove('hidden');
-};
-
-window.closeAlert = function() {
-    const modalEl = document.getElementById('alert-modal');
-    if (modalEl) modalEl.classList.add('hidden');
-};
-
-// 4. Email 登入處理函數 (掛載至 window)
-window.handleEmailLogin = async function() {
-    const emailInput = document.getElementById('email-input');
-    const passwordInput = document.getElementById('password-input');
-
-    const email = emailInput ? emailInput.value.trim() : '';
-    const password = passwordInput ? passwordInput.value : '';
+// Email 登入
+document.getElementById('btn-email-login')?.addEventListener('click', async () => {
+    const email = document.getElementById('email-input').value.trim();
+    const password = document.getElementById('password-input').value;
 
     if (!email || !password) {
-        window.showAlert('請輸入 Email 與密碼！');
+        showAlert('請輸入 Email 與密碼！');
         return;
     }
 
     try {
         await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
-        console.error('Email 登入失敗：', err);
-        window.showAlert('登入失敗：' + (err.message || '帳號或密碼錯誤'));
+        console.error('登入失敗：', err);
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+            showAlert('Email 或密碼不正確，請重新檢查！');
+        } else if (err.code === 'auth/invalid-email') {
+            showAlert('請輸入有效的 Email 格式！');
+        } else {
+            showAlert('登入失敗：' + err.message);
+        }
     }
-};
+});
 
-// 5. Google 重定向登入處理函數 (採用方案三：signInWithRedirect 替代 Popup)
-window.handleGoogleLogin = async function() {
+// Google 登入
+document.getElementById('btn-google-login')?.addEventListener('click', async () => {
     const provider = new GoogleAuthProvider();
     try {
-        // 使用 Redirect 方式進行驗證，完全繞過 Pop-up 彈窗攔截
-        await signInWithRedirect(auth, provider);
+        await signInWithPopup(auth, provider);
     } catch (err) {
-        console.error('發起 Google 登入失敗：', err);
-        window.showAlert('無法啟動 Google 登入：' + err.message);
+        console.error('Google 登入失敗：', err);
+        showAlert('Google 登入失敗：' + err.message);
     }
-};
+});
