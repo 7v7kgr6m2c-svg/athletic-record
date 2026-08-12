@@ -1,47 +1,110 @@
-import { auth, db } from './firebase-config.js';
-import { collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+document.addEventListener("DOMContentLoaded", function () {
+  // 選項對應表
+  const phaseActionMap = {
+    "Start Phase": [
+      "Track Events",
+      "Field Events",
+      "Event Organization",
+      "Logistics & Venue Setup"
+    ],
+    "In-Progress Phase": [
+      "Track Events",
+      "Field Events",
+      "Score Reporting & Verification",
+      "Medical & Safety"
+    ],
+    "End Phase": [
+      "Award Ceremonies",
+      "Score Reporting & Verification",
+      "Venue Tear-down & Cleaning",
+      "Post-Event Review"
+    ]
+  };
 
-document.addEventListener('DOMContentLoaded', () => {
-    const athleteId = localStorage.getItem('current_athlete_id');
-    const athleteName = localStorage.getItem('current_athlete_name');
+  const actionTaskTypeMap = {
+    "Track Events": [
+      "Sprints (100m / 200m / 400m)",
+      "Middle & Long Distance",
+      "Hurdles & Relays"
+    ],
+    "Field Events": [
+      "Jumps (High / Long / Triple)",
+      "Throws (Shot Put / Discus / Javelin)"
+    ],
+    "Event Organization": [
+      "Registration & Check-in",
+      "Schedule Announcement",
+      "Athlete Briefing"
+    ],
+    "Logistics & Venue Setup": [
+      "Equipment Setup",
+      "Track & Field Inspection",
+      "PA System Setup"
+    ],
+    "Score Reporting & Verification": [
+      "Result Entry",
+      "Judges Verification",
+      "Leaderboard Update"
+    ],
+    "Medical & Safety": [
+      "First Aid Support",
+      "Emergency Response",
+      "Track Safety Clearance"
+    ],
+    "Award Ceremonies": [
+      "Medal Presentation",
+      "Certificate Distribution",
+      "Photo Session"
+    ],
+    "Venue Tear-down & Cleaning": [
+      "Equipment Return",
+      "Venue Cleaning",
+      "Facility Handover"
+    ],
+    "Post-Event Review": [
+      "Score Summary Filing",
+      "Staff Feedback Collection",
+      "Incident Report Review"
+    ]
+  };
 
-    if (!athleteId) {
-        window.location.href = 'athletes.html';
-        return;
-    }
+  // DOM 元素獲取
+  const phaseSelect = document.getElementById("phaseSelect");
+  const actionSelect = document.getElementById("actionSelect");
+  const taskTypeSelect = document.getElementById("taskTypeSelect");
 
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            window.location.href = 'index.html';
-            return;
-        }
-        loadTrackRecords(athleteId);
+  // 通用輔助函式：動態填入 <select> 的選項
+  function populateSelect(selectElement, options, defaultText) {
+    selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+    options.forEach((optionText) => {
+      const opt = document.createElement("option");
+      opt.value = optionText;
+      opt.textContent = optionText;
+      selectElement.appendChild(opt);
     });
+  }
+
+  // 當「階段」變更時，更新「動作」選項
+  function updateActionOptions() {
+    const selectedPhase = phaseSelect.value;
+    const actions = phaseActionMap[selectedPhase] || [];
+
+    populateSelect(actionSelect, actions, "請選擇動作");
+    // 重置任務類型選項
+    updateTaskTypeOptions();
+  }
+
+  // 當「動作」變更時，更新「任務類型」選項
+  function updateTaskTypeOptions() {
+    const selectedAction = actionSelect.value;
+    const taskTypes = actionTaskTypeMap[selectedAction] || [];
+
+    populateSelect(taskTypeSelect, taskTypes, "請選擇任務類型");
+  }
+
+  // 綁定動態監聽事件
+  if (phaseSelect && actionSelect && taskTypeSelect) {
+    phaseSelect.addEventListener("change", updateActionOptions);
+    actionSelect.addEventListener("change", updateTaskTypeOptions);
+  }
 });
-
-async function loadTrackRecords(athleteId) {
-    const recordContainer = document.getElementById('record-list');
-    if (!recordContainer) return;
-
-    try {
-        const q = query(collection(db, "track_records"), where("athleteId", "==", athleteId));
-        const querySnapshot = await getDocs(q);
-        recordContainer.innerHTML = '';
-        querySnapshot.forEach((doc) => {
-            const item = doc.data();
-            const row = document.createElement('div');
-            row.className = 'p-3 border-b border-slate-100 flex justify-between items-center';
-            row.innerHTML = `
-                <div>
-                    <span class="font-bold text-slate-800">${item.event || '田徑項目'}</span>
-                    <span class="text-xs text-slate-400 block">${item.date || ''}</span>
-                </div>
-                <div class="font-mono text-lg font-semibold text-orange-600">${item.time || item.score}</div>
-            `;
-            recordContainer.appendChild(row);
-        });
-    } catch (error) {
-        console.error("載入田徑成績失敗:", error);
-    }
-}
