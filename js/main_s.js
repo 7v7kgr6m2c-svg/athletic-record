@@ -1,104 +1,140 @@
 import { auth, db } from './firebase-config.js';
-import { collection, addDoc, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-document.addEventListener('DOMContentLoaded', () => {
-    const athleteId = localStorage.getItem('current_athlete_id');
-    const athleteName = localStorage.getItem('current_athlete_name');
+const currentAthleteId = localStorage.getItem('current_athlete_id');
+const athleteProfile = {
+  id: currentAthleteId,
+  name: localStorage.getItem('current_athlete_name'),
+  dob: localStorage.getItem('current_athlete_dob'),
+  gender: localStorage.getItem('current_athlete_gender'),
+  avatar: localStorage.getItem('current_athlete_avatar'),
+  theme: localStorage.getItem('current_athlete_theme') || 'cyan'
+};
 
-    // 驗證是否有選擇運動員
-    if (!athleteId) {
-        window.location.href = 'athletes.html';
-        return;
-    }
+let chartInstance = null;
 
-    // 更新頁面上顯示的運動員姓名（若有相對應標籤）
-    const nameDisplay = document.getElementById('current-athlete-display');
-    if (nameDisplay && athleteName) {
-        nameDisplay.textContent = athleteName;
-    }
+function calculateAge(dobStr) {
+  if (!dobStr) return '未知';
+  const birthDate = new Date(dobStr);
+  if (isNaN(birthDate.getTime())) return '未知';
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+  return age;
+}
 
-    // 檢查 Firebase 登入狀態
-    onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            window.location.href = 'index.html';
-            return;
-        }
-        loadSwimRecords(athleteId);
+function showAlert(msg, icon = '') {
+  alert(`${icon} ${msg}`);
+}
+
+function applyTheme(theme) {
+  document.documentElement.style.setProperty('--primary-color', theme === 'blue' ? '#0288d1' : '#009688');
+}
+
+function setInitialTodayDate() {
+  const today = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('record-date');
+  if (dateInput) dateInput.value = today;
+}
+
+function initProfileUI() {
+  document.getElementById('athlete-name').textContent = athleteProfile.name || '運動員';
+  document.getElementById('athlete-dob').textContent = `出生日期: ${athleteProfile.dob || '未填寫'}`;
+  document.getElementById('athlete-age').textContent = `年齡: ${calculateAge(athleteProfile.dob)}`;
+  document.getElementById('athlete-gender').textContent = `性別: ${athleteProfile.gender || '未指定'}`;
+
+  const defaultAvatar = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E";
+
+  const avatarImg = document.getElementById('avatar-img');
+  if (avatarImg) {
+    const avatarVal = athleteProfile.avatar;
+    avatarImg.src = (avatarVal && avatarVal !== 'null' && avatarVal.trim() !== '') ? avatarVal : defaultAvatar;
+  }
+}
+
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const date = document.getElementById('record-date').value;
+  const category = document.getElementById('record-category').value;
+  const item = document.getElementById('record-item').value;
+  const value = parseFloat(document.getElementById('record-value').value);
+
+  try {
+    await addDoc(collection(db, "athletes", currentAthleteId, "swim_records"), {
+      date, category, item, value,
+      createdAt: new Date()
     });
-
-    // 監聽新增游泳紀錄表單提交（若頁面上有表單）
-    const swimForm = document.getElementById('swim-record-form');
-    if (swimForm) {
-        swimForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await handleAddSwimRecord(athleteId);
-        });
-    }
-});
-
-// 載入游泳成績紀錄
-async function loadSwimRecords(athleteId) {
-    const recordContainer = document.getElementById('swim-record-list');
-    if (!recordContainer) return;
-
-    try {
-        const q = query(
-            collection(db, "swimming_records"), 
-            where("athleteId", "==", athleteId)
-        );
-        const querySnapshot = await getDocs(q);
-        recordContainer.innerHTML = '';
-
-        if (querySnapshot.empty) {
-            recordContainer.innerHTML = '<div class="text-center text-slate-400 py-8">暫無游泳紀錄</div>';
-            return;
-        }
-
-        querySnapshot.forEach((doc) => {
-            const item = doc.data();
-            const row = document.createElement('div');
-            row.className = 'p-4 bg-white rounded-2xl mb-3 shadow-sm border border-slate-100 flex justify-between items-center';
-            row.innerHTML = `
-                <div>
-                    <div class="font-bold text-slate-800 text-base">${item.event || '游泳項目'}</div>
-                    <div class="text-xs text-slate-400 mt-1">${item.date || ''} ${item.poolLength ? `(${item.poolLength}m池)` : ''}</div>
-                </div>
-                <div class="font-mono text-xl font-bold text-cyan-600">${item.time || '--:--.--'}</div>
-            `;
-            recordContainer.appendChild(row);
-        });
-    } catch (error) {
-        console.error("載入游泳成績失敗:", error);
-    }
+    showAlert('紀錄儲存成功！', '✅');
+    await fetchRecordsFromFirestore();
+  } catch (err) {
+    showAlert('儲存失敗：' + err.message, '❌');
+  }
 }
 
-// 新增游泳成績紀錄
-async function handleAddSwimRecord(athleteId) {
-    const eventInput = document.getElementById('swim-event')?.value;
-    const timeInput = document.getElementById('swim-time')?.value;
-    const dateInput = document.getElementById('swim-date')?.value;
-
-    if (!eventInput || !timeInput) {
-        alert('請填寫完整項目與成績');
-        return;
-    }
-
-    try {
-        await addDoc(collection(db, "swimming_records"), {
-            athleteId: athleteId,
-            event: eventInput,
-            time: timeInput,
-            date: dateInput || new Date().toISOString().split('T')[0],
-            createdAt: new Date()
-        });
-
-        // 重新載入列表並重置表單
-        loadSwimRecords(athleteId);
-        const swimForm = document.getElementById('swim-record-form');
-        if (swimForm) swimForm.reset();
-    } catch (error) {
-        console.error("新增游泳成績失敗:", error);
-        alert('新增失敗，請稍後再試');
-    }
+async function fetchRecordsFromFirestore() {
+  try {
+    const q = query(
+      collection(db, "athletes", currentAthleteId, "swim_records"),
+      orderBy("date", "asc")
+    );
+    const snapshot = await getDocs(q);
+    const records = snapshot.docs.map(doc => doc.data());
+    initChart(records);
+  } catch (err) {
+    console.error("載入紀錄失敗:", err);
+  }
 }
+
+function initChart(records = []) {
+  const ctx = document.getElementById('performance-chart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+
+  const labels = records.map(r => r.date);
+  const data = records.map(r => r.value);
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.length ? labels : ['無數據'],
+      datasets: [{
+        label: '游泳成績 (秒)',
+        data: data.length ? data : [0],
+        borderColor: '#0288d1',
+        backgroundColor: 'rgba(2, 136, 209, 0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } }
+    }
+  });
+}
+
+function initMainPage() {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      window.location.href = 'index.html';
+      return;
+    }
+
+    if (!currentAthleteId) {
+      showAlert('未選擇運動員，將為您返回選擇頁面！', '⚠️');
+      setTimeout(() => { window.location.href = 'athletes.html'; }, 1500);
+      return;
+    }
+
+    initProfileUI();
+    applyTheme(athleteProfile.theme);
+    setInitialTodayDate();
+
+    await fetchRecordsFromFirestore();
+
+    document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
+  });
+}
+
+initMainPage();
