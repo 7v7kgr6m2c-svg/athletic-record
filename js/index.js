@@ -8,13 +8,17 @@ import {
 
 let hasRedirected = false;
 
-// 1. 監聽 Firebase 驗證狀態
-onAuthStateChanged(auth, (user) => {
-    if (user && !hasRedirected) {
-        hasRedirected = true;
-        window.location.replace('athletes.html');
-    }
-});
+// 1. 安全監聽 Firebase 驗證狀態
+try {
+    onAuthStateChanged(auth, (user) => {
+        if (user && !hasRedirected) {
+            hasRedirected = true;
+            window.location.replace('athletes.html');
+        }
+    });
+} catch (err) {
+    console.error("Firebase 初始化受阻，請關閉廣告攔截器：", err);
+}
 
 // 2. 顯示與關閉 Alert Modal
 window.showAlert = function(msg) {
@@ -57,6 +61,10 @@ window.handleGoogleLogin = async function() {
         await signInWithPopup(auth, provider);
     } catch (err) {
         console.error('Google 登入失敗：', err);
-        window.showAlert('Google 登入失敗：' + err.message);
+        if (err.code === 'auth/popup-blocked') {
+            window.showAlert('登入彈窗被瀏覽器或擴充功能封鎖，請允許本網站開啟彈窗！');
+        } else {
+            window.showAlert('Google 登入失敗：' + err.message);
+        }
     }
 };
