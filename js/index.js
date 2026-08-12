@@ -2,25 +2,40 @@ import { auth } from './firebase-config.js';
 import { 
     signInWithEmailAndPassword, 
     GoogleAuthProvider, 
-    signInWithPopup, 
+    signInWithRedirect, 
+    getRedirectResult,
     onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 let hasRedirected = false;
 
-// 1. 安全監聽 Firebase 驗證狀態
-try {
-    onAuthStateChanged(auth, (user) => {
-        if (user && !hasRedirected) {
-            hasRedirected = true;
-            window.location.replace('athletes.html');
-        }
-    });
-} catch (err) {
-    console.error("Firebase 初始化受阻，請關閉廣告攔截器：", err);
-}
+// 1. 監聽 Firebase 驗證狀態 (登入成功後自動轉址至 athletes.html)
+onAuthStateChanged(auth, (user) => {
+    if (user && !hasRedirected) {
+        hasRedirected = true;
+        window.location.replace('athletes.html');
+    }
+});
 
-// 2. 顯示與關閉 Alert Modal
+// 2. 頁面初始化：捕捉從 Google 登入頁面重定向回來的結果
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+            console.log("Google 重定向登入成功：", result.user);
+            // 登入成功後，onAuthStateChanged 會自動觸發轉址
+        }
+    } catch (err) {
+        console.error('Google 重定向登入失敗：', err);
+        if (err.code === 'auth/unauthorized-domain') {
+            window.showAlert('登入失敗：未授權的網域，請至 Firebase Console 新增 Authorized Domain。');
+        } else {
+            window.showAlert('Google 登入失敗：' + (err.message || '無法完成認證'));
+        }
+    }
+});
+
+// 3. 顯示與關閉 Alert Modal (掛載至 window 供全域調用)
 window.showAlert = function(msg) {
     const msgEl = document.getElementById('alert-msg');
     const modalEl = document.getElementById('alert-modal');
@@ -33,7 +48,7 @@ window.closeAlert = function() {
     if (modalEl) modalEl.classList.add('hidden');
 };
 
-// 3. 全域 Email 登入處理函數
+// 4. Email 登入處理函數 (掛載至 window)
 window.handleEmailLogin = async function() {
     const emailInput = document.getElementById('email-input');
     const passwordInput = document.getElementById('password-input');
@@ -54,17 +69,14 @@ window.handleEmailLogin = async function() {
     }
 };
 
-// 4. 全域 Google 登入處理函數
+// 5. Google 重定向登入處理函數 (採用方案三：signInWithRedirect 替代 Popup)
 window.handleGoogleLogin = async function() {
     const provider = new GoogleAuthProvider();
     try {
-        await signInWithPopup(auth, provider);
+        // 使用 Redirect 方式進行驗證，完全繞過 Pop-up 彈窗攔截
+        await signInWithRedirect(auth, provider);
     } catch (err) {
-        console.error('Google 登入失敗：', err);
-        if (err.code === 'auth/popup-blocked') {
-            window.showAlert('登入彈窗被瀏覽器或擴充功能封鎖，請允許本網站開啟彈窗！');
-        } else {
-            window.showAlert('Google 登入失敗：' + err.message);
-        }
+        console.error('發起 Google 登入失敗：', err);
+        window.showAlert('無法啟動 Google 登入：' + err.message);
     }
 };
