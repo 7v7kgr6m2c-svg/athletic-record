@@ -1,7 +1,35 @@
-.cropper-view-box, .cropper-face { 
-    border-radius: 50%; 
+/* 圖片裁切自訂樣式 */
+.cropper-view-box,
+.cropper-face {
+    border-radius: 50%;
 }
 
-.cropper-container { 
-    touch-action: none; 
+.cropper-container {
+    touch-action: none;
+}
+
+.swipe-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.5rem;
+    touch-action: pan-y;
+}
+
+.swipe-content {
+    transition: transform 0.2s ease-out;
+    will-change: transform;
+}
+
+.color-option {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s, border-width 0.2s;
+}
+
+.color-option.active {
+    transform: scale(1.15);
+    outline: 3px solid #2563eb;
+    outline-offset: 2px;
 }
