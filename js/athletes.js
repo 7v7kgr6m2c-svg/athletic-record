@@ -114,11 +114,13 @@ async function loadAthletes() {
   }
 }
 
-// 建立運動員卡片（採用原生 Tailwind 雙層定位，解決邊界溢出問題）
+// 建立運動員卡片（採用原生行內樣式鎖死，無視任何 Tailwind CDN 未編譯問題）
 function createAthleteCard(id, data) {
   const wrapper = document.createElement('div');
-  // 外層：強制 relative 與 overflow-hidden，將 absolute 子元素嚴格封鎖在卡片內部
-  wrapper.className = "relative overflow-hidden rounded-3xl mb-4 shadow-sm border border-slate-200/60 select-none";
+  
+  // 原生 Inline Style 強制鎖定卡片相對定位與圓角遮罩
+  wrapper.style.cssText = "position: relative !important; overflow: hidden !important; border-radius: 1.5rem !important; margin-bottom: 1rem; user-select: none;";
+  wrapper.className = "shadow-sm border border-slate-200/60";
 
   const themeColors = {
     blue: 'bg-blue-600',
@@ -129,14 +131,14 @@ function createAthleteCard(id, data) {
   const bgClass = themeColors[data.theme] || 'bg-blue-600';
 
   wrapper.innerHTML = `
-    <!-- 背景操作按鈕層 (絕對定位於卡片右側，預設被 z-10 前景遮住) -->
-    <div class="absolute inset-y-0 right-0 flex items-center z-0">
-      <button class="btn-change-color h-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 flex items-center justify-center transition cursor-pointer" type="button">更換顏色</button>
-      <button class="btn-delete h-full bg-red-600 hover:bg-red-700 text-white font-bold px-5 flex items-center justify-center transition cursor-pointer" type="button">刪除</button>
+    <!-- 背景操作按鈕層 (原生絕對定位，100% 錨定於上方 wrapper) -->
+    <div style="position: absolute !important; top: 0 !important; bottom: 0 !important; right: 0 !important; height: 100% !important; display: flex !important; align-items: center !important; z-index: 1 !important;">
+      <button class="btn-change-color bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 flex items-center justify-center transition cursor-pointer" style="height: 100% !important; border: none !important;" type="button">更換顏色</button>
+      <button class="btn-delete bg-red-600 hover:bg-red-700 text-white font-bold px-5 flex items-center justify-center transition cursor-pointer" style="height: 100% !important; border: none !important;" type="button">刪除</button>
     </div>
 
-    <!-- 前景卡片內容層 (相對定位 z-10 覆蓋按鈕，受觸控滑動偏移) -->
-    <div class="swipe-content relative z-10 ${bgClass} p-5 rounded-3xl text-white flex items-center justify-between cursor-pointer transition-transform duration-200 ease-out">
+    <!-- 前景卡片內容層 (原生相對定位 z-index: 2 蓋住按鈕) -->
+    <div class="swipe-content ${bgClass} p-5 rounded-3xl text-white flex items-center justify-between cursor-pointer" style="position: relative !important; z-index: 2 !important; width: 100% !important; transition: transform 0.2s ease-out; will-change: transform;">
       <div class="flex items-center gap-4">
         <img src="${data.avatar || 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23ffffff\' stroke-width=\'1.5\'%3E%3Cpath d=\'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\'/%3E%3Ccircle cx=\'12\' cy=\'7\' r=\'4\'/%3E%3C/svg%3E'}" class="w-14 h-14 rounded-full object-cover border-2 border-white/20 shadow-sm flex-shrink-0">
         <div>
