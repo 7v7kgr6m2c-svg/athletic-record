@@ -1,4 +1,4 @@
-import { auth } from './firebase-config.js？v=1.0.1';
+import { auth } from './firebase-config.js';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 // iOS 手勢與滑動鎖定
