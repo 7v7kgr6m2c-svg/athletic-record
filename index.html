@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
     <title>登入 - 運動員紀錄系統</title>
-    
+    <link rel="icon" href="images/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="images/logo.png">
+
     <!-- CDN 套件 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/main.css">
@@ -13,7 +15,7 @@
 <body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen p-4 flex items-center justify-center select-none overflow-hidden">
 
     <div class="w-full max-w-sm bg-white p-6 md:p-8 rounded-3xl shadow-xl border border-slate-200/60 space-y-6 text-center">
-        <!-- Logo 圖示 -->
+        <!-- Logo 圖示 (內聯 SVG，防止檔案路徑問題導致破圖) -->
         <div class="flex flex-col items-center">
             <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-3 shadow-md">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
@@ -33,7 +35,6 @@
                 <input type="password" id="password-input" placeholder="請輸入密碼" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50">
             </div>
 
-            <!-- 改為行內 onclick 觸發 -->
             <button type="button" onclick="handleEmailLogin()" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-3.5 rounded-2xl shadow-md transition text-sm cursor-pointer mt-2">
                 Email 登入
             </button>
@@ -45,7 +46,6 @@
             <div class="flex-grow border-t border-slate-200"></div>
         </div>
 
-        <!-- 改為行內 onclick 觸發 -->
         <button type="button" onclick="handleGoogleLogin()" class="w-full bg-white hover:bg-slate-50 active:scale-[0.98] text-slate-700 border border-slate-200 font-bold py-3 rounded-2xl shadow-sm transition flex items-center justify-center gap-3 text-sm cursor-pointer">
             <svg class="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -66,6 +66,7 @@
         </div>
     </div>
 
+    <!-- 載入核心邏輯 -->
     <script type="module" src="js/index.js"></script>
 </body>
 </html>
