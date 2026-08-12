@@ -4,7 +4,7 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebas
 
 const firebaseConfig = {
     apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
-    authDomain: "athletes-record.firebaseapp.com",
+    authDomain: "trackandwave.com",
     projectId: "athletes-record",
     storageBucket: "athletes-record.appspot.com",
     messagingSenderId: "259439207122",
