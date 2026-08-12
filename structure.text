@@ -1,23 +1,23 @@
-athletic-record/  (專案根目錄)
-├── index.html        <-- 必須直接放在這裡！
-├── athletes.html
-├── select_sport.html
-├── main_a.html
-├── main_s.html
+athletic-record/
 ├── CNAME
-├── images/           <-- 與 index.html 在同一層
+├── index.html          (登入頁面 DOM)
+├── athletes.html       (運動員列表 DOM)
+├── select_sport.html   (選擇運動項目 DOM)
+├── main_a.html         (田徑成績管理 DOM)
+├── main_s.html         (游泳成績管理 DOM)
+├── images/
 │   └── logo.png
 ├── css/
-    ├── main.css            # 通用及全域樣式 (例如鎖定手勢、畫面防縮放)
-    ├── picker.css          # iOS 3D 日期滾輪與選單樣式
-    ├── tab.css             # Material You / Tab 選項卡樣式
-    └── cropper-custom.css  # 圖片裁切自訂樣式
+│   ├── main.css        (全域防縮放與基本控制)
+│   ├── picker.css      (iOS 日期滾輪樣式)
+│   ├── tab.css         (Material You / 分類選項卡樣式)
+│   └── cropper-custom.css (頭像裁切與選單樣式)
 └── js/
-    ├── firebase-config.js  # Firebase 初始化設定
-    ├── ios-picker.js       # iOS 日期滾輪模組 logic
-    ├── prevent-gestures.js.# 全力防縮放與雙擊事件防護
-    ├── index.js            # 登入頁面 logic
-    ├── select_sport.js     # 選擇運動項目頁面 logic
-    ├── athletes.js         # 運動員列表 logic
-    ├── main_a.js           # 田徑成績管理 logic
-    └── main_s.js           # 游泳成績管理 logic
+    ├── firebase-config.js (Firebase Auth / Firestore 配置)
+    ├── prevent-gestures.js(手勢與雙擊防護)
+    ├── ios-picker.js   (iOS 3D 日期滾輪組件)
+    ├── index.js        (登入頁面邏輯)
+    ├── athletes.js     (運動員管理與 CRUD 邏輯)
+    ├── select_sport.js (選擇運動項目路由邏輯)
+    ├── main_a.js       (田徑成績 Firestore 與 Chart.js 邏輯)
+    └── main_s.js       (游泳成績 Firestore 與 Chart.js 邏輯)
