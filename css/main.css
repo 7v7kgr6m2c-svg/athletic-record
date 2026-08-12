@@ -1,23 +1,24 @@
-/* 強制鎖定畫面，禁止滑動與橡皮筋效果 */
 html, body {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100vw;
-    height: 100dvh;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100dvh;
     overflow: hidden !important;
     touch-action: none !important;
     -webkit-user-select: none;
     user-select: none;
     -webkit-text-size-adjust: 100%;
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
 }
 
-/* 確保輸入框點擊時不會觸發 iOS 自動放大 */
-input { 
-    font-size: 16px !important; 
+input, select, textarea {
+    font-size: 16px !important;
     touch-action: manipulation;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
