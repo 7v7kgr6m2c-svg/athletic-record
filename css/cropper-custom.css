@@ -1,35 +1,90 @@
 /* 圖片裁切自訂樣式 */
 .cropper-view-box,
 .cropper-face {
-    border-radius: 50%;
+  border-radius: 50%;
 }
 
 .cropper-container {
-    touch-action: none;
+  touch-action: none;
 }
 
+/* 修正卡片側滑按鈕定位與邊界限制 */
 .swipe-container {
-    position: relative;
-    overflow: hidden;
-    border-radius: 1.5rem;
-    touch-action: pan-y;
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 1.5rem !important; /* 確保圓角邊界完整裁切背景按鈕 */
+  touch-action: pan-y;
 }
 
+/* 前景卡片主體 (覆蓋在按鈕層上方) */
 .swipe-content {
-    transition: transform 0.2s ease-out;
-    will-change: transform;
+  position: relative !important;
+  z-index: 10 !important;
+  transition: transform 0.2s ease-out;
+  will-change: transform;
+  width: 100%;
 }
 
+/* 背景操作按鈕層 (嚴格限制在單一卡片高度內) */
+.swipe-actions {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  z-index: 1 !important;
+}
+
+.swipe-btn-color {
+  height: 100%;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.swipe-btn-color:hover {
+  background-color: #1d4ed8;
+}
+
+.swipe-btn-delete {
+  height: 100%;
+  background-color: #dc2626;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.swipe-btn-delete:hover {
+  background-color: #b91c1c;
+}
+
+/* 主題顏色選擇器圓圈 */
 .color-option {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: transform 0.2s, border-width 0.2s;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s, outline 0.2s;
 }
 
 .color-option.active {
-    transform: scale(1.15);
-    outline: 3px solid #2563eb;
-    outline-offset: 2px;
+  transform: scale(1.15);
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
 }
