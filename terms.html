@@ -3,159 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>付費訂閱與取消條款 | Terms of Paid Subscription</title>
+    <title>付費訂閱與取消條款 | Track & Wave</title>
     <style>
-        :root {
-            --primary-color: #635bff; /* Stripe 經典紫色調 */
-            --text-color: #333333;
-            --bg-color: #f8f9fa;
-            --card-bg: #ffffff;
-            --border-color: #e6ebf1;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 40px 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
-        }
-        h1 {
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 15px;
-            font-size: 28px;
-            margin-top: 0;
-        }
-        h2 {
-            font-size: 20px;
-            color: #1a1f36;
-            margin-top: 30px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        p, li {
-            font-size: 15px;
-            color: #4f566b;
-        }
-        ul {
-            padding-left: 20px;
-        }
-        li {
-            margin-bottom: 8px;
-        }
-        .meta-date {
-            font-size: 13px;
-            color: #a3acb9;
-            margin-bottom: 30px;
-        }
-        .lang-en {
-            color: #697386;
-            font-style: italic;
-            display: block;
-            margin-top: 4px;
-            font-size: 14px;
-        }
-        .highlight {
-            background-color: #f7fafc;
-            border-left: 4px solid var(--primary-color);
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 0 8px 8px 0;
-        }
-        .footer-link {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-            text-align: center;
-            font-size: 14px;
-        }
-        a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
+        :root { --primary-color: #635bff; --text-color: #333333; --bg-color: #f8f9fa; --card-bg: #ffffff; --border-color: #e6ebf1; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: var(--text-color); background-color: var(--bg-color); margin: 0; padding: 40px 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--card-bg); padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px rgba(50, 50, 93, 0.05); }
+        h1 { color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 15px; font-size: 28px; margin-top: 0; }
+        h2 { font-size: 20px; color: #1a1f36; margin-top: 30px; }
+        p, li { font-size: 15px; color: #4f566b; }
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .meta-date { font-size: 13px; color: #a3acb9; margin-bottom: 30px; }
+        .lang-en { color: #697386; font-style: italic; display: block; margin-top: 4px; font-size: 14px; }
+        .highlight { background-color: #f7fafc; border-left: 4px solid var(--primary-color); padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+        .footer-link { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center; font-size: 14px; }
+        a { color: var(--primary-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <!-- 標題 -->
     <h1>付費訂閱與取消條款 / Paid Subscription Terms</h1>
-    
-    <!-- ⚠️ 請修改日期 -->
     <div class="meta-date">最後更新日期 / Last Updated: 2026年8月13日</div>
 
     <p>
-        歡迎訂閱 <strong><Track & Wave</strong>（以下簡稱「本服務」）。本服務之訂閱、扣款與退款事宜由第三方支付平台 Stripe 處理。當您訂閱本服務，即表示您已閱讀、理解並同意本條款。
+        歡迎訂閱 <strong>Track & Wave</strong>（以下簡稱「本服務」）。本服務之訂閱、扣款與退款事宜由第三方支付平台 Stripe 處理。當您訂閱本服務，即表示您已閱讀、理解並同意本條款。
         <span class="lang-en">Welcome to Track & Wave (hereinafter referred to as "the Service"). Subscriptions, billing, and refunds for the Service are processed by Stripe. By subscribing, you agree to these Terms.</span>
     </p>
 
-    <!-- 第一部分 -->
     <h2>➡️ 1. 訂閱方案與自動續訂 / Subscription & Auto-Renewal</h2>
     <ul>
-        <li><strong>服務範圍：</strong>用戶透過 Stripe 成功付款後，系統（透過 Firebase）將自動解鎖相對應的付費功能或內容。<span class="lang-en">Scope: Upon successful payment via Stripe, access to paid features will be automatically granted via Firebase.</span></li>
-        <li><strong>自動續訂：</strong>本服務所有訂閱方案（月繳/年繳）均預設為<strong>自動續訂</strong>。當前訂閱週期結束時，Stripe 將自動從您綁定的支付工具中扣除下一個週期的費用。<span class="lang-en">Auto-Renewal: All subscription plans are set to auto-renew by default. Stripe will automatically charge your linked payment method at the end of each billing cycle.</span></li>
+        <li><strong>服務範圍：</strong>用戶透過 Stripe 成功付款後，系統（透過 Firebase）將自動解鎖相對應的運動數據管理付費功能或內容。<span class="lang-en">Scope: Upon successful payment via Stripe, access to premium features will be automatically granted via Firebase.</span></li>
+        <li><strong>自動續訂：</strong>本服務所有訂閱方案均預設為<strong>自動續訂</strong>。當前訂閱週期結束時，Stripe 將自動從您綁定的支付工具中扣除下一個週期的費用。<span class="lang-en">Auto-Renewal: All subscription plans are set to auto-renew by default. Stripe will automatically charge your linked payment method at the end of each billing cycle.</span></li>
         <li><strong>價格變更：</strong>我們保留調整訂閱價格的權利。如有任何價格變更，我們將至少於下一次扣款前 14 天透過 Email 通知您。<span class="lang-en">Price Changes: We reserve the right to change fees with at least 14 days' notice prior to your next billing date.</span></li>
     </ul>
 
-    <!-- 第二部分 -->
     <h2>➡️ 2. 付款與安全 / Payment & Security</h2>
     <ul>
         <li><strong>金流處理：</strong>我們使用 Stripe 作為合規的第三方金流服務商。您的信用卡資料將直接輸入並儲存於 Stripe 的安全伺服器中。<span class="lang-en">Payment Processor: We use Stripe to process payments. Your credit card information is directly collected and securely stored by Stripe.</span></li>
-        <li><strong>資料隱私：</strong>我們的網站（GitHub Pages）與後台（Firebase）<strong>絕不會</strong>收集、儲存或經手您的完整信用卡卡號或 CVC 安全碼。<span class="lang-en">Data Privacy: Our platform (GitHub & Firebase) never stores or handles your full credit card details.</span></li>
+        <li><strong>資料隱私：</strong>我們的網站與後台（Firebase）<strong>絕不會</strong>收集、儲存或經手您的完整信用卡卡號或 CVC 安全碼。<span class="lang-en">Data Privacy: Our platform never stores or handles your full credit card details.</span></li>
     </ul>
 
-    <!-- 第三部分 -->
     <h2>➡️ 3. 取消訂閱政策 / Cancellation Policy</h2>
     <div class="highlight">
         <strong>如何取消訂閱 / How to Cancel:</strong><br>
-        1. 登入本服務，進入您的「個人帳戶後台」。<br>
+        1. 登入 Track & Wave，進入您的「個人帳戶後台」。<br>
         2. 點擊「管理訂閱」，系統將引導您至 <strong>Stripe 客戶門戶 (Stripe Customer Portal)</strong>。<br>
         3. 點擊「取消方案」即可完成。<br>
         <span class="lang-en">Log in to your account, click "Manage Subscription" to be redirected to the Stripe Customer Portal, and select "Cancel Plan".</span>
     </div>
     <ul>
         <li><strong>隨時取消：</strong>您可以隨時、無條件取消您的訂閱。取消後，您將不會在下個週期被扣款。<span class="lang-en">Cancel Anytime: You can cancel your subscription at any time. You will not be charged for the next cycle.</span></li>
-        <li><strong>取消後權限：</strong>取消訂閱後，您目前的付費會員權限將持續有效，直至<strong>當前已付費的計費週期結束為止</strong>。<span class="lang-en">Access Post-Cancellation: You will retain access to the paid features until the end of your current billing period.</span></li>
+        <li><strong>取消後權限：</strong>取消訂閱後，您目前的付費權限將持續有效，直至<strong>當前已付費的計費週期結束為止</strong>。<span class="lang-en">Access Post-Cancellation: You will retain access to the paid features until the end of your current billing period.</span></li>
     </ul>
 
-    <!-- 第四部分 -->
     <h2>➡️ 4. 退款政策 / Refund Policy</h2>
     <ul>
-        <li><strong>原則不退款：</strong>除非法律另有規定，否則所有已支付的訂閱費用（包含月繳與年繳）均<strong>不予退還</strong>。我們不對未使用的天數或比例進行退款。<span class="lang-en">Standard Policy: Except as required by law, all fees are non-refundable. We do not provide refunds or credits for any partial subscription periods.</span></li>
-        <!-- ⚠️ 請修改退款天數 -->
-        <li><strong>例外情況：</strong>若因技術故障（例如 Stripe 重複扣款、Firebase 未成功開通權限且無法修復），請於扣款後 <strong>7 天</strong>內聯繫我們的聯絡信箱，我們將協助處理全額退款。<span class="lang-en">Exceptions: For technical anomalies (e.g., duplicate charges), please contact us within 7 days.</span></li>
+        <li><strong>原則不退款：</strong>除非法律另有規定，否則所有已支付的訂閱費用均<strong>不予退還</strong>。我們不對未使用的天數或比例進行退款。<span class="lang-en">Standard Policy: Except as required by law, all fees are non-refundable. We do not provide refunds or credits for any partial subscription periods.</span></li>
+        <li><strong>例外情況：</strong>若因技術故障（如 Stripe 重複扣款、Firebase 未成功開通權限且無法修復），請於扣款後 <strong>7 天內</strong>聯繫我們的聯絡信箱，我們將協助處理全額退款。<span class="lang-en">Exceptions: For technical anomalies (e.g., duplicate charges), please contact us within 7 days.</span></li>
     </ul>
 
-    <!-- 第五部分 -->
     <h2>➡️ 5. 聯絡我們 / Contact Us</h2>
-    <p>
-        如果您對訂閱、扣款、取消或退款有任何疑問，請透過以下方式與我們聯繫：<br>
-        If you have any questions regarding your subscription, please contact us at:
-    </p>
+    <p>如果您對訂閱、扣款、取消或退款有任何疑問，請與我們聯繫：</p>
     <ul>
-        <!-- ⚠️ 請修改聯絡 Email 與網址 -->
         <li><strong>Email:</strong> <a href="mailto:contact@trackandwave.com">contact@trackandwave.com</a></li>
+        <li><strong>Website:</strong> <a href="https://trackandwave.com" target="_blank">www.trackandwave.com</a></li>
     </ul>
 
-    <!-- 頁尾聲明 -->
     <div class="footer-link">
-        <!-- ⚠️ 請修改版權名稱 -->
-        &copy; 2026 Vianus International Limited. All rights reserved. | <a href="#">回到首頁 Home</a>
+        &copy; 2026 Vianus International Limited. All rights reserved. | <a href="https://trackandwave.com">回到首頁 Home</a>
     </div>
 </div>
-
 </body>
 </html>
