@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    
+
     <!-- 1. 標準 SVG Favicon（加上 ?v=1 避開快取） -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=1">
 
@@ -103,50 +103,23 @@
             <p class="text-xs md:text-sm text-slate-500 mt-1 font-medium">點擊進入紀錄，向左滑動卡片可更換顏色或刪除資料</p>
         </div>
 
-        <!-- 中間運動員列表（固定渲染 3 個 Slot / 預留空間，確保第 2 個 Slot 居中） -->
+        <!-- 中間運動員列表 -->
         <div id="slots-container" class="space-y-4">
             <div class="text-center py-8 text-slate-400 font-medium">正在載入資料...</div>
         </div>
 
         <!-- 下方按鈕區塊 -->
         <div class="pt-2 space-y-2">
-            <!-- 綁定 Email/密碼 按鈕 -->
-            <button id="btn-open-link-modal" onclick="openLinkModal()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold py-3.5 rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                <span>綁定 / 重設 Email 密碼登入</span>
-            </button>
+            <!-- 改為「個人帳戶設定」連結 -->
+            <a href="account.html" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold py-3.5 rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <span>個人帳戶設定</span>
+            </a>
 
             <button id="btn-logout" class="w-full bg-white hover:bg-red-50 text-red-600 border border-red-200 font-bold py-3.5 rounded-2xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 <span>登出帳戶</span>
             </button>
-        </div>
-    </div>
-
-    <!-- 綁定 Email/密碼 Modal 彈窗 -->
-    <div id="link-password-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
-        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <h3 class="text-lg font-bold text-slate-900 text-center">綁定 / 重設 Email 密碼</h3>
-            <p class="text-xs text-slate-500 text-center font-medium">設定密碼後，未來您也可以使用目前的 Email 電子郵件與此密碼登入系統。</p>
-            
-            <div class="space-y-3 pt-2">
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">設定新密碼</label>
-                    <input type="password" id="new-password-input" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="至少8位，包含大小寫字母與數字">
-                </div>
-                <div class="text-[11px] text-slate-400 space-y-0.5 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                    <p class="font-semibold text-slate-500">密碼需符合以下要求：</p>
-                    <p>• 長度至少 8 個字元</p>
-                    <p>• 包含至少一個大寫字母 (A-Z)</p>
-                    <p>• 包含至少一個小寫字母 (a-z)</p>
-                    <p>• 包含至少一個數字 (0-9)</p>
-                </div>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button type="button" onclick="closeLinkModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 rounded-xl text-sm transition cursor-pointer">取消</button>
-                <button type="button" onclick="handleLinkPassword()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm shadow transition cursor-pointer">確認綁定</button>
-            </div>
         </div>
     </div>
 
@@ -279,7 +252,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, EmailAuthProvider, linkWithCredential, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -339,76 +312,6 @@
         window.resolveCustomConfirm = function(val) {
             document.getElementById('custom-confirm-modal').classList.add('hidden');
             if (confirmResolver) confirmResolver(val);
-        }
-
-        // 開啟與關閉綁定彈窗
-        window.openLinkModal = function() {
-            document.getElementById('link-password-modal').classList.remove('hidden');
-        }
-
-        window.closeLinkModal = function() {
-            document.getElementById('link-password-modal').classList.add('hidden');
-            document.getElementById('new-password-input').value = '';
-        }
-
-        // 執行綁定或更新密碼（支援密碼政策檢查）
-        window.handleLinkPassword = async function() {
-            const user = auth.currentUser;
-            const password = document.getElementById('new-password-input').value;
-
-            if (!user) {
-                showAlert('請先登入帳戶！', '⚠️');
-                return;
-            }
-
-            // 檢查 Firebase 密碼政策：至少 8 位、須包含大寫字母、小寫字母與數字
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-
-            if (!password || !passwordRegex.test(password)) {
-                showAlert('密碼不符合安全性規定：\n• 長度至少 8 位數\n• 必須包含大寫字母\n• 必須包含小寫字母\n• 必須包含數字', '⚠️');
-                return;
-            }
-
-            try {
-                const hasPassword = user.providerData.some(p => p.providerId === 'password');
-
-                if (hasPassword) {
-                    await updatePassword(user, password);
-                    showAlert(`成功重設密碼！未來請使用新的密碼登入。`, '✅');
-                } else {
-                    const credential = EmailAuthProvider.credential(user.email, password);
-                    await linkWithCredential(user, credential);
-                    showAlert(`成功為 ${user.email} 設定密碼！未來可以使用 Email / 密碼 登入。`, '✅');
-                }
-                closeLinkModal();
-            } catch (err) {
-                console.error('操作失敗：', err);
-                if (err.code === 'auth/weak-password' || err.code === 'auth/password-policy-autherror') {
-                    showAlert('密碼強度不足或不符合政策規定，請重新設定！', '⚠️');
-                } else if (err.code === 'auth/provider-already-linked') {
-                    try {
-                        await updatePassword(user, password);
-                        showAlert(`已更新密碼！未來請使用新的密碼登入。`, '✅');
-                        closeLinkModal();
-                    } catch (updateErr) {
-                        showAlert('更新密碼失敗：' + updateErr.message, '❌');
-                    }
-                } else if (err.code === 'auth/credential-already-in-use') {
-                    showAlert('此 Email 憑證已被其他帳號使用！', '❌');
-                } else if (err.code === 'auth/requires-recent-login') {
-                    showAlert('敏感操作，請登出後重新用 Google 登入再嘗試設定。', '⚠️');
-                } else {
-                    showAlert('設定失敗：' + err.message, '❌');
-                }
-            }
-        };
-
-        // 強制顯示綁定按鈕
-        function checkUserProviders(user) {
-            const btnLink = document.getElementById('btn-open-link-modal');
-            if (user && user.email) {
-                btnLink.classList.remove('hidden');
-            }
         }
 
         function calculateAge(dobString) {
@@ -663,7 +566,6 @@
                 return;
             }
             currentUser = user;
-            checkUserProviders(user); // 檢查並顯示按鈕
             setTodayAsDefault();
             renderColorPicker();
             await fetchAthletes();
@@ -699,7 +601,6 @@
                     const wrapper = document.createElement('div');
                     wrapper.className = 'swipe-container bg-slate-800 shadow-lg';
                     wrapper.innerHTML = `
-                        <!-- 滑動選單：包含「顏色」與「刪除」按鈕 -->
                         <div class="absolute right-0 top-0 bottom-0 flex w-[160px]">
                             <button class="color-btn w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 shadow-inner cursor-pointer transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.75 1.7-1.67 0-.42-.16-.82-.44-1.11-.28-.29-.44-.69-.44-1.11 0-.92.75-1.67 1.67-1.67H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z"/></svg>
@@ -770,7 +671,6 @@
                     addBox.addEventListener('click', openAddModal);
                     container.appendChild(addBox);
                 } else {
-                    // 當已顯示完整內容（例如只有 1 位或 2 位運動員時），補充不可見的占位塊，保持第 2 個卡片位置永遠處於視覺核心中心
                     const spacer = document.createElement('div');
                     spacer.className = "min-h-[110px] invisible aria-hidden='true'";
                     container.appendChild(spacer);
