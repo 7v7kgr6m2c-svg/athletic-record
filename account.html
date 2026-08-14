@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <!-- Favicon 設置 -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+    <link rel="alternate icon" type="image/png" href="/favicon.png?v=2">
+    <link rel="apple-touch-icon" href="/favicon.png?v=2">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Track & Wave - 個人帳戶後台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body {
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-text-size-adjust: 100%;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- 頂部導覽列 Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <a href="athletes.html" class="flex items-center gap-2">
+                <img src="logo.png" alt="Track & Wave" class="h-8 object-contain">
+            </a>
+            <div class="flex items-center gap-3">
+                <a href="athletes.html" class="text-xs sm:text-sm font-bold text-slate-600 hover:text-sky-600 transition">返回主頁</a>
+                <button id="btn-logout" class="text-xs sm:text-sm font-bold text-red-500 hover:text-red-600 transition cursor-pointer">登出</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區塊 -->
+    <main class="flex-1 max-w-2xl w-full mx-auto p-4 sm:p-6 my-6 space-y-6">
+        
+        <div>
+            <h1 class="text-2xl font-black text-slate-800">個人帳戶後台</h1>
+            <p class="text-xs sm:text-sm text-slate-400 mt-1">管理您的個人資料與訂閱方案</p>
+        </div>
+
+        <!-- 帳戶資訊卡片 -->
+        <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-100 space-y-4">
+            <h2 class="text-base font-bold text-slate-700 pb-2 border-b border-slate-100">帳戶資料</h2>
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span class="text-xs sm:text-sm text-slate-400 font-medium">電子郵件 (Email)</span>
+                <span id="user-email" class="text-sm sm:text-base font-bold text-slate-700">載入中...</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-2">
+                <span class="text-xs sm:text-sm text-slate-400 font-medium">目前的訂閱方案</span>
+                <div class="flex items-center gap-2">
+                    <span id="plan-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">免費版</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 訂閱管理卡片 (對應條款政策) -->
+        <div class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-100 space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-700">訂閱狀態與管理</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">點擊下方按鈕以變更、升級或取消您的訂閱方案</p>
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" id="btn-manage-subscription" class="w-full sm:w-auto px-6 py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow transition text-sm flex items-center justify-center gap-2 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    <span>管理訂閱 (Stripe 門戶)</span>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                💡 點擊「管理訂閱」後，系統將安全引導您至 <strong>Stripe 客戶門戶 (Stripe Customer Portal)</strong>，您可以於該處進行信用卡變更、發票下載或點擊「取消方案」。
+            </p>
+        </div>
+
+    </main>
+
+    <!-- 自訂 Alert Modal -->
+    <div id="alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-6 shadow-2xl space-y-4 text-center">
+            <div id="alert-icon" class="w-12 h-12 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">i</div>
+            <p id="alert-msg" class="text-sm font-medium text-slate-800 whitespace-pre-line"></p>
+            <button onclick="closeAlert()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-sm shadow cursor-pointer transition">確認</button>
+        </div>
+    </div>
+
+    <!-- Firebase 與 邏輯 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA40NWznF4c7Gz2FNzVTCyse_Tm9gp-1n0",
+            authDomain: "trackandwave.com",
+            projectId: "athletes-record",
+            storageBucket: "athletes-record.appspot.com",
+            messagingSenderId: "259439207122",
+            appId: "1:259439207122:web:26d6211ac1379c936e030b",
+            measurementId: "G-F3ZH9YN0VT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        function showAlert(msg) {
+            document.getElementById('alert-msg').textContent = msg;
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+
+        window.closeAlert = function() {
+            document.getElementById('alert-modal').classList.add('hidden');
+        }
+
+        // 監聽登入狀態
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('user-email').textContent = user.email || '已登入';
+            } else {
+                // 未登入則重導回登入頁
+                window.location.href = 'index.html';
+            }
+        });
+
+        // 管理訂閱按鈕點擊處置
+        document.getElementById('btn-manage-subscription').addEventListener('click', async () => {
+            showAlert('正在為您開啟 Stripe 安全訂閱管理門戶...');
+            // TODO: 後端串接發起 create-portal-session 並重導向至 Stripe Portal URL
+            // window.location.href = stripePortalUrl;
+        });
+
+        // 登出
+        document.getElementById('btn-logout').addEventListener('click', async () => {
+            await signOut(auth);
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
