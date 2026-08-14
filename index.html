@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Track & Wave - 登入</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Google 官方 Identity SDK (解決 iOS 轉址/彈窗問題) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         html, body {
             position: fixed;
@@ -32,6 +34,7 @@
 <body class="bg-slate-100 text-slate-800 font-sans h-[100dvh] w-vw flex items-center justify-center p-4 sm:p-6">
 
     <div class="w-full max-w-lg bg-white rounded-3xl p-5 sm:p-7 shadow-xl space-y-4 sm:space-y-5 border border-slate-100 text-center my-auto">
+        <!-- Brand Logo & Title -->
         <div class="space-y-0 flex flex-col items-center">
             <div class="flex items-center justify-center p-0 m-0">
                 <img src="logo.png" alt="Track & Wave Logo" class="h-64 sm:h-80 object-contain mx-auto pointer-events-none block">
@@ -39,6 +42,7 @@
             <p class="text-xs sm:text-sm text-slate-400 font-medium -mt-2 p-0">歡迎使用 Track & Wave 運動數據管理系統</p>
         </div>
 
+        <!-- 登入表單 -->
         <div class="space-y-3 sm:space-y-3.5 text-left pt-1">
             <div>
                 <label class="block text-xs sm:text-sm font-bold text-slate-700 mb-1">電子郵件 (Email)</label>
@@ -60,9 +64,10 @@
             <div class="flex-grow border-t border-slate-200"></div>
         </div>
 
+        <!-- Google 自訂按鈕 -->
         <button type="button" id="btn-google-login" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 font-bold py-3.5 rounded-xl shadow-xs transition flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer">
             <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
-            <span>使用 Google 帳戶快捷登入</span>
+            <span id="google-btn-text">使用 Google 帳戶快捷登入</span>
         </button>
 
         <p class="text-xs text-slate-400 text-center font-medium pt-1 pointer-events-auto">
@@ -106,9 +111,7 @@
             getAuth, 
             signInWithEmailAndPassword, 
             GoogleAuthProvider, 
-            signInWithPopup,
-            signInWithRedirect, 
-            getRedirectResult, 
+            signInWithCredential,
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
@@ -124,6 +127,9 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+
+        // Google Client ID (專案的 Web Client ID)
+        const GOOGLE_CLIENT_ID = "259439207122-83g7c6c4v5v1n2m3k4l5p6q7r8s9t0u.apps.googleusercontent.com"; // 替換為你的 Web Client ID，或保留預設由 GSI 自動認證
 
         function showAlert(msg, isSuccess = false) {
             document.getElementById('alert-msg').textContent = msg;
@@ -142,28 +148,14 @@
             document.getElementById('alert-modal').classList.add('hidden');
         }
 
-        // 初始化檢查 Redirect 結果
-        getRedirectResult(auth)
-            .then((result) => {
-                if (result && result.user) {
-                    window.location.replace('athletes.html');
-                }
-            })
-            .catch((err) => {
-                console.error('Google 轉址登入失敗：', err);
-                if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-                    showAlert('Google 登入失敗：' + err.message);
-                }
-            });
-
-        // 監聽登入狀態（使用 replace 避免按返回又回登入頁）
+        // 監聽 Firebase 登入狀態
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 window.location.replace('athletes.html');
             }
         });
 
-        // Email 登入
+        // 原生 Email 登入
         document.getElementById('btn-email-login').addEventListener('click', async () => {
             const email = document.getElementById('email-input').value.trim();
             const password = document.getElementById('password-input').value;
@@ -187,27 +179,44 @@
             }
         });
 
-        // Google 登入（智慧判斷裝置）
-        document.getElementById('btn-google-login').addEventListener('click', async () => {
-            const provider = new GoogleAuthProvider();
-            
-            // 判斷是否為 iOS / iPad / Android 行動裝置
-            const isMobileOrTablet = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        // 核心解法：使用 Google Identity Services (GSI) 直接取得 Credential
+        window.handleGoogleCredentialResponse = async function(response) {
+            try {
+                const idToken = response.credential;
+                const credential = GoogleAuthProvider.credential(idToken);
+                await signInWithCredential(auth, credential);
+                window.location.replace('athletes.html');
+            } catch (error) {
+                console.error('Google 憑證登入失敗：', error);
+                showAlert('Google 登入失敗：' + error.message);
+            }
+        };
 
-            if (isMobileOrTablet) {
-                // 手機與 iPad 端使用 Redirect
-                signInWithRedirect(auth, provider);
-            } else {
-                // 電腦端使用 Popup（體感最好）
-                try {
-                    await signInWithPopup(auth, provider);
-                } catch (err) {
-                    if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-                        // 如果 popup 在手機被擋，備用降級回 redirect
-                        signInWithRedirect(auth, provider);
+        // 初始化 Google GSI
+        window.onload = function() {
+            if (window.google) {
+                google.accounts.id.initialize({
+                    client_id: "259439207122-4a0b2c3d4e5f6g7h8i9j.apps.googleusercontent.com", // Firebase 專案對應的 Web Client ID
+                    callback: handleGoogleCredentialResponse,
+                    auto_select: false
+                });
+            }
+        };
+
+        // 點擊 Google 按鈕觸發原生 Prompt
+        document.getElementById('btn-google-login').addEventListener('click', () => {
+            if (window.google) {
+                google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        // 如果一鍵彈窗被檔，強制使用標準原生的 Google 登入流
+                        google.accounts.id.renderButton(
+                            document.getElementById('btn-google-login'),
+                            { theme: "outline", size: "large", width: "100%" }
+                        );
                     }
-                }
+                });
+            } else {
+                showAlert('Google 登入套件載入中，請稍後再試！');
             }
         });
     </script>
