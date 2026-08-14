@@ -19,13 +19,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
-        /* 禁用手勢與雙擊縮放，鎖定版面不可滑動 */
+        /* 允許整頁垂直滾動，同時保持防止縮放等設置 */
         html, body {
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
-            height: 100%;
-            overflow: hidden;
             margin: 0;
+            background-color: #f1f5f9;
         }
 
         input, select, textarea {
@@ -94,15 +93,17 @@
       }, false);
     </script>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans h-[100dvh] w-screen flex flex-col justify-between select-none overflow-hidden">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-[100dvh] w-screen flex flex-col justify-between select-none">
 
-    <!-- 中間主要內容區塊（獨立滾動，確保 Footer 不會被擠出視窗） -->
-    <main class="flex-1 w-full max-w-lg mx-auto p-4 md:p-6 overflow-y-auto space-y-4">
-        <!-- 頁面頂部 Logo -->
-        <div class="flex justify-center items-center pt-2 pb-1">
-            <img src="logo_horizontal.png" alt="Logo" class="h-auto max-h-14 w-auto object-contain">
+    <!-- 1. 固定於頁頂的 Logo 區域 (Sticky Header) -->
+    <header class="sticky top-0 z-30 w-full bg-slate-100/90 backdrop-blur-md py-3 border-b border-slate-200/50 shadow-xs">
+        <div class="max-w-lg mx-auto flex justify-center items-center px-4">
+            <img src="logo_horizontal.png" alt="Logo" class="h-auto max-h-12 w-auto object-contain">
         </div>
+    </header>
 
+    <!-- 2. 主要內容區塊（可滾動） -->
+    <main class="flex-1 w-full max-w-lg mx-auto p-4 md:p-6 space-y-4">
         <!-- 上方標題 -->
         <div class="bg-white p-5 rounded-3xl shadow-sm text-center border border-slate-200/60">
             <h2 class="text-2xl font-black text-slate-900 tracking-tight">運動員列表</h2>
@@ -128,8 +129,8 @@
         </div>
     </main>
 
-    <!-- 固定於頁底的 Footer -->
-    <footer class="w-full py-3 pb-6 border-t border-slate-200/80 text-center text-slate-400 text-xs flex-shrink-0 bg-slate-100">
+    <!-- 3. 不固定的 Footer（放在頁面最底下，滾動到最下才會看到） -->
+    <footer class="w-full py-6 mt-6 border-t border-slate-200/80 text-center text-slate-400 text-xs bg-slate-100">
         <div class="max-w-lg mx-auto px-4 space-y-1">
             <div class="flex items-center justify-center gap-3 font-medium">
                 <a href="terms.html" class="hover:text-slate-600 transition">服務條款</a>
