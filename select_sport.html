@@ -6,10 +6,10 @@
     <!-- 1. 標準 SVG Favicon（加上 ?v=1 避開快取） -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=1">
 
-    <!-- 2. 備用 PNG / ICO 格式（建議準備一份 32x32 的 PNG 或 ICO） -->
+    <!-- 2. 備用 PNG / ICO 格式 -->
     <link rel="alternate icon" type="image/png" href="/favicon_180x180.png?v=1">
 
-    <!-- 3. iOS / Apple 裝置專用圖示（加書籤或分頁卡片時會讀取這張） -->
+    <!-- 3. iOS / Apple 裝置專用圖示 -->
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon_180x180.png?v=1">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
@@ -26,23 +26,22 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans min-h-[100dvh] w-screen flex flex-col justify-between select-none">
 
-    <!-- 1. 固定於頁頂的 Logo 區域 (Sticky Header) -->
-    <header class="sticky top-0 z-30 w-full bg-slate-100/90 backdrop-blur-md py-3 border-b border-slate-200/50 shadow-xs">
-        <div class="max-w-lg mx-auto flex justify-center items-center px-4">
-            <img src="logo.png" alt="Logo" class="h-auto max-h-12 w-auto object-contain">
-        </div>
-    </header>
-
-    <!-- 2. 主要內容區域 -->
+    <!-- 主要內容區域 -->
     <main class="flex-1 w-full max-w-md mx-auto p-4 md:p-6 flex flex-col justify-center">
         <div class="space-y-6 text-center my-auto">
+            
+            <!-- 放大的 Logo（放大至 max-h-20） -->
+            <img src="logo.png" alt="Logo" class="h-auto max-h-20 w-auto object-contain mx-auto mb-2">
+
+            <!-- 第 1 個標題方框 -->
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/60 space-y-2">
                 <h2 id="athlete-greeting" class="text-2xl font-black text-slate-900 tracking-tight">請選擇記錄項目</h2>
                 <p class="text-xs md:text-sm text-slate-500 font-medium">選擇您要管理或查看的運動種類</p>
             </div>
 
+            <!-- 運動項目按鈕區 -->
             <div class="grid grid-cols-1 gap-5">
-                <!-- 田徑按鈕（橙紅色跑道漸層，內襯加大） -->
+                <!-- 田徑按鈕 -->
                 <button onclick="goToSport('main_a.html')" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
                     <div class="flex items-center gap-4">
                         <span class="text-4xl">🏃</span>
@@ -54,7 +53,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </button>
 
-                <!-- 游泳按鈕（水藍色漸層，內襯加大） -->
+                <!-- 游泳按鈕 -->
                 <button onclick="goToSport('main_s.html')" class="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
                     <div class="flex items-center gap-4">
                         <span class="text-4xl">🏊</span>
@@ -73,7 +72,7 @@
         </div>
     </main>
 
-    <!-- 3. 頁腳 (Footer) -->
+    <!-- 頁腳 (Footer) -->
     <footer class="w-full py-6 mt-6 border-t border-slate-200/80 text-center text-slate-400 text-xs">
         <div class="max-w-lg mx-auto px-4 space-y-1.5">
             <div class="flex items-center justify-center gap-3 font-medium">
