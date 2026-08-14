@@ -19,50 +19,71 @@
         html, body {
             touch-action: manipulation;
             -webkit-text-size-adjust: 100%;
-            height: 100%;
-            overflow: hidden;
             margin: 0;
+            background-color: #f1f5f9;
         }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans h-screen w-screen p-4 md:p-8 flex items-center justify-center select-none overflow-hidden">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-[100dvh] w-screen flex flex-col justify-between select-none">
 
-    <div class="w-full max-w-md space-y-6 text-center">
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/60 space-y-2">
-            <h2 id="athlete-greeting" class="text-2xl font-black text-slate-900 tracking-tight">請選擇記錄項目</h2>
-            <p class="text-xs md:text-sm text-slate-500 font-medium">選擇您要管理或查看的運動種類</p>
+    <!-- 1. 固定於頁頂的 Logo 區域 (Sticky Header) -->
+    <header class="sticky top-0 z-30 w-full bg-slate-100/90 backdrop-blur-md py-3 border-b border-slate-200/50 shadow-xs">
+        <div class="max-w-lg mx-auto flex justify-center items-center px-4">
+            <img src="logo.png" alt="Logo" class="h-auto max-h-12 w-auto object-contain">
         </div>
+    </header>
 
-        <div class="grid grid-cols-1 gap-5">
-            <!-- 田徑按鈕（橙紅色跑道漸層，內襯加大） -->
-            <button onclick="goToSport('main_a.html')" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <span class="text-4xl">🏃</span>
-                    <h3 class="text-2xl font-bold flex items-baseline gap-2">
-                        <span>田徑</span>
-                        <span class="text-base font-medium opacity-90 font-sans">Track & Field</span>
-                    </h3>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-            </button>
+    <!-- 2. 主要內容區域 -->
+    <main class="flex-1 w-full max-w-md mx-auto p-4 md:p-6 flex flex-col justify-center">
+        <div class="space-y-6 text-center my-auto">
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/60 space-y-2">
+                <h2 id="athlete-greeting" class="text-2xl font-black text-slate-900 tracking-tight">請選擇記錄項目</h2>
+                <p class="text-xs md:text-sm text-slate-500 font-medium">選擇您要管理或查看的運動種類</p>
+            </div>
 
-            <!-- 游泳按鈕（水藍色漸層，內襯加大） -->
-            <button onclick="goToSport('main_s.html')" class="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
-                <div class="flex items-center gap-4">
-                    <span class="text-4xl">🏊</span>
-                    <h3 class="text-2xl font-bold flex items-baseline gap-2">
-                        <span>游泳</span>
-                        <span class="text-base font-medium opacity-90 font-sans">Swimming</span>
-                    </h3>
-                </div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            <div class="grid grid-cols-1 gap-5">
+                <!-- 田徑按鈕（橙紅色跑道漸層，內襯加大） -->
+                <button onclick="goToSport('main_a.html')" class="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
+                    <div class="flex items-center gap-4">
+                        <span class="text-4xl">🏃</span>
+                        <h3 class="text-2xl font-bold flex items-baseline gap-2">
+                            <span>田徑</span>
+                            <span class="text-base font-medium opacity-90 font-sans">Track & Field</span>
+                        </h3>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
+
+                <!-- 游泳按鈕（水藍色漸層，內襯加大） -->
+                <button onclick="goToSport('main_s.html')" class="bg-gradient-to-r from-cyan-600 to-blue-700 hover:from-cyan-700 hover:to-blue-800 text-white p-8 rounded-3xl shadow-lg flex items-center justify-between transition transform active:scale-98 cursor-pointer">
+                    <div class="flex items-center gap-4">
+                        <span class="text-4xl">🏊</span>
+                        <h3 class="text-2xl font-bold flex items-baseline gap-2">
+                            <span>游泳</span>
+                            <span class="text-base font-medium opacity-90 font-sans">Swimming</span>
+                        </h3>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+
+            <button onclick="window.location.href='athletes.html'" class="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold py-3.5 rounded-2xl shadow-sm transition cursor-pointer">
+                返回運動員列表
             </button>
         </div>
+    </main>
 
-        <button onclick="window.location.href='athletes.html'" class="w-full bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 font-bold py-3.5 rounded-2xl shadow-sm transition cursor-pointer">
-            返回運動員列表
-        </button>
-    </div>
+    <!-- 3. 頁腳 (Footer) -->
+    <footer class="w-full py-6 mt-6 border-t border-slate-200/80 text-center text-slate-400 text-xs">
+        <div class="max-w-lg mx-auto px-4 space-y-1.5">
+            <div class="flex items-center justify-center gap-3 font-medium">
+                <a href="terms.html" class="hover:text-slate-600 transition">服務條款</a>
+                <span>•</span>
+                <a href="privacy.html" class="hover:text-slate-600 transition">隱私權政策</a>
+            </div>
+            <p class="text-[11px] text-slate-400">&copy; 2026 Track & Wave. All rights reserved.</p>
+        </div>
+    </footer>
 
     <script>
         const athleteName = localStorage.getItem('current_athlete_name');
