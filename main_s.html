@@ -1321,11 +1321,11 @@
       let cardHtml = `
         <div class="relative overflow-hidden rounded-3xl shadow-xs border border-slate-200/80 bg-slate-100 swipe-card-wrapper">
           <!-- 背景按鈕層（向左滑動時顯示） -->
-          <div class="absolute inset-y-0 right-0 flex items-center pr-2 gap-1.5 z-0">
-            <button onclick="editRecord('${r.id}')" class="h-5/6 px-4 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-2xl flex items-center justify-center transition cursor-pointer shadow-sm">
+          <div class="absolute inset-y-0 right-0 flex w-[140px] z-0">
+            <button onclick="editRecord('${r.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center transition cursor-pointer">
               編輯
             </button>
-            <button onclick="deleteRecord('${r.id}')" class="h-5/6 px-4 bg-red-500 hover:bg-red-600 text-white font-bold text-xs rounded-2xl flex items-center justify-center transition cursor-pointer shadow-sm">
+            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-sm flex items-center justify-center transition cursor-pointer">
               刪除
             </button>
           </div>
@@ -1412,7 +1412,7 @@
       const diffX = endX - startX;
 
       if (diffX < -50) {
-        activeCardInner.style.transform = 'translateX(-120px)';
+        activeCardInner.style.transform = 'translateX(-140px)';
       } else {
         activeCardInner.style.transform = 'translateX(0px)';
       }
@@ -1443,7 +1443,7 @@
         if (activeCardInner) {
           const diffX = me.clientX - startX;
           if (diffX < -50) {
-            activeCardInner.style.transform = 'translateX(-120px)';
+            activeCardInner.style.transform = 'translateX(-140px)';
           } else {
             activeCardInner.style.transform = 'translateX(0px)';
           }
