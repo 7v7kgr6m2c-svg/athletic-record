@@ -1503,6 +1503,7 @@
       onStageChange();
 
       renderList();
+      switchMainTab('history');
     }
 
     window.switchGroupMode = function(mode) {
@@ -1568,11 +1569,11 @@
         if (!contentEl || !actionsEl) return;
 
         if (diffX > 50) {
-          // 向左滑動 -> 顯示編輯按鈕
-          contentEl.style.transform = 'translateX(-80px)';
+          // 向左滑動 -> 顯示編輯與刪除按鈕
+          contentEl.style.transform = 'translateX(-160px)';
           actionsEl.style.transform = 'translateX(0)';
         } else if (diffX < -50) {
-          // 向右滑動 -> 隱藏編輯按鈕
+          // 向右滑動 -> 隱藏編輯與刪除按鈕
           contentEl.style.transform = 'translateX(0)';
           actionsEl.style.transform = 'translateX(100%)';
         }
@@ -1605,10 +1606,14 @@
              ontouchstart="handleCardTouchStart(event)" 
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
           
-          <!-- 滑動向左出現的編輯操作區塊 -->
-          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-20 bg-blue-600 text-white flex items-center justify-center font-bold text-sm transition-transform duration-300 translate-x-full z-10 cursor-pointer"
-               onclick="editRecord('${r.id}')">
-            編輯
+          <!-- 滑動向左出現的操作區塊（編輯 + 刪除） -->
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-300 translate-x-full z-10 font-bold text-sm">
+            <button type="button" onclick="editRecord('${r.id}')" class="w-1/2 bg-blue-600 text-white flex items-center justify-center cursor-pointer">
+              編輯
+            </button>
+            <button type="button" onclick="deleteRecord('${r.id}')" class="w-1/2 bg-red-600 text-white flex items-center justify-center cursor-pointer">
+              刪除
+            </button>
           </div>
 
           <!-- 卡片主要內容區塊 -->
