@@ -73,6 +73,12 @@
           background-color: var(--theme-bg-light, #e0f2fe);
           font-weight: 700;
       }
+
+      /* 左滑選單容器與平滑過渡 */
+      .swipe-item-inner {
+          transition: transform 0.25s ease-out;
+          will-change: transform;
+      }
   </style>
   <script>
     document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
@@ -175,8 +181,6 @@
               <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">比賽</button>
               <button type="button" onclick="switchGroupMode('event')" id="tab-event" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">項目</button>
             </div>
-
-            <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition font-medium cursor-pointer">編輯記錄</button>
           </div>
         </div>
 
@@ -253,7 +257,7 @@
             <select id="status-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
               <option value="NORMAL">正常</option>
               <option value="DQ">DQ (犯規)</option>
-              <option value="DNS">DNS (未起跑)</option>
+              <option value="DNS">DNS (未出賽)</option>
               <option value="DNF">DNF (未完賽)</option>
             </select>
           </div>
@@ -485,7 +489,6 @@
       theme: currentAthleteTheme
     };
 
-    let isHistoryEditMode = false;
     let records = [];
     let chartInstance = null;
     let currentUser = null;
@@ -502,7 +505,7 @@
     let isInitializingPicker = false;
 
     const STAGE_ORDER = { '決賽': 3, '準決賽': 2, '初賽': 1 };
-    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跑)', 'DNF': 'DNF (未完賽)' };
+    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未出賽)', 'DNF': 'DNF (未完賽)' };
 
     // 泳姿權重與項目庫定義（按短距離優先，相同距離依: 自由泳>蛙泳>仰泳>蝶泳>混合泳）
     const STROKE_ORDER = { 'free': 1, 'breast': 2, 'back': 3, 'fly': 4, 'medley': 5 };
@@ -1237,10 +1240,7 @@
         }
       }
 
-      isHistoryEditMode = false;
-      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
       renderList();
-
       switchMainTab('form');
     }
 
@@ -1264,15 +1264,8 @@
       setInitialTodayDate();
       onStageChange();
 
-      isHistoryEditMode = false;
-      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
       renderList();
-    }
-
-    window.toggleEditMode = function() {
-      isHistoryEditMode = !isHistoryEditMode;
-      document.getElementById('toggle-edit-mode-btn').textContent = isHistoryEditMode ? '完成編輯' : '編輯記錄';
-      renderList();
+      switchMainTab('history');
     }
 
     window.switchGroupMode = function(mode) {
@@ -1326,46 +1319,142 @@
       const stageInfo = `${r.stage || '初賽'} (${poolTag})`;
 
       let cardHtml = `
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-          ${showCompInHeader ? `
-            <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
-              <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
-              <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
-            </div>
-          ` : ''}
+        <div class="relative overflow-hidden rounded-3xl shadow-xs border border-slate-200/80 bg-slate-100 swipe-card-wrapper">
+          <!-- 背景按鈕層（向左滑動時顯示） -->
+          <div class="absolute inset-y-0 right-0 flex items-center pr-2 gap-1.5 z-0">
+            <button onclick="editRecord('${r.id}')" class="h-5/6 px-4 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-2xl flex items-center justify-center transition cursor-pointer shadow-sm">
+              編輯
+            </button>
+            <button onclick="deleteRecord('${r.id}')" class="h-5/6 px-4 bg-red-500 hover:bg-red-600 text-white font-bold text-xs rounded-2xl flex items-center justify-center transition cursor-pointer shadow-sm">
+              刪除
+            </button>
+          </div>
 
-          <div class="p-4 space-y-2">
-            <div class="flex items-start justify-between gap-3">
-              <div class="space-y-1">
-                <div class="flex items-center gap-3">
-                  ${getRankBadgeHtml(r.rank)}
-                  <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${r.eventName}</h3>
-                </div>
-                <div class="pl-[52px] text-xs text-slate-400 font-medium">
-                  <span>${stageInfo}</span>
-                </div>
+          <!-- 前景卡片內容 -->
+          <div class="swipe-item-inner relative z-10 bg-white rounded-3xl"
+               ontouchstart="handleTouchStart(event)" 
+               ontouchmove="handleTouchMove(event)" 
+               ontouchend="handleTouchEnd(event)"
+               onmousedown="handleMouseDown(event)">
+            ${showCompInHeader ? `
+              <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100 rounded-t-3xl">
+                <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
+                <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
               </div>
+            ` : ''}
 
-              <div class="text-right flex flex-col items-end">
-                <div class="flex items-baseline">
-                  ${resultDisplay}
+            <div class="p-4 space-y-2">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-3">
+                    ${getRankBadgeHtml(r.rank)}
+                    <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${r.eventName}</h3>
+                  </div>
+                  <div class="pl-[52px] text-xs text-slate-400 font-medium">
+                    <span>${stageInfo}</span>
+                  </div>
                 </div>
-                <span class="text-xs text-slate-400 font-medium mt-1">${ageText}</span>
+
+                <div class="text-right flex flex-col items-end">
+                  <div class="flex items-baseline">
+                    ${resultDisplay}
+                  </div>
+                  <span class="text-xs text-slate-400 font-medium mt-1">${ageText}</span>
+                </div>
               </div>
             </div>
           </div>
-
-          ${isHistoryEditMode ? `
-            <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
-              <button onclick="editRecord('${r.id}')" class="text-xs font-bold text-sky-600 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-xl transition cursor-pointer">編輯此筆紀錄</button>
-              <button onclick="deleteRecord('${r.id}')" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition cursor-pointer">刪除此筆紀錄</button>
-            </div>
-          ` : ''}
         </div>
       `;
 
       return cardHtml;
     }
+
+    // 左滑手勢邏輯實現
+    let startX = 0;
+    let startY = 0;
+    let currentX = 0;
+    let activeCardInner = null;
+
+    window.handleTouchStart = function(e) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      activeCardInner = e.currentTarget;
+      
+      // 關閉其他已展開的卡片
+      document.querySelectorAll('.swipe-item-inner').forEach(el => {
+        if (el !== activeCardInner) {
+          el.style.transform = 'translateX(0px)';
+        }
+      });
+    };
+
+    window.handleTouchMove = function(e) {
+      if (!activeCardInner) return;
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+      const diffX = touchX - startX;
+      const diffY = touchY - startY;
+
+      // 當水平滑動距離大於垂直滑動時才處理滑動
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (diffX < 0 && diffX > -140) {
+          activeCardInner.style.transform = `translateX(${diffX}px)`;
+        } else if (diffX >= 0) {
+          activeCardInner.style.transform = 'translateX(0px)';
+        }
+      }
+    };
+
+    window.handleTouchEnd = function(e) {
+      if (!activeCardInner) return;
+      const endX = e.changedTouches[0].clientX;
+      const diffX = endX - startX;
+
+      if (diffX < -50) {
+        activeCardInner.style.transform = 'translateX(-120px)';
+      } else {
+        activeCardInner.style.transform = 'translateX(0px)';
+      }
+      activeCardInner = null;
+    };
+
+    // 滑鼠事件支援桌面端測試向左拖曳
+    let isMouseDown = false;
+    window.handleMouseDown = function(e) {
+      isMouseDown = true;
+      startX = e.clientX;
+      activeCardInner = e.currentTarget;
+
+      document.querySelectorAll('.swipe-item-inner').forEach(el => {
+        if (el !== activeCardInner) el.style.transform = 'translateX(0px)';
+      });
+
+      const onMouseMove = (me) => {
+        if (!isMouseDown || !activeCardInner) return;
+        const diffX = me.clientX - startX;
+        if (diffX < 0 && diffX > -140) {
+          activeCardInner.style.transform = `translateX(${diffX}px)`;
+        }
+      };
+
+      const onMouseUp = (me) => {
+        isMouseDown = false;
+        if (activeCardInner) {
+          const diffX = me.clientX - startX;
+          if (diffX < -50) {
+            activeCardInner.style.transform = 'translateX(-120px)';
+          } else {
+            activeCardInner.style.transform = 'translateX(0px)';
+          }
+        }
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    };
 
     function renderList() {
       const container = document.getElementById('cards-container');
