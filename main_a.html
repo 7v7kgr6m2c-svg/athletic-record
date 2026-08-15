@@ -864,6 +864,7 @@
     };
 
     const EVENTS_DB = [
+      { id: '30m', cat: 'track', type: 'time', name: '30米', hasWind: true },
       { id: '60m', cat: 'track', type: 'time', name: '60米', hasWind: true },
       { id: '100m', cat: 'track', type: 'time', name: '100米', hasWind: true },
       { id: '200m', cat: 'track', type: 'time', name: '200米', hasWind: true },
@@ -875,11 +876,15 @@
       { id: '100mh', cat: 'track', type: 'time', name: '100米欄', hasWind: true },
       { id: '110mh', cat: 'track', type: 'time', name: '110米欄', hasWind: true },
       { id: '400mh', cat: 'track', type: 'time', name: '400米欄', hasWind: false },
+      { id: '60m_hurdle', cat: 'track', type: 'time', name: '60米障礙賽', hasWind: false },
       { id: '3000m_steeple', cat: 'track', type: 'time', name: '3000米障礙賽', hasWind: false },
       { id: 'high_jump', cat: 'field', type: 'distance', name: '跳高', hasWind: false },
       { id: 'pole_vault', cat: 'field', type: 'distance', name: '撐竿跳高', hasWind: false },
+      { id: 'standing_long_jump', cat: 'field', type: 'distance', name: '立定跳遠', hasWind: false },
       { id: 'long_jump', cat: 'field', type: 'distance', name: '跳遠', hasWind: true },
       { id: 'triple_jump', cat: 'field', type: 'distance', name: '三級跳遠', hasWind: true },
+      { id: 'bean_bag_throw', cat: 'field', type: 'distance', name: '擲豆袋', hasWind: false },
+      { id: 'softball_throw', cat: 'field', type: 'distance', name: '擲壘球', hasWind: false },
       { id: 'shot_put', cat: 'field', type: 'distance', name: '推鉛球', hasWind: false },
       { id: 'discus', cat: 'field', type: 'distance', name: '擲鐵餅', hasWind: false },
       { id: 'javelin', cat: 'field', type: 'distance', name: '擲標槍', hasWind: false },
