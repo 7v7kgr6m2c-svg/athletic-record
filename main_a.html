@@ -857,7 +857,7 @@
 
     window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
 
-    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS (未起跑)', 'DNF': 'DNF (未完賽)', 'NM': 'NM (無成績)' };
+    const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS（未出賽)', 'DNF': 'DNF (未完賽)', 'NM': 'NM (無成績)' };
     const SUB_EVENT_TYPES = {
       '60米欄': 'time', '100米欄': 'time', '110米欄': 'time', '100米': 'time', '200米': 'time', '400米': 'time', '800米': 'time', '1500米': 'time',
       '跳高': 'distance', '撐竿跳高': 'distance', '跳遠': 'distance', '推鉛球': 'distance', '擲鐵餅': 'distance', '擲標槍': 'distance'
@@ -1259,7 +1259,7 @@
       statusSelect.innerHTML = '';
       statusSelect.appendChild(new Option('正常', 'NORMAL'));
       statusSelect.appendChild(new Option('DQ (犯規)', 'DQ'));
-      statusSelect.appendChild(new Option('DNS (未起跑)', 'DNS'));
+      statusSelect.appendChild(new Option('DNS (未出賽)', 'DNS'));
       if (itemObj.cat === 'field') statusSelect.appendChild(new Option('NM (無成績)', 'NM'));
       else statusSelect.appendChild(new Option('DNF (未完賽)', 'DNF'));
 
