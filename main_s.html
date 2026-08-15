@@ -511,6 +511,13 @@
     const STROKE_ORDER = { 'free': 1, 'breast': 2, 'back': 3, 'fly': 4, 'medley': 5 };
 
     const EVENTS_DB = [
+      // 25m (限定短池)
+      { id: '25free', cat: 'free', distance: 25, name: '25米 自由泳', poolOnly: 'short' },
+      { id: '25breast', cat: 'breast', distance: 25, name: '25米 蛙泳', poolOnly: 'short' },
+      { id: '25back', cat: 'back', distance: 25, name: '25米 仰泳', poolOnly: 'short' },
+      { id: '25fly', cat: 'fly', distance: 25, name: '25米 蝶泳', poolOnly: 'short' },
+      { id: '25kick', cat: 'free', distance: 25, name: '25米 持板踢腳', poolOnly: 'short' },
+
       // 50m
       { id: '50free', cat: 'free', distance: 50, name: '50米 自由泳' },
       { id: '50breast', cat: 'breast', distance: 50, name: '50米 蛙泳' },
@@ -1111,6 +1118,10 @@
     }
 
     window.onPoolTypeChange = function() {
+      const poolType = document.getElementById('pool-type-select').value;
+      if (poolType === 'long' && currentCategory === 'all') {
+        // 如果切換到長池，而目前選的是 25米獨有項目，可能需要重設
+      }
       filterCategory(currentCategory);
     }
 
@@ -1132,7 +1143,7 @@
 
       // 依據類別與池長進行過濾，並按照排序規例排列
       const filtered = EVENTS_DB.filter(e => {
-        if (currentPoolType === 'long' && e.poolOnly === 'short') return false;
+        if (currentPoolType === 'long' && (e.poolOnly === 'short' || e.distance === 25)) return false;
         return currentCategory === 'all' || e.cat === currentCategory;
       }).sort(compareEvents);
 
