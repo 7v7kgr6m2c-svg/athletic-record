@@ -894,7 +894,6 @@
       { id: 'decathlon', cat: 'combined', type: 'points', name: '十項全能', subs: ['100米', '跳遠', '推鉛球', '跳高', '400米', '110米欄', '擲鐵餅', '撐竿跳高', '擲標槍', '1500米'] }
     ];
 
-    // 項目名稱正規化：優先從 EVENTS_DB 抓取純中文名稱，否則去除斜線與英文後綴
     function getCleanEventName(record) {
       if (!record) return '';
       const itemObj = EVENTS_DB.find(e => e.id === record.eventId);
@@ -1156,7 +1155,10 @@
       const selectedId = document.getElementById('event-select').value;
       const itemObj = EVENTS_DB.find(e => e.id === selectedId);
 
-      if (itemObj && itemObj.subs) {
+      if (!itemObj) return;
+
+      // 1. 全能項目的子項目狀態處理
+      if (itemObj.subs) {
         const container = document.getElementById('sub-events-container');
         for (let div of container.children) {
           const subSelect = div.querySelector('.sub-status');
@@ -1169,6 +1171,39 @@
             subSelect.disabled = false;
             subInputs.forEach(i => i.disabled = false);
           }
+        }
+        return;
+      }
+
+      // 2. 單項（徑項/田項）之「成績」與「風速」顯示隱藏邏輯
+      const resultLabel = document.getElementById('result-label');
+      const timeGroup = document.getElementById('time-input-group');
+      const distGroup = document.getElementById('distance-input-group');
+      const windContainer = document.getElementById('wind-container');
+
+      if (status !== 'NORMAL') {
+        // 狀態非「正常」時（DQ, DNS, DNF, NM）
+        if (resultLabel) resultLabel.classList.add('hidden');
+        if (timeGroup) timeGroup.classList.add('hidden');
+        if (distGroup) distGroup.classList.add('hidden');
+        if (windContainer) windContainer.classList.add('hidden');
+      } else {
+        // 狀態為「正常」時，依項目類別還原顯示
+        if (resultLabel) resultLabel.classList.remove('hidden');
+
+        if (itemObj.type === 'time') {
+          if (timeGroup) timeGroup.classList.remove('hidden');
+          if (distGroup) distGroup.classList.add('hidden');
+        } else if (itemObj.type === 'distance') {
+          if (distGroup) distGroup.classList.remove('hidden');
+          if (timeGroup) timeGroup.classList.add('hidden');
+        }
+
+        // 風速欄位僅在該項目有風速需求時顯示
+        if (itemObj.hasWind) {
+          if (windContainer) windContainer.classList.remove('hidden');
+        } else {
+          if (windContainer) windContainer.classList.add('hidden');
         }
       }
     }
@@ -1218,9 +1253,6 @@
       const singleDiv = document.getElementById('single-event-inputs');
       const combinedDiv = document.getElementById('combined-event-inputs');
       const container = document.getElementById('sub-events-container');
-      const timeGroup = document.getElementById('time-input-group');
-      const distGroup = document.getElementById('distance-input-group');
-      const windContainer = document.getElementById('wind-container');
       const statusSelect = document.getElementById('status-select');
 
       container.innerHTML = '';
@@ -1268,10 +1300,8 @@
       } else {
         singleDiv.classList.remove('hidden');
         combinedDiv.classList.add('hidden');
-        if (itemObj.type === 'time') { timeGroup.classList.remove('hidden'); distGroup.classList.add('hidden'); }
-        else { distGroup.classList.remove('hidden'); timeGroup.classList.add('hidden'); }
-        if (itemObj.hasWind) windContainer.classList.remove('hidden'); else windContainer.classList.add('hidden');
       }
+      
       onStatusChange();
       onStageChange();
     }
