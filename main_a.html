@@ -176,9 +176,6 @@
               <button type="button" onclick="switchGroupMode('comp')" id="tab-comp" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">比賽</button>
               <button type="button" onclick="switchGroupMode('event')" id="tab-event" class="px-3 py-1.5 rounded-xl text-slate-600 hover:text-slate-900 transition cursor-pointer">項目</button>
             </div>
-
-            <!-- 編輯模式 toggle -->
-            <button onclick="toggleEditMode()" id="toggle-edit-mode-btn" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl transition font-medium cursor-pointer">編輯記錄</button>
           </div>
         </div>
 
@@ -515,7 +512,6 @@
       theme: currentAthleteTheme
     };
 
-    let isHistoryEditMode = false;
     let records = [];
     let chartInstance = null;
     let currentUser = null;
@@ -1157,7 +1153,6 @@
 
       if (!itemObj) return;
 
-      // 1. 全能項目的子項目狀態處理
       if (itemObj.subs) {
         const container = document.getElementById('sub-events-container');
         for (let div of container.children) {
@@ -1175,20 +1170,17 @@
         return;
       }
 
-      // 2. 單項（徑項/田項）之「成績」與「風速」顯示隱藏邏輯
       const resultLabel = document.getElementById('result-label');
       const timeGroup = document.getElementById('time-input-group');
       const distGroup = document.getElementById('distance-input-group');
       const windContainer = document.getElementById('wind-container');
 
       if (status !== 'NORMAL') {
-        // 狀態非「正常」時（DQ, DNS, DNF, NM）
         if (resultLabel) resultLabel.classList.add('hidden');
         if (timeGroup) timeGroup.classList.add('hidden');
         if (distGroup) distGroup.classList.add('hidden');
         if (windContainer) windContainer.classList.add('hidden');
       } else {
-        // 狀態為「正常」時，依項目類別還原顯示
         if (resultLabel) resultLabel.classList.remove('hidden');
 
         if (itemObj.type === 'time') {
@@ -1199,7 +1191,6 @@
           if (timeGroup) timeGroup.classList.add('hidden');
         }
 
-        // 風速欄位僅在該項目有風速需求時顯示
         if (itemObj.hasWind) {
           if (windContainer) windContainer.classList.remove('hidden');
         } else {
@@ -1486,10 +1477,7 @@
         }
       }
 
-      isHistoryEditMode = false;
-      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
       renderList();
-
       switchMainTab('form');
     }
 
@@ -1514,14 +1502,6 @@
       onEventSelectChange();
       onStageChange();
 
-      isHistoryEditMode = false;
-      document.getElementById('toggle-edit-mode-btn').textContent = '編輯記錄';
-      renderList();
-    }
-
-    window.toggleEditMode = function() {
-      isHistoryEditMode = !isHistoryEditMode;
-      document.getElementById('toggle-edit-mode-btn').textContent = isHistoryEditMode ? '完成編輯' : '編輯記錄';
       renderList();
     }
 
@@ -1566,6 +1546,39 @@
       return `<div class="w-10 h-10 flex-shrink-0"></div>`;
     }
 
+    /* 滑動手勢相關變數與函數 */
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    window.handleCardTouchStart = function(e) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+
+    window.handleCardTouchEnd = function(e, id) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffX = touchStartX - touchEndX;
+      const diffY = Math.abs(touchStartY - touchEndY);
+
+      // 水平滑動大於 50px 且垂直移動小於 30px 時觸發
+      if (diffY < 30) {
+        const contentEl = document.getElementById(`card-content-${id}`);
+        const actionsEl = document.getElementById(`card-actions-${id}`);
+        if (!contentEl || !actionsEl) return;
+
+        if (diffX > 50) {
+          // 向左滑動 -> 顯示編輯按鈕
+          contentEl.style.transform = 'translateX(-80px)';
+          actionsEl.style.transform = 'translateX(0)';
+        } else if (diffX < -50) {
+          // 向右滑動 -> 隱藏編輯按鈕
+          contentEl.style.transform = 'translateX(0)';
+          actionsEl.style.transform = 'translateX(100%)';
+        }
+      }
+    }
+
     function buildRecordCardHtml(r, showCompInHeader = true) {
       const ageNum = getAgeAtDate(athleteProfile.dob, r.date);
       const ageText = ageNum !== null ? `參賽年齡 ${ageNum} 歲` : '參賽年齡 -';
@@ -1588,61 +1601,66 @@
       }
 
       let cardHtml = `
-        <div class="bg-white rounded-3xl border border-slate-200/80 shadow-xs overflow-hidden">
-          ${showCompInHeader ? `
-            <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
-              <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
-              <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
-            </div>
-          ` : ''}
-
-          <div class="p-4 space-y-2">
-            <div class="flex items-start justify-between gap-3">
-              <div class="space-y-1">
-                <div class="flex items-center gap-3">
-                  ${getRankBadgeHtml(r.rank)}
-                  <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${cleanName}</h3>
-                </div>
-                <div class="pl-[52px] text-xs text-slate-400 font-medium">
-                  <span>${subInfoText || '賽事紀錄'}</span>
-                </div>
-              </div>
-
-              <div class="text-right flex flex-col items-end">
-                <div class="flex items-baseline">
-                  ${resultDisplay}
-                </div>
-                <span class="text-xs text-slate-400 font-medium mt-1">${ageText}</span>
-              </div>
-            </div>
+        <div class="relative overflow-hidden bg-white rounded-3xl border border-slate-200/80 shadow-xs"
+             ontouchstart="handleCardTouchStart(event)" 
+             ontouchend="handleCardTouchEnd(event, '${r.id}')">
+          
+          <!-- 滑動向左出現的編輯操作區塊 -->
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-20 bg-blue-600 text-white flex items-center justify-center font-bold text-sm transition-transform duration-300 translate-x-full z-10 cursor-pointer"
+               onclick="editRecord('${r.id}')">
+            編輯
           </div>
 
-          ${r.isCombined && r.subDetails?.length > 0 ? `
-            <div class="px-4 pb-3 border-t border-slate-100 pt-2 bg-slate-50/50">
-              <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-                <span>查看全能單項細項 (${r.subDetails.length})</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-              </button>
-              <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                ${r.subDetails.map(sub => {
-                  const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
-                  const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
-                  return `
-                  <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between">
-                    <span class="font-bold text-slate-700">${sub.name}</span>
-                    <span class="font-mono">${valDisplay} (${sub.pts}分)</span>
+          <!-- 卡片主要內容區塊 -->
+          <div id="card-content-${r.id}" class="transition-transform duration-300 bg-white">
+            ${showCompInHeader ? `
+              <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
+                <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
+                <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
+              </div>
+            ` : ''}
+
+            <div class="p-4 space-y-2">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-3">
+                    ${getRankBadgeHtml(r.rank)}
+                    <h3 class="text-lg md:text-xl font-extrabold text-slate-800">${cleanName}</h3>
                   </div>
-                `}).join('')}
+                  <div class="pl-[52px] text-xs text-slate-400 font-medium">
+                    <span>${subInfoText || '賽事紀錄'}</span>
+                  </div>
+                </div>
+
+                <div class="text-right flex flex-col items-end">
+                  <div class="flex items-baseline">
+                    ${resultDisplay}
+                  </div>
+                  <span class="text-xs text-slate-400 font-medium mt-1">${ageText}</span>
+                </div>
               </div>
             </div>
-          ` : ''}
 
-          ${isHistoryEditMode ? `
-            <div class="bg-slate-50 px-4 py-2 border-t border-slate-100 flex justify-end gap-2">
-              <button onclick="editRecord('${r.id}')" class="text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl transition cursor-pointer">編輯此筆紀錄</button>
-              <button onclick="deleteRecord('${r.id}')" class="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl transition cursor-pointer">刪除此筆紀錄</button>
-            </div>
-          ` : ''}
+            ${r.isCombined && r.subDetails?.length > 0 ? `
+              <div class="px-4 pb-3 border-t border-slate-100 pt-2 bg-slate-50/50">
+                <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
+                  <span>查看全能單項細項 (${r.subDetails.length})</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  ${r.subDetails.map(sub => {
+                    const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
+                    const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
+                    return `
+                    <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between">
+                      <span class="font-bold text-slate-700">${sub.name}</span>
+                      <span class="font-mono">${valDisplay} (${sub.pts}分)</span>
+                    </div>
+                  `}).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
         </div>
       `;
 
