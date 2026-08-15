@@ -254,7 +254,7 @@
 
           <div class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">狀態 <span class="text-red-500">*</span></label>
-            <select id="status-select" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <select id="status-select" onchange="onStatusChange()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500">
               <option value="NORMAL">正常</option>
               <option value="DQ">DQ (犯規)</option>
               <option value="DNS">DNS (未出賽)</option>
@@ -262,7 +262,8 @@
             </select>
           </div>
 
-          <div class="flex items-center gap-3">
+          <!-- 加上 id="score-container" 方便透過 JS 隱藏/顯示 -->
+          <div id="score-container" class="flex items-center gap-3">
             <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">成績 <span class="text-red-500">*</span></label>
             <div class="flex items-center gap-1">
               <input type="number" id="time-min" min="0" placeholder="分" oninput="sanitizeDigit(this)" class="w-14 border rounded-xl h-10 text-center bg-slate-50 focus:ring-2 focus:ring-sky-500">
@@ -301,7 +302,7 @@
             <button type="submit" id="submit-btn" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-medium h-10 rounded-xl transition duration-200 shadow cursor-pointer">
               儲存紀錄
             </button>
-            <button type="button" id="cancel-edit-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-xl transition duration-200 cursor-pointer">
+            <button type="button" id="edit-cancel-btn" onclick="cancelEditMode()" class="hidden px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium h-10 rounded-xl transition duration-200 cursor-pointer">
               取消編輯
             </button>
           </div>
@@ -805,6 +806,7 @@
 
         filterCategory('all', document.querySelectorAll('.cat-btn')[0]);
         onStageChange();
+        onStatusChange(); // 初始化狀態檢查
         await fetchRecordsFromFirestore();
         initChart();
 
@@ -1117,6 +1119,17 @@
       }
     }
 
+    // 當狀態改變時觸發：若不是 "NORMAL" 則隱藏成績欄位
+    window.onStatusChange = function() {
+      const status = document.getElementById('status-select').value;
+      const scoreContainer = document.getElementById('score-container');
+      if (status !== 'NORMAL') {
+        scoreContainer.classList.add('hidden');
+      } else {
+        scoreContainer.classList.remove('hidden');
+      }
+    }
+
     window.onPoolTypeChange = function() {
       const poolType = document.getElementById('pool-type-select').value;
       if (poolType === 'long' && currentCategory === 'all') {
@@ -1202,6 +1215,10 @@
         record.result = formatTimeStr(document.getElementById('time-min').value, sec, ms);
       } else {
         record.result = status;
+        // 清空分、秒、毫秒輸入欄位值，避免隱藏狀態送出舊殘留值
+        document.getElementById('time-min').value = '';
+        document.getElementById('time-sec').value = '';
+        document.getElementById('time-ms').value = '';
       }
 
       const success = await saveRecordToFirestore(record, editId);
@@ -1220,7 +1237,7 @@
       document.getElementById('edit-record-id').value = r.id;
       document.getElementById('form-title').textContent = '編輯成績';
       document.getElementById('submit-btn').textContent = '更新紀錄';
-      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      document.getElementById('edit-cancel-btn').classList.remove('hidden');
 
       document.getElementById('competition').value = r.competition;
       setInitialTodayDate(r.date);
@@ -1235,6 +1252,7 @@
       document.getElementById('stage-select').value = r.stage || '初賽';
       onStageChange();
       document.getElementById('status-select').value = r.status || 'NORMAL';
+      onStatusChange(); // 依據記錄狀態切換成績欄位顯示
       document.getElementById('rank-select').value = r.rank || '';
 
       if (r.status === 'NORMAL' && r.result) {
@@ -1249,6 +1267,10 @@
             document.getElementById('time-sec').value = minSec[0];
           }
         }
+      } else {
+        document.getElementById('time-min').value = '';
+        document.getElementById('time-sec').value = '';
+        document.getElementById('time-ms').value = '';
       }
 
       renderList();
@@ -1270,10 +1292,11 @@
       document.getElementById('edit-record-id').value = '';
       document.getElementById('form-title').textContent = '新增成績';
       document.getElementById('submit-btn').textContent = '儲存紀錄';
-      document.getElementById('cancel-edit-btn').classList.add('hidden');
+      document.getElementById('edit-cancel-btn').classList.add('hidden');
       document.getElementById('record-form').reset();
       setInitialTodayDate();
       onStageChange();
+      onStatusChange();
 
       renderList();
       switchMainTab('history');
