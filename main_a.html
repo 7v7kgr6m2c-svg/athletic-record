@@ -1755,9 +1755,12 @@
                     const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
                     const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
                     return `
-                    <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between">
+                    <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between items-center">
                       <span class="font-bold text-slate-700">${sub.name}</span>
-                      <span class="font-mono">${valDisplay} (${sub.pts}分)</span>
+                      <div class="text-right flex flex-col items-end leading-tight">
+                        <span class="font-mono text-slate-800">${valDisplay}</span>
+                        <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
+                      </div>
                     </div>
                   `}).join('')}
                 </div>
@@ -2024,38 +2027,16 @@
         label: itemObj.name,
         data: chartDataPoints,
         borderColor: theme.primaryColor,
-        backgroundColor: `${theme.primaryColor}22`,
+        backgroundColor: theme.primaryColor,
         pointBackgroundColor: theme.primaryColor,
-        pointRadius: 6,
-        pointHoverRadius: 9,
-        fill: true,
-        tension: 0.3
+        pointRadius: 5,
+        tension: 0.2
       }];
-
-      const isTimeEvent = itemObj.type === 'time';
-      chartInstance.options.scales.y = {
-        reverse: isTimeEvent,
-        title: {
-          display: true,
-          text: isTimeEvent ? '時間 (秒)' : (itemObj.type === 'distance' ? '距離 (米)' : '分數')
-        }
-      };
 
       chartInstance.update();
     }
 
-    document.getElementById('btn-logout').addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        localStorage.clear();
-        showAlert('成功登出！', '✅');
-        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-      } catch (err) {
-        showAlert('登出失敗：' + err.message, '❌');
-      }
-    });
-
-    initMainPage();
+    document.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
