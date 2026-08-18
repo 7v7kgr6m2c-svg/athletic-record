@@ -831,6 +831,25 @@
         initChart();
 
         document.getElementById('record-form').addEventListener('submit', handleFormSubmit);
+
+        // 登出按鈕事件處理
+        const logoutBtn = document.getElementById('btn-logout');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', async () => {
+            try {
+              await signOut(auth);
+              localStorage.removeItem('current_athlete_id');
+              localStorage.removeItem('current_athlete_name');
+              localStorage.removeItem('current_athlete_dob');
+              localStorage.removeItem('current_athlete_gender');
+              localStorage.removeItem('current_athlete_avatar');
+              localStorage.removeItem('current_athlete_theme');
+              window.location.href = 'index.html';
+            } catch (err) {
+              showAlert('登出失敗：' + err.message, '❌');
+            }
+          });
+        }
       });
     }
 
@@ -913,7 +932,7 @@
       }
     };
 
-    window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9]/g, ''); }
+    window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9.]/g, ''); }
 
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS（未出賽)', 'DNF': 'DNF (未完賽)', 'NM': 'NM (無成績)' };
     const SUB_EVENT_TYPES = {
@@ -1362,13 +1381,14 @@
 
         itemObj.subs.forEach(subName => {
           const subType = SUB_EVENT_TYPES[subName] || 'time';
+          const hasWind = ['60米欄', '100米欄', '110米欄', '100米', '200米', '跳遠'].includes(subName);
           const div = document.createElement('div');
-          div.className = 'sub-item-row bg-slate-50 p-2 rounded-xl border flex items-center justify-between gap-1';
+          div.className = 'sub-item-row bg-slate-50 p-2 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2';
           div.dataset.subname = subName;
           div.dataset.subtype = subType;
           div.innerHTML = `
             <span class="font-bold text-slate-700 whitespace-nowrap min-w-[56px]">${subName}</span>
-            <div class="flex items-center justify-between flex-1 gap-1">
+            <div class="flex items-center justify-between flex-1 gap-1 w-full sm:w-auto">
               <div class="flex items-center gap-0.5">
                 ${subType === 'time' ? 
                   `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this); autoCalcSubScore(this.closest('.sub-item-row'));" class="sub-min w-10 border rounded-lg h-9 text-center bg-white"><span>:</span>
@@ -1378,6 +1398,7 @@
                    <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); autoCalcSubScore(this.closest('.sub-item-row'));" class="sub-cm w-12 border rounded-lg h-9 text-center bg-white">`
                 }
               </div>
+              ${hasWind ? `<input type="number" step="0.1" placeholder="風速" class="sub-wind w-14 border rounded-lg h-9 text-center bg-white">` : ''}
               <div class="flex items-center gap-1">
                 <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
                   <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
@@ -1454,8 +1475,10 @@
             const pts = parseFloat(div.querySelector('.sub-pts').value) || 0;
             const subType = div.dataset.subtype;
             const subStatus = div.querySelector('.sub-status').value;
+            const windInput = div.querySelector('.sub-wind');
+            const wind = windInput && windInput.value !== '' ? parseFloat(windInput.value) : null;
             let valStr = subStatus === 'NORMAL' ? (subType === 'time' ? formatTimeStr(div.querySelector('.sub-min').value, div.querySelector('.sub-sec').value, div.querySelector('.sub-ms').value) : formatDistStr(div.querySelector('.sub-m').value, div.querySelector('.sub-cm').value)) : subStatus;
-            details.push({ name, val: valStr, type: subType, pts, status: subStatus });
+            details.push({ name, val: valStr, type: subType, pts, status: subStatus, wind });
           });
           record.result = parseFloat(document.getElementById('total-score').value) || 0;
           record.subDetails = details;
@@ -1530,6 +1553,10 @@
             if (rows[idx]) {
               rows[idx].querySelector('.sub-status').value = sub.status || 'NORMAL';
               rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
+              const windInput = rows[idx].querySelector('.sub-wind');
+              if (windInput && sub.wind !== undefined && sub.wind !== null) {
+                windInput.value = sub.wind;
+              }
               if (sub.type === 'time' && sub.val.includes('.')) {
                 const parts = sub.val.split('.');
                 const minSec = parts[0].split(':');
@@ -1701,6 +1728,26 @@
         subInfoText += subInfoText ? ` · 風速 ${windStr} 米/秒` : `風速 ${windStr} 米/秒`;
       }
 
+      // 判斷全能賽專用風速規則（平均風速 <= +2.0m/s 或 單項風速 <= +4.0m/s）
+      let combinedWindNotice = '';
+      if (r.isCombined && r.subDetails?.length > 0) {
+        const windSubs = r.subDetails.filter(sub => sub.wind !== undefined && sub.wind !== null && !isNaN(sub.wind));
+        if (windSubs.length > 0) {
+          const totalWind = windSubs.reduce((sum, sub) => sum + sub.wind, 0);
+          const avgWind = totalWind / windSubs.length;
+          const maxWind = Math.max(...windSubs.map(sub => sub.wind));
+          const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
+          
+          const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
+          combinedWindNotice = `
+            <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
+              <span class="font-bold">全能專用風速證明：${isLegalCombined ? '符合紀錄採認標準' : '不符合採認標準 (超風速)'}</span>
+              <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
+            </div>
+          `;
+        }
+      }
+
       let cardHtml = `
         <div class="relative overflow-hidden bg-white rounded-3xl border border-slate-200/80 shadow-xs"
              ontouchstart="handleCardTouchStart(event)" 
@@ -1752,15 +1799,17 @@
                   <span>查看全能單項細項 (${r.subDetails.length})</span>
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
+                ${combinedWindNotice}
                 <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   ${r.subDetails.map(sub => {
                     const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
                     const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
+                    const windStr = sub.wind !== undefined && sub.wind !== null ? ` [${sub.wind > 0 ? '+' : ''}${sub.wind}m/s]` : '';
                     return `
                     <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between items-center">
                       <span class="font-bold text-slate-700">${sub.name}</span>
                       <div class="text-right flex flex-col items-end leading-tight">
-                        <span class="font-mono text-slate-800">${valDisplay}</span>
+                        <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
                         <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
                       </div>
                     </div>
@@ -2020,8 +2069,8 @@
           competition: r.competition,
           stage: r.stage,
           rank: r.rank,
-          wind: r.wind,
-          displayResult: `${r.result} ${unit}`
+          displayResult: `${r.result} ${unit}`,
+          wind: r.wind
         };
       });
 
@@ -2036,19 +2085,14 @@
         pointHoverRadius: 6
       }];
 
+      if (chartInstance.options.scales.y) {
+        chartInstance.options.scales.y.reverse = (itemObj.type === 'time');
+      }
+
       chartInstance.update();
     }
 
-    document.getElementById('btn-logout').addEventListener('click', async () => {
-      try {
-        await signOut(auth);
-        window.location.href = 'index.html';
-      } catch (err) {
-        showAlert('登出失敗：' + err.message, '❌');
-      }
-    });
-
-    window.addEventListener('DOMContentLoaded', initMainPage);
+    initMainPage();
   </script>
 </body>
 </html>
