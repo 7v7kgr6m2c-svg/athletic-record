@@ -1418,7 +1418,7 @@
           const avg = sum / count;
           avgInput.value = (avg > 0 ? '+' : '') + avg.toFixed(2);
         } else {
-          avgInput.value = 0;
+          avgInput.value = "0";
         }
       }
     }
@@ -2003,67 +2003,38 @@
             class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
               currentSelectedEventFilter === 'all' 
                 ? 'bg-blue-600 text-white shadow-xs' 
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                : 'bg-slate-100 text-slate-600 hover:text-slate-900'
             }">
-            全部項目 (${activeEventNames.length})
+            全部項目
           </button>
         `;
 
         activeEventNames.forEach(name => {
-          const count = sortedRecords.filter(r => getCleanEventName(r) === name).length;
           const isSelected = currentSelectedEventFilter === name;
           filterBarHtml += `
             <button onclick="filterEventGroup('${name}')" 
               class="text-xs px-3 py-1.5 rounded-full font-medium transition cursor-pointer ${
                 isSelected 
                   ? 'bg-blue-600 text-white shadow-xs' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  : 'bg-slate-100 text-slate-600 hover:text-slate-900'
               }">
-              ${name} (${count})
+              ${name}
             </button>
           `;
         });
         eventFilterBar.innerHTML = filterBarHtml;
 
-        const groups = {};
-        sortedRecords.forEach(r => {
-          const cleanName = getCleanEventName(r);
-          if (currentSelectedEventFilter !== 'all' && cleanName !== currentSelectedEventFilter) {
-            return;
-          }
-          if (!groups[cleanName]) groups[cleanName] = [];
-          groups[cleanName].push(r);
-        });
+        const filteredRecords = currentSelectedEventFilter === 'all'
+          ? sortedRecords
+          : sortedRecords.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
 
-        const sortedEventNames = Object.keys(groups).sort((a, b) => {
-          const orderA = EVENTS_ORDER[a] ?? 999;
-          const orderB = EVENTS_ORDER[b] ?? 999;
-          return orderA - orderB;
-        });
-
-        sortedEventNames.forEach(eventName => {
-          const itemRecords = groups[eventName];
-          let groupHtml = `
-            <div class="space-y-3">
-              <div class="flex items-center justify-between border-b pb-1 pt-2">
-                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #2563eb);"></span>
-                  <span>${eventName}</span>
-                </h3>
-                <span class="text-xs text-slate-400 font-semibold">${itemRecords.length} 筆紀錄</span>
-              </div>
-              <div class="space-y-3">
-                ${itemRecords.map(r => buildRecordCardHtml(r, true)).join('')}
-              </div>
-            </div>
-          `;
-          container.innerHTML += groupHtml;
+        filteredRecords.forEach(r => {
+          container.innerHTML += buildRecordCardHtml(r, true);
         });
       }
     }
 
-    // 初始化頁面
-    initMainPage();
+    window.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
