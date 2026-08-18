@@ -263,7 +263,7 @@
 
             <div id="wind-container" class="flex items-center gap-3">
               <label class="w-16 text-sm font-medium text-slate-700 whitespace-nowrap">風速</label>
-              <input type="number" id="wind" step="0.1" placeholder="例：+1.2" oninput="validateForm()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input type="text" id="wind" placeholder="例：+1.2 或 NWI" oninput="validateForm()" class="w-36 border rounded-xl h-10 px-3 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
 
             <div class="flex items-center gap-3">
@@ -508,7 +508,7 @@
       if (val === null || val === undefined) return null;
       if (typeof val === 'number') return isNaN(val) ? null : val;
       const str = String(val).trim();
-      if (!str) return null;
+      if (!str || str.toUpperCase() === 'NWI') return 'NWI';
       const parsed = parseFloat(str);
       return isNaN(parsed) ? null : parsed;
     }
@@ -1211,13 +1211,21 @@
 
         let windBadge = '';
         if (r.wind !== null && r.wind !== undefined) {
-          const isLegal = r.wind <= 2.0;
-          const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-          windBadge = `
-            <span class="text-xs px-2.5 py-0.5 rounded-full font-bold border ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
-              風速 ${windStr} 米/秒 ${isLegal ? '(標準風速)' : '(超風速)'}
-            </span>
-          `;
+          if (r.wind === 'NWI') {
+            windBadge = `
+              <span class="text-xs px-2.5 py-0.5 rounded-full font-bold border bg-slate-100 text-slate-600 border-slate-300">
+                NWI (無風速資料)
+              </span>
+            `;
+          } else {
+            const isLegal = r.wind <= 2.0;
+            const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
+            windBadge = `
+              <span class="text-xs px-2.5 py-0.5 rounded-full font-bold border ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
+                風速 ${windStr} 米/秒 ${isLegal ? '(標準風速)' : '(超風速)'}
+              </span>
+            `;
+          }
         }
 
         let combinedWindNotice = '';
@@ -1226,7 +1234,7 @@
         if (r.isCombined && r.subDetails?.length > 0) {
           const windSubs = r.subDetails
             .map(sub => parseWindValue(sub.wind))
-            .filter(v => v !== null);
+            .filter(v => v !== null && v !== 'NWI');
 
           if (windSubs.length > 0) {
             const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
@@ -1255,7 +1263,7 @@
                   const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
                   const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
                   const parsedWind = parseWindValue(sub.wind);
-                  const windStr = parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '';
+                  const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
                   return `
                   <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
                     <span class="font-bold text-slate-700">${sub.name}</span>
@@ -1480,7 +1488,7 @@
       let count = 0;
       windInputs.forEach(i => {
         const val = parseWindValue(i.value);
-        if (!i.disabled && val !== null) {
+        if (!i.disabled && val !== null && val !== 'NWI') {
           sum += val;
           count++;
         }
@@ -1579,7 +1587,7 @@
 
               <div class="flex items-center justify-between sm:justify-end gap-1 w-full sm:w-auto">
                 <div>
-                  ${hasWind ? `<input type="text" placeholder="風速 (例：+1.2)" oninput="calculateCombinedAverageWind()" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white">` : ''}
+                  ${hasWind ? `<input type="text" placeholder="風速 (例：+1.2 或 NWI)" oninput="calculateCombinedAverageWind()" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white">` : ''}
                 </div>
                 <div class="flex items-center gap-1">
                   <select onchange="onSubStatusChange(this)" class="sub-status hidden sm:block w-20 border rounded-lg h-9 px-1 text-[11px] bg-white">
@@ -1741,7 +1749,7 @@
               rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
               const windInput = rows[idx].querySelector('.sub-wind');
               if (windInput && sub.wind !== undefined && sub.wind !== null) {
-                windInput.value = sub.wind > 0 ? `+${sub.wind}` : sub.wind;
+                windInput.value = sub.wind === 'NWI' ? 'NWI' : (sub.wind > 0 ? `+${sub.wind}` : sub.wind);
               }
               if (sub.type === 'time' && sub.val.includes('.')) {
                 const parts = sub.val.split('.');
@@ -1766,7 +1774,7 @@
       } else {
         document.getElementById('rank-select').value = r.rank || '';
         if (r.wind !== null && r.wind !== undefined) {
-          document.getElementById('wind').value = r.wind;
+          document.getElementById('wind').value = r.wind === 'NWI' ? 'NWI' : r.wind;
         }
         if (r.status === 'NORMAL' && r.result) {
           if (r.type === 'time') {
@@ -1909,21 +1917,30 @@
       let windBadgeHtml = '';
 
       if (r.wind !== null && r.wind !== undefined) {
-        const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-        const isLegal = r.wind <= 2.0;
-        subInfoText += subInfoText ? ` · 風速 ${windStr} 米/秒` : `風速 ${windStr} 米/秒`;
-        windBadgeHtml = `
-          <span class="text-[11px] px-2 py-0.5 rounded-full font-bold border ml-2 ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
-            ${isLegal ? '合乎標準' : '超風速'}
-          </span>
-        `;
+        if (r.wind === 'NWI') {
+          subInfoText += subInfoText ? ` · NWI` : `NWI`;
+          windBadgeHtml = `
+            <span class="text-[11px] px-2 py-0.5 rounded-full font-bold border ml-2 bg-slate-100 text-slate-600 border-slate-300">
+              NWI
+            </span>
+          `;
+        } else {
+          const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
+          const isLegal = r.wind <= 2.0;
+          subInfoText += subInfoText ? ` · 風速 ${windStr} 米/秒` : `風速 ${windStr} 米/秒`;
+          windBadgeHtml = `
+            <span class="text-[11px] px-2 py-0.5 rounded-full font-bold border ml-2 ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
+              ${isLegal ? '合乎標準' : '超風速'}
+            </span>
+          `;
+        }
       }
 
       let combinedWindNotice = '';
       if (r.isCombined && r.subDetails?.length > 0) {
         const windSubs = r.subDetails
           .map(sub => parseWindValue(sub.wind))
-          .filter(v => v !== null);
+          .filter(v => v !== null && v !== 'NWI');
 
         if (windSubs.length > 0) {
           const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
@@ -1996,7 +2013,7 @@
                     const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
                     const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
                     const parsedWind = parseWindValue(sub.wind);
-                    const windStr = parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '';
+                    const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
                     return `
                     <div class="bg-white p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center shadow-2xs">
                       <span class="font-bold text-slate-700">${sub.name}</span>
@@ -2078,62 +2095,29 @@
           return orderA - orderB;
         });
 
-        filterBar.innerHTML = `
-          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-semibold transition ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部項目
+        let filterBtnsHtml = `
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            全部 (${records.length})
           </button>
         `;
 
-        eventNames.forEach(name => {
-          const activeClass = currentSelectedEventFilter === name ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
-          filterBar.innerHTML += `
-            <button onclick="filterEventGroup('${name}')" class="px-3 py-1 rounded-full text-xs font-semibold transition ${activeClass}">
-              ${name}
+        eventNames.forEach(evtName => {
+          const count = records.filter(r => getCleanEventName(r) === evtName).length;
+          const isActive = currentSelectedEventFilter === evtName;
+          filterBtnsHtml += `
+            <button onclick="filterEventGroup('${evtName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${isActive ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+              ${evtName} (${count})
             </button>
           `;
         });
+        filterBar.innerHTML = filterBtnsHtml;
 
-        const groups = {};
-        records.forEach(r => {
-          const name = getCleanEventName(r);
-          if (currentSelectedEventFilter === 'all' || currentSelectedEventFilter === name) {
-            if (!groups[name]) groups[name] = [];
-            groups[name].push(r);
-          }
-        });
+        const filteredRecords = currentSelectedEventFilter === 'all' 
+          ? records 
+          : records.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
 
-        const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
-          const orderA = EVENTS_ORDER[a] ?? 999;
-          const orderB = EVENTS_ORDER[b] ?? 999;
-          return orderA - orderB;
-        });
-
-        if (sortedGroupKeys.length === 0) {
-          container.innerHTML = `<div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">該項目尚無紀錄</div>`;
-          return;
-        }
-
-        sortedGroupKeys.forEach(name => {
-          const groupRecords = groups[name];
-
-          let groupHtml = `
-            <div class="bg-slate-50/60 p-4 rounded-3xl border border-slate-200/80 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 px-1">
-                <span class="font-extrabold text-slate-800 text-base">${name}</span>
-                <span class="text-xs font-bold text-slate-400">${groupRecords.length} 筆紀錄</span>
-              </div>
-              <div class="space-y-3">
-          `;
-
-          groupRecords.forEach(r => {
-            groupHtml += buildRecordCardHtml(r, true);
-          });
-
-          groupHtml += `
-              </div>
-            </div>
-          `;
-          container.innerHTML += groupHtml;
+        filteredRecords.forEach(r => {
+          container.innerHTML += buildRecordCardHtml(r, true);
         });
       }
     }
