@@ -1446,7 +1446,7 @@
               <!-- 第二行（手機）：風速（靠左）、分數（靠右）；iPad 與上者合併為單行 -->
               <div class="flex items-center justify-between sm:justify-end gap-1 w-full sm:w-auto">
                 <div>
-                  ${hasWind ? `<input type="number" step="0.1" placeholder="風速 (例：+1.2)" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white">` : ''}
+                  ${hasWind ? `<input type="number" step="0.1" placeholder="風速 (例：+1.2)" oninput="calculateCombinedAverageWind()" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white">` : ''}
                 </div>
                 <div class="flex items-center gap-1">
                   <!-- iPad 版顯示狀態 -->
@@ -2008,41 +2008,89 @@
       const ctx = document.getElementById('progressChart').getContext('2d');
       chartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [{ label: '成績', data: [], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3 }] },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        data: {
+          labels: [],
+          datasets: [{
+            label: '成績趨勢',
+            data: [],
+            borderColor: THEME_CONFIGS[athleteProfile.theme || 'blue'].primaryColor,
+            backgroundColor: 'transparent',
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: THEME_CONFIGS[athleteProfile.theme || 'blue'].primaryColor,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false }
+            },
+            y: {
+              grid: { color: '#f1f5f9' }
+            }
+          }
+        }
       });
     }
 
-    function updateChart() {
+    window.updateChart = function() {
       if (!chartInstance) return;
-      const selectedId = document.getElementById('chart-filter').value;
-      if (!selectedId) {
+
+      const chartSelect = document.getElementById('chart-filter');
+      const selectedEventId = chartSelect.value;
+
+      if (!selectedEventId) {
         chartInstance.data.labels = [];
         chartInstance.data.datasets[0].data = [];
         chartInstance.update();
         return;
       }
 
-      const filteredRecords = records.filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL')).sort((a, b) => new Date(a.date) - new Date(b.date));
+      const itemObj = EVENTS_DB.find(e => e.id === selectedEventId);
+      const filteredRecords = records.filter(r => r.eventId === selectedEventId && (!r.status || r.status === 'NORMAL'));
 
-      const labels = filteredRecords.map(r => r.date);
-      const data = filteredRecords.map(r => {
+      // 按日期升序排列 (最舊到最新) 以繪製趨勢圖
+      filteredRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const labels = [];
+      const values = [];
+
+      filteredRecords.forEach(r => {
+        labels.push(r.date.replace(/-/g, '/'));
+
+        let numericVal = 0;
         if (r.type === 'time' && typeof r.result === 'string') {
           const parts = r.result.split(':');
           if (parts.length === 2) {
-            return (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+            numericVal = (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
+          } else {
+            numericVal = parseFloat(r.result) || 0;
           }
-          return parseFloat(r.result) || 0;
+        } else {
+          numericVal = parseFloat(r.result) || 0;
         }
-        return parseFloat(r.result) || 0;
+        values.push(numericVal);
       });
 
       chartInstance.data.labels = labels;
-      chartInstance.data.datasets[0].data = data;
+      chartInstance.data.datasets[0].data = values;
+
+      if (itemObj && itemObj.type === 'time') {
+        chartInstance.options.scales.y.reverse = true; 
+      } else {
+        chartInstance.options.scales.y.reverse = false;
+      }
+
       chartInstance.update();
     }
 
-    document.addEventListener('DOMContentLoaded', initMainPage);
+    window.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
