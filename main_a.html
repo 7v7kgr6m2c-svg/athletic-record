@@ -1305,7 +1305,8 @@
     window.autoCalcSubScore = function(rowEl) {
       const subName = rowEl.dataset.subname;
       const subType = rowEl.dataset.subtype;
-      const subStatus = rowEl.querySelector('.sub-status').value;
+      const subStatusSelect = rowEl.querySelector('.sub-status:not(.hidden)') || rowEl.querySelector('.sub-status');
+      const subStatus = subStatusSelect ? subStatusSelect.value : 'NORMAL';
       const ptsInput = rowEl.querySelector('.sub-pts');
 
       if (subStatus !== 'NORMAL') {
@@ -1430,7 +1431,7 @@
                 </div>
                 <!-- 手機版第一行右側：狀態；iPad 則在單行內 -->
                 <div class="flex sm:hidden items-center">
-                  <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
+                  <select onchange="onSubStatusChange(this)" class="sub-status w-20 border rounded-lg h-9 px-1 text-[11px] bg-white">
                     <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                   </select>
                 </div>
@@ -1443,10 +1444,10 @@
                 </div>
                 <div class="flex items-center gap-1">
                   <!-- iPad 版顯示狀態 -->
-                  <select onchange="onSubStatusChange(this)" class="sub-status hidden sm:block border rounded-lg h-9 px-1 text-[11px] bg-white">
+                  <select onchange="onSubStatusChange(this)" class="sub-status hidden sm:block w-20 border rounded-lg h-9 px-1 text-[11px] bg-white">
                     <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                   </select>
-                  <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-14 border rounded-lg h-9 bg-white font-bold text-center">
+                  <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-20 border rounded-lg h-9 bg-white font-bold text-center">
                 </div>
               </div>
             </div>`;
