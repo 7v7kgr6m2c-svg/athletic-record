@@ -300,13 +300,13 @@
             
             <div class="flex items-center gap-3 pt-2 border-t mt-2">
               <label class="w-16 text-sm font-bold text-slate-700">平均風速</label>
-              <input type="number" id="avg-wind" placeholder="平均風速" class="w-28 border rounded-xl h-10 text-center bg-slate-100 font-bold text-slate-700" readonly>
+              <input type="number" id="avg-wind" placeholder="0" value="0" class="w-28 border rounded-xl h-10 text-center bg-slate-100 font-bold text-slate-700" readonly>
               <span class="text-xs text-slate-400">米/秒</span>
             </div>
 
             <div class="flex items-center gap-3 pt-1">
               <label class="w-16 text-sm font-bold text-slate-700">總分</label>
-              <input type="number" id="total-score" placeholder="總分" class="w-28 border rounded-xl h-10 text-center bg-blue-50 font-bold text-blue-800" readonly>
+              <input type="number" id="total-score" placeholder="0" class="w-28 border rounded-xl h-10 text-center bg-blue-50 font-bold text-blue-800" readonly>
             </div>
 
             <div class="flex items-center gap-3 pt-2">
@@ -514,18 +514,15 @@
       const { a, b, c, group } = config;
 
       if (group === 'track') {
-        // 徑項：Points = INT(a * (b - P)^c)  [P 為時間（秒）]
         if (valInUnits < b) {
           score = Math.floor(a * Math.pow(b - valInUnits, c));
         }
       } else if (group === 'jump') {
-        // 跳躍：Points = INT(a * (P - b)^c)  [P 為距離（厘米）]
         const cmVal = valInUnits * 100;
         if (cmVal > b) {
           score = Math.floor(a * Math.pow(cmVal - b, c));
         }
       } else if (group === 'throw') {
-        // 投擲：Points = INT(a * (P - b)^c)  [P 為距離（米）]
         if (valInUnits > b) {
           score = Math.floor(a * Math.pow(valInUnits - b, c));
         }
@@ -1357,7 +1354,7 @@
           const avg = sum / count;
           avgInput.value = (avg > 0 ? '+' : '') + avg.toFixed(2);
         } else {
-          avgInput.value = '';
+          avgInput.value = 0;
         }
       }
     }
@@ -1430,7 +1427,7 @@
                 }
               </div>
               <div class="flex items-center gap-1">
-                ${hasWind ? `<input type="number" step="0.1" placeholder="風速（例：+1.2）" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-20 border rounded-lg h-9 text-center bg-white">` : ''}
+                ${hasWind ? `<input type="number" step="0.1" placeholder="風速（例：+1.2）" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-28 border rounded-lg h-9 text-center bg-white">` : ''}
                 <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
                   <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                 </select>
@@ -1722,18 +1719,15 @@
       const diffX = touchStartX - touchEndX;
       const diffY = Math.abs(touchStartY - touchEndY);
 
-      // 水平滑動大於 50px 且垂直移動小於 30px 時觸發
       if (diffY < 30) {
         const contentEl = document.getElementById(`card-content-${id}`);
         const actionsEl = document.getElementById(`card-actions-${id}`);
         if (!contentEl || !actionsEl) return;
 
         if (diffX > 50) {
-          // 向左滑動 -> 顯示編輯與刪除按鈕
           contentEl.style.transform = 'translateX(-160px)';
           actionsEl.style.transform = 'translateX(0)';
         } else if (diffX < -50) {
-          // 向右滑動 -> 隱藏編輯與刪除按鈕
           contentEl.style.transform = 'translateX(0)';
           actionsEl.style.transform = 'translateX(100%)';
         }
@@ -1761,7 +1755,6 @@
         subInfoText += subInfoText ? ` · 風速 ${windStr} 米/秒` : `風速 ${windStr} 米/秒`;
       }
 
-      // 判斷全能賽專用風速規則（平均風速 <= +2.0m/s 或 單項風速 <= +4.0m/s）
       let combinedWindNotice = '';
       if (r.isCombined && r.subDetails?.length > 0) {
         const windSubs = r.subDetails.filter(sub => sub.wind !== undefined && sub.wind !== null && !isNaN(sub.wind));
@@ -1786,7 +1779,6 @@
              ontouchstart="handleCardTouchStart(event)" 
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
           
-          <!-- 滑動向左出現的操作區塊（編輯 + 刪除） -->
           <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-300 translate-x-full z-10 font-bold text-sm">
             <button type="button" onclick="editRecord('${r.id}')" class="w-1/2 bg-blue-600 text-white flex items-center justify-center cursor-pointer">
               編輯
@@ -1796,7 +1788,6 @@
             </button>
           </div>
 
-          <!-- 卡片主要內容區塊 -->
           <div id="card-content-${r.id}" class="transition-transform duration-300 bg-white">
             ${showCompInHeader ? `
               <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
@@ -1968,25 +1959,18 @@
           return orderA - orderB;
         });
 
-        if (sortedEventNames.length === 0) {
-          container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">該項目尚無紀錄</div>`;
-          return;
-        }
-
         sortedEventNames.forEach(eventName => {
-          const eventRecords = groups[eventName];
-
+          const itemRecords = groups[eventName];
           let groupHtml = `
             <div class="space-y-3">
-              <div class="border-b pb-1 pt-2">
+              <div class="flex items-center justify-between border-b pb-1 pt-2">
                 <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
                   <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #2563eb);"></span>
                   <span>${eventName}</span>
-                  <span class="text-xs font-normal text-slate-400">(${eventRecords.length} 筆紀錄)</span>
                 </h3>
               </div>
               <div class="space-y-3">
-                ${eventRecords.map(r => buildRecordCardHtml(r, true)).join('')}
+                ${itemRecords.map(r => buildRecordCardHtml(r, true)).join('')}
               </div>
             </div>
           `;
@@ -1997,7 +1981,6 @@
 
     function initChart() {
       const ctx = document.getElementById('progressChart').getContext('2d');
-
       chartInstance = new Chart(ctx, {
         type: 'line',
         data: {
@@ -2031,7 +2014,7 @@
       });
     }
 
-    window.updateChart = function() {
+    function updateChart() {
       if (!chartInstance) return;
       const selectedId = document.getElementById('chart-filter').value;
       if (!selectedId) {
@@ -2041,12 +2024,11 @@
         return;
       }
 
-      const filtered = records
-        .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+      const validRecords = records.filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'));
+      validRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const labels = filtered.map(r => r.date.replace(/-/g, '/'));
-      const data = filtered.map(r => {
+      const labels = validRecords.map(r => r.date.replace(/-/g, '/'));
+      const data = validRecords.map(r => {
         if (r.type === 'time' && typeof r.result === 'string') {
           const parts = r.result.split(':');
           if (parts.length === 2) {
@@ -2062,7 +2044,8 @@
       chartInstance.update();
     }
 
-    initMainPage();
+    window.initMainPage = initMainPage;
+    document.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
