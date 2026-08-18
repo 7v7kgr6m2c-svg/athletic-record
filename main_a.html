@@ -1050,7 +1050,10 @@
             legend: { display: false }
           },
           scales: {
-            y: { beginAtZero: false }
+            y: { 
+              beginAtZero: false,
+              reverse: false 
+            }
           }
         }
       });
@@ -1083,7 +1086,7 @@
       }
     }
 
-    function updateChart() {
+    window.updateChart = function() {
       if (!chartInstance) return;
       const chartSelect = document.getElementById('chart-filter');
       const eventId = chartSelect.value;
@@ -1093,6 +1096,9 @@
         chartInstance.update();
         return;
       }
+
+      const itemObj = EVENTS_DB.find(e => e.id === eventId);
+      const isTrack = itemObj ? itemObj.type === 'time' : false;
 
       const filtered = records
         .filter(r => r.eventId === eventId && (!r.status || r.status === 'NORMAL'))
@@ -1110,6 +1116,10 @@
         return parseFloat(r.result) || 0;
       });
 
+      // 1. 徑項（時間）將 Y 軸倒轉，數值越小（進步）折線向上
+      chartInstance.options.scales.y.reverse = isTrack;
+
+      // 2. 更新資料並繪製圖表
       chartInstance.data.labels = labels;
       chartInstance.data.datasets[0].data = dataPoints;
       chartInstance.update();
@@ -1988,7 +1998,7 @@
                     const parsedWind = parseWindValue(sub.wind);
                     const windStr = parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '';
                     return `
-                    <div class="bg-white p-2 rounded-xl border border-slate-200 text-xs text-slate-600 flex justify-between items-center">
+                    <div class="bg-white p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center shadow-2xs">
                       <span class="font-bold text-slate-700">${sub.name}</span>
                       <div class="text-right flex flex-col items-end leading-tight">
                         <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
@@ -2002,124 +2012,124 @@
           </div>
         </div>
       `;
-
       return cardHtml;
     }
 
     function renderList() {
       const container = document.getElementById('cards-container');
-      const eventFilterBar = document.getElementById('event-filter-bar');
+      const filterBar = document.getElementById('event-filter-bar');
       container.innerHTML = '';
 
       if (records.length === 0) {
-        eventFilterBar.classList.add('hidden');
-        eventFilterBar.innerHTML = '';
-        container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">目前尚無紀錄</div>`;
+        filterBar.classList.add('hidden');
+        container.innerHTML = `<div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">尚無成績紀錄</div>`;
         return;
       }
 
-      const sortedRecords = sortRecordsChronologically(records);
-
       if (currentGroupMode === 'all') {
-        eventFilterBar.classList.add('hidden');
-        sortedRecords.forEach(r => {
+        filterBar.classList.add('hidden');
+        records.forEach(r => {
           container.innerHTML += buildRecordCardHtml(r, true);
         });
-
       } else if (currentGroupMode === 'comp') {
-        eventFilterBar.classList.add('hidden');
+        filterBar.classList.add('hidden');
         const groups = {};
-        sortedRecords.forEach(r => {
-          if (!groups[r.competition]) groups[r.competition] = [];
-          groups[r.competition].push(r);
+        records.forEach(r => {
+          const key = `${r.date}___${r.competition}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(r);
         });
 
-        const sortedCompNames = Object.keys(groups).sort((a, b) => {
-          const dateA = new Date(groups[a][0].date);
-          const dateB = new Date(groups[b][0].date);
-          return dateB - dateA;
-        });
-
-        sortedCompNames.forEach(compName => {
-          const compRecords = groups[compName].sort((a, b) => {
-            const orderA = EVENTS_ORDER[a.eventId] ?? 999;
-            const orderB = EVENTS_ORDER[b.eventId] ?? 999;
-            return orderA - orderB;
-          });
-
-          const latestDate = compRecords[0].date.replace(/-/g, '/');
+        Object.keys(groups).forEach(key => {
+          const [date, compName] = key.split('___');
+          const groupRecords = groups[key];
 
           let groupHtml = `
-            <div class="space-y-3">
-              <div class="flex items-center justify-between border-b pb-1 pt-2">
-                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #2563eb);"></span>
-                  <span>${compName}</span>
-                </h3>
-                <span class="text-xs text-slate-400 font-mono">${latestDate}</span>
+            <div class="bg-slate-50/60 p-4 rounded-3xl border border-slate-200/80 space-y-3">
+              <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 px-1">
+                <span class="font-extrabold text-slate-800 text-base">${compName}</span>
+                <span class="text-xs font-bold text-slate-400 font-mono">${date.replace(/-/g, '/')}</span>
               </div>
               <div class="space-y-3">
-                ${compRecords.map(r => buildRecordCardHtml(r, false)).join('')}
+          `;
+
+          groupRecords.forEach(r => {
+            groupHtml += buildRecordCardHtml(r, false);
+          });
+
+          groupHtml += `
               </div>
             </div>
           `;
           container.innerHTML += groupHtml;
         });
-
       } else if (currentGroupMode === 'event') {
-        const activeEventNames = [...new Set(sortedRecords.map(r => getCleanEventName(r)))].sort((a, b) => {
+        filterBar.classList.remove('hidden');
+        
+        const eventNamesSet = new Set();
+        records.forEach(r => {
+          const name = getCleanEventName(r);
+          if (name) eventNamesSet.add(name);
+        });
+
+        const eventNames = Array.from(eventNamesSet).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        eventFilterBar.classList.remove('hidden');
-        let filterButtonsHtml = `
-          <button type="button" onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部 (${sortedRecords.length})
+        filterBar.innerHTML = `
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-semibold transition ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            全部項目
           </button>
         `;
 
-        activeEventNames.forEach(eName => {
-          const count = sortedRecords.filter(r => getCleanEventName(r) === eName).length;
-          filterButtonsHtml += `
-            <button type="button" onclick="filterEventGroup('${eName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === eName ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-              ${eName} (${count})
+        eventNames.forEach(name => {
+          const activeClass = currentSelectedEventFilter === name ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+          filterBar.innerHTML += `
+            <button onclick="filterEventGroup('${name}')" class="px-3 py-1 rounded-full text-xs font-semibold transition ${activeClass}">
+              ${name}
             </button>
           `;
         });
-        eventFilterBar.innerHTML = filterButtonsHtml;
-
-        const filteredRecords = currentSelectedEventFilter === 'all' 
-          ? sortedRecords 
-          : sortedRecords.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
 
         const groups = {};
-        filteredRecords.forEach(r => {
-          const eName = getCleanEventName(r);
-          if (!groups[eName]) groups[eName] = [];
-          groups[eName].push(r);
+        records.forEach(r => {
+          const name = getCleanEventName(r);
+          if (currentSelectedEventFilter === 'all' || currentSelectedEventFilter === name) {
+            if (!groups[name]) groups[name] = [];
+            groups[name].push(r);
+          }
         });
 
-        const sortedEventKeys = Object.keys(groups).sort((a, b) => {
+        const sortedGroupKeys = Object.keys(groups).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        sortedEventKeys.forEach(eName => {
-          const eventRecords = groups[eName];
+        if (sortedGroupKeys.length === 0) {
+          container.innerHTML = `<div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">該項目尚無紀錄</div>`;
+          return;
+        }
+
+        sortedGroupKeys.forEach(name => {
+          const groupRecords = groups[name];
+
           let groupHtml = `
-            <div class="space-y-3">
-              <div class="flex items-center justify-between border-b pb-1 pt-2">
-                <h3 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #2563eb);"></span>
-                  <span>${eName}</span>
-                </h3>
-                <span class="text-xs text-slate-400 font-bold">${eventRecords.length} 筆紀錄</span>
+            <div class="bg-slate-50/60 p-4 rounded-3xl border border-slate-200/80 space-y-3">
+              <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 px-1">
+                <span class="font-extrabold text-slate-800 text-base">${name}</span>
+                <span class="text-xs font-bold text-slate-400">${groupRecords.length} 筆紀錄</span>
               </div>
               <div class="space-y-3">
-                ${eventRecords.map(r => buildRecordCardHtml(r, true)).join('')}
+          `;
+
+          groupRecords.forEach(r => {
+            groupHtml += buildRecordCardHtml(r, true);
+          });
+
+          groupHtml += `
               </div>
             </div>
           `;
@@ -2128,7 +2138,7 @@
       }
     }
 
-    initMainPage();
+    window.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
