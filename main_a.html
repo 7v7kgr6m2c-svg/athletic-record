@@ -297,15 +297,16 @@
               <span class="text-xs text-slate-400">依世界田徑總會(WA)標準自動計算分數</span>
             </div>
             <div id="sub-events-container" class="space-y-2 text-xs"></div>
-            <div class="flex items-center justify-between pt-2 border-t mt-2">
-              <div class="flex items-center gap-3">
-                <label class="w-16 text-sm font-bold text-slate-700">總分</label>
-                <input type="number" id="total-score" placeholder="總分" class="w-28 border rounded-xl h-10 text-center bg-blue-50 font-bold text-blue-800" readonly>
-              </div>
-              <div id="combined-wind-container" class="flex items-center gap-2">
-                <label class="text-sm font-medium text-slate-700 whitespace-nowrap">風速</label>
-                <input type="number" id="combined-wind" step="0.1" placeholder="+1.2" oninput="validateForm()" class="w-28 border rounded-xl h-10 px-3 text-right bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              </div>
+            
+            <div class="flex items-center gap-3 pt-2 border-t mt-2">
+              <label class="w-16 text-sm font-bold text-slate-700">平均風速</label>
+              <input type="text" id="avg-wind" placeholder="自動計算" class="w-28 border rounded-xl h-10 text-center bg-slate-100 font-bold text-slate-700" readonly>
+              <span class="text-xs text-slate-400">m/s</span>
+            </div>
+
+            <div class="flex items-center gap-3 pt-1">
+              <label class="w-16 text-sm font-bold text-slate-700">總分</label>
+              <input type="number" id="total-score" placeholder="總分" class="w-28 border rounded-xl h-10 text-center bg-blue-50 font-bold text-blue-800" readonly>
             </div>
 
             <div class="flex items-center gap-3 pt-2">
@@ -938,7 +939,7 @@
       }
     };
 
-    window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9.]/g, ''); }
+    window.sanitizeDigit = function(el) { el.value = el.value.replace(/[^0-9.-]/g, ''); }
 
     const STATUS_MAP = { 'DQ': 'DQ (犯規)', 'DNS': 'DNS（未出賽)', 'DNF': 'DNF (未完賽)', 'NM': 'NM (無成績)' };
     const SUB_EVENT_TYPES = {
@@ -1256,6 +1257,7 @@
             subInputs.forEach(i => i.disabled = false);
           }
         }
+        calculateCombinedAverageWind();
         return;
       }
 
@@ -1300,6 +1302,7 @@
       });
       autoCalcSubScore(row);
       calculateTotalScore();
+      calculateCombinedAverageWind();
     }
 
     window.autoCalcSubScore = function(rowEl) {
@@ -1335,6 +1338,28 @@
         ptsInput.value = score;
       }
       calculateTotalScore();
+    }
+
+    window.calculateCombinedAverageWind = function() {
+      const windInputs = document.querySelectorAll('.sub-wind');
+      let sum = 0;
+      let count = 0;
+      windInputs.forEach(i => {
+        if (!i.disabled && i.value !== '' && !isNaN(parseFloat(i.value))) {
+          sum += parseFloat(i.value);
+          count++;
+        }
+      });
+
+      const avgInput = document.getElementById('avg-wind');
+      if (avgInput) {
+        if (count > 0) {
+          const avg = sum / count;
+          avgInput.value = (avg > 0 ? '+' : '') + avg.toFixed(2);
+        } else {
+          avgInput.value = '';
+        }
+      }
     }
 
     window.filterCategory = function(cat, btnEl) {
@@ -1404,8 +1429,8 @@
                    <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); autoCalcSubScore(this.closest('.sub-item-row'));" class="sub-cm w-12 border rounded-lg h-9 text-center bg-white">`
                 }
               </div>
-              ${hasWind ? `<input type="number" step="0.1" placeholder="風速" class="sub-wind w-14 border rounded-lg h-9 text-center bg-white">` : ''}
               <div class="flex items-center gap-1">
+                ${hasWind ? `<input type="number" step="0.1" placeholder="例: +1.2" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-20 border rounded-lg h-9 text-center bg-white">` : ''}
                 <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
                   <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                 </select>
@@ -1415,6 +1440,7 @@
           container.appendChild(div);
         });
         calculateTotalScore();
+        calculateCombinedAverageWind();
       } else {
         singleDiv.classList.remove('hidden');
         combinedDiv.classList.add('hidden');
@@ -1488,11 +1514,9 @@
           });
           record.result = parseFloat(document.getElementById('total-score').value) || 0;
           record.subDetails = details;
-          record.wind = document.getElementById('combined-wind').value ? parseFloat(document.getElementById('combined-wind').value) : null;
         } else {
           record.result = status;
           record.subDetails = [];
-          record.wind = null;
         }
       } else {
         if (status === 'NORMAL') {
@@ -1555,9 +1579,6 @@
 
       if (r.isCombined) {
         document.getElementById('combined-rank-select').value = r.rank || '';
-        if (r.wind !== null && r.wind !== undefined) {
-          document.getElementById('combined-wind').value = r.wind;
-        }
         if (r.subDetails && r.subDetails.length > 0) {
           const rows = document.querySelectorAll('.sub-item-row');
           r.subDetails.forEach((sub, idx) => {
@@ -1586,6 +1607,7 @@
             }
           });
           calculateTotalScore();
+          calculateCombinedAverageWind();
         }
       } else {
         document.getElementById('rank-select').value = r.rank || '';
@@ -1978,48 +2000,65 @@
 
       chartInstance = new Chart(ctx, {
         type: 'line',
-        data: { labels: [], datasets: [] },
+        data: {
+          labels: [],
+          datasets: [{
+            label: '成績',
+            data: [],
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37, 99, 235, 0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 7
+          }]
+        },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false }
+          },
+          scales: {
+            x: {
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: false
+            }
           }
         }
       });
     }
 
     window.updateChart = function() {
-      const eventId = document.getElementById('chart-filter').value;
-      if (!eventId || !chartInstance) return;
+      if (!chartInstance) return;
+      const selectedId = document.getElementById('chart-filter').value;
+      if (!selectedId) {
+        chartInstance.data.labels = [];
+        chartInstance.data.datasets[0].data = [];
+        chartInstance.update();
+        return;
+      }
 
-      const filteredRecords = records.filter(r => r.eventId === eventId && (!r.status || r.status === 'NORMAL'));
-      filteredRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const filtered = records
+        .filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL'))
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const labels = filteredRecords.map(r => r.date);
-      const data = filteredRecords.map(r => {
+      const labels = filtered.map(r => r.date.replace(/-/g, '/'));
+      const data = filtered.map(r => {
         if (r.type === 'time' && typeof r.result === 'string') {
           const parts = r.result.split(':');
           if (parts.length === 2) {
             return (parseFloat(parts[0]) * 60) + parseFloat(parts[1]);
           }
-          return parseFloat(r.result);
+          return parseFloat(r.result) || 0;
         }
-        return parseFloat(r.result);
+        return parseFloat(r.result) || 0;
       });
 
-      const currentTheme = THEME_CONFIGS[athleteProfile.theme] || THEME_CONFIGS.blue;
-
       chartInstance.data.labels = labels;
-      chartInstance.data.datasets = [{
-        label: '成績',
-        data: data,
-        borderColor: currentTheme.primaryColor,
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointBackgroundColor: currentTheme.primaryColor,
-        pointRadius: 4
-      }];
+      chartInstance.data.datasets[0].data = data;
       chartInstance.update();
     }
 
