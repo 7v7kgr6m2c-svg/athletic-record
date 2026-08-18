@@ -1411,14 +1411,14 @@
           const subType = SUB_EVENT_TYPES[subName] || 'time';
           const hasWind = ['60米欄', '100米欄', '110米欄', '100米', '200米', '跳遠'].includes(subName);
           const div = document.createElement('div');
-          div.className = 'sub-item-row bg-slate-50 p-2.5 rounded-xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-2';
+          div.className = 'sub-item-row bg-slate-50 p-2 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2';
           div.dataset.subname = subName;
           div.dataset.subtype = subType;
           div.innerHTML = `
             <span class="font-bold text-slate-700 whitespace-nowrap min-w-[56px]">${subName}</span>
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between flex-1 gap-2 w-full md:w-auto">
-              <!-- 左側：成績輸入框 ＋ （手機版放在成績下方的風速框） -->
-              <div class="flex flex-col gap-1.5 w-full md:w-auto">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between flex-1 gap-1.5 w-full sm:w-auto">
+              <!-- 第一行（手機）：成績（靠左）、狀態（靠右）；iPad 保持單行 -->
+              <div class="flex items-center justify-between sm:justify-start gap-1 w-full sm:w-auto">
                 <div class="flex items-center gap-0.5">
                   ${subType === 'time' ? 
                     `<input type="number" min="0" placeholder="分" oninput="sanitizeDigit(this); autoCalcSubScore(this.closest('.sub-item-row'));" class="sub-min w-10 border rounded-lg h-9 text-center bg-white"><span>:</span>
@@ -1428,16 +1428,26 @@
                      <input type="number" min="0" max="99" placeholder="厘米" oninput="sanitizeDigit(this); autoCalcSubScore(this.closest('.sub-item-row'));" class="sub-cm w-12 border rounded-lg h-9 text-center bg-white">`
                   }
                 </div>
-                ${hasWind ? `<input type="number" step="0.1" placeholder="風速 (例：+1.2)" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white md:hidden">` : ''}
+                <!-- 手機版第一行右側：狀態；iPad 則在單行內 -->
+                <div class="flex sm:hidden items-center">
+                  <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
+                    <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
+                  </select>
+                </div>
               </div>
 
-              <!-- 右側/中間：iPad保持單行（含風速），手機版顯示狀態與分數 -->
-              <div class="flex items-center justify-end md:justify-start gap-1 w-full md:w-auto">
-                ${hasWind ? `<input type="number" step="0.1" placeholder="風速 (例：+1.2)" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white hidden md:block">` : ''}
-                <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
-                  <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
-                </select>
-                <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-14 border rounded-lg h-9 bg-white font-bold text-center">
+              <!-- 第二行（手機）：風速（靠左）、分數（靠右）；iPad 與上者合併為單行 -->
+              <div class="flex items-center justify-between sm:justify-end gap-1 w-full sm:w-auto">
+                <div>
+                  ${hasWind ? `<input type="number" step="0.1" placeholder="風速 (例：+1.2)" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white">` : ''}
+                </div>
+                <div class="flex items-center gap-1">
+                  <!-- iPad 版顯示狀態 -->
+                  <select onchange="onSubStatusChange(this)" class="sub-status hidden sm:block border rounded-lg h-9 px-1 text-[11px] bg-white">
+                    <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
+                  </select>
+                  <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-14 border rounded-lg h-9 bg-white font-bold text-center">
+                </div>
               </div>
             </div>`;
           container.appendChild(div);
@@ -1509,9 +1519,9 @@
             const name = div.dataset.subname;
             const pts = parseFloat(div.querySelector('.sub-pts').value) || 0;
             const subType = div.dataset.subtype;
-            const subStatus = div.querySelector('.sub-status').value;
-            // 抓取非隱藏的 sub-wind 輸入框
-            const windInput = Array.from(div.querySelectorAll('.sub-wind')).find(input => input.offsetWidth > 0 || input.offsetHeight > 0) || div.querySelector('.sub-wind');
+            const subStatusSelect = div.querySelector('.sub-status:not(.hidden)') || div.querySelector('.sub-status');
+            const subStatus = subStatusSelect ? subStatusSelect.value : 'NORMAL';
+            const windInput = div.querySelector('.sub-wind');
             const wind = windInput && windInput.value !== '' ? parseFloat(windInput.value) : null;
             let valStr = subStatus === 'NORMAL' ? (subType === 'time' ? formatTimeStr(div.querySelector('.sub-min').value, div.querySelector('.sub-sec').value, div.querySelector('.sub-ms').value) : formatDistStr(div.querySelector('.sub-m').value, div.querySelector('.sub-cm').value)) : subStatus;
             details.push({ name, val: valStr, type: subType, pts, status: subStatus, wind });
@@ -1587,11 +1597,12 @@
           const rows = document.querySelectorAll('.sub-item-row');
           r.subDetails.forEach((sub, idx) => {
             if (rows[idx]) {
-              rows[idx].querySelector('.sub-status').value = sub.status || 'NORMAL';
+              const statusSelects = rows[idx].querySelectorAll('.sub-status');
+              statusSelects.forEach(s => s.value = sub.status || 'NORMAL');
               rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
-              const windInputs = rows[idx].querySelectorAll('.sub-wind');
-              if (windInputs.length > 0 && sub.wind !== undefined && sub.wind !== null) {
-                windInputs.forEach(w => w.value = sub.wind);
+              const windInput = rows[idx].querySelector('.sub-wind');
+              if (windInput && sub.wind !== undefined && sub.wind !== null) {
+                windInput.value = sub.wind;
               }
               if (sub.type === 'time' && sub.val.includes('.')) {
                 const parts = sub.val.split('.');
@@ -1990,53 +2001,25 @@
       const ctx = document.getElementById('progressChart').getContext('2d');
       chartInstance = new Chart(ctx, {
         type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: '成績變化',
-            data: [],
-            borderColor: '#2563eb',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-            fill: true,
-            tension: 0.3,
-            pointBackgroundColor: '#2563eb',
-            pointRadius: 5
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            x: {
-              grid: { display: false }
-            },
-            y: {
-              beginAtZero: false
-            }
-          }
-        }
+        data: { labels: [], datasets: [{ label: '成績', data: [], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', fill: true, tension: 0.3 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
       });
     }
 
     function updateChart() {
       if (!chartInstance) return;
-
-      const selectedEventId = document.getElementById('chart-filter').value;
-      if (!selectedEventId) {
+      const selectedId = document.getElementById('chart-filter').value;
+      if (!selectedId) {
         chartInstance.data.labels = [];
         chartInstance.data.datasets[0].data = [];
         chartInstance.update();
         return;
       }
 
-      const validRecords = records.filter(r => r.eventId === selectedEventId && (!r.status || r.status === 'NORMAL'));
-      validRecords.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const filteredRecords = records.filter(r => r.eventId === selectedId && (!r.status || r.status === 'NORMAL')).sort((a, b) => new Date(a.date) - new Date(b.date));
 
-      const labels = validRecords.map(r => r.date.replace(/-/g, '/'));
-      const dataPoints = validRecords.map(r => {
+      const labels = filteredRecords.map(r => r.date);
+      const data = filteredRecords.map(r => {
         if (r.type === 'time' && typeof r.result === 'string') {
           const parts = r.result.split(':');
           if (parts.length === 2) {
@@ -2048,7 +2031,7 @@
       });
 
       chartInstance.data.labels = labels;
-      chartInstance.data.datasets[0].data = dataPoints;
+      chartInstance.data.datasets[0].data = data;
       chartInstance.update();
     }
 
