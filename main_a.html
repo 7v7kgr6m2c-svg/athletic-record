@@ -300,8 +300,8 @@
             
             <div class="flex items-center gap-3 pt-2 border-t mt-2">
               <label class="w-16 text-sm font-bold text-slate-700">平均風速</label>
-              <input type="text" id="avg-wind" placeholder="自動計算" class="w-28 border rounded-xl h-10 text-center bg-slate-100 font-bold text-slate-700" readonly>
-              <span class="text-xs text-slate-400">m/s</span>
+              <input type="text" id="avg-wind" placeholder="平均風速" class="w-28 border rounded-xl h-10 text-center bg-slate-100 font-bold text-slate-700" readonly>
+              <span class="text-xs text-slate-400">米/秒</span>
             </div>
 
             <div class="flex items-center gap-3 pt-1">
@@ -1430,7 +1430,7 @@
                 }
               </div>
               <div class="flex items-center gap-1">
-                ${hasWind ? `<input type="number" step="0.1" placeholder="例: +1.2" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-20 border rounded-lg h-9 text-center bg-white">` : ''}
+                ${hasWind ? `<input type="number" step="0.1" placeholder="+1.2" oninput="sanitizeDigit(this); calculateCombinedAverageWind();" class="sub-wind w-20 border rounded-lg h-9 text-center bg-white">` : ''}
                 <select onchange="onSubStatusChange(this)" class="sub-status border rounded-lg h-9 px-1 text-[11px] bg-white">
                   <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
                 </select>
