@@ -1415,6 +1415,12 @@
           div.className = 'sub-item-row bg-slate-50 p-2 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2';
           div.dataset.subname = subName;
           div.dataset.subtype = subType;
+
+          // 根據單項屬於田項(distance)或徑項(time)設定對應的狀態選單
+          const subStatusOptions = subType === 'distance' 
+            ? `<option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option><option value="NM">NM</option>`
+            : `<option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option><option value="DNF">DNF</option>`;
+
           div.innerHTML = `
             <span class="font-bold text-slate-700 whitespace-nowrap min-w-[56px]">${subName}</span>
             <div class="flex flex-col sm:flex-row sm:items-center justify-between flex-1 gap-1.5 w-full sm:w-auto">
@@ -1432,7 +1438,7 @@
                 <!-- 手機版第一行右側：狀態；iPad 則在單行內 -->
                 <div class="flex sm:hidden items-center">
                   <select onchange="onSubStatusChange(this)" class="sub-status w-20 border rounded-lg h-9 px-1 text-[11px] bg-white">
-                    <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
+                    ${subStatusOptions}
                   </select>
                 </div>
               </div>
@@ -1445,7 +1451,7 @@
                 <div class="flex items-center gap-1">
                   <!-- iPad 版顯示狀態 -->
                   <select onchange="onSubStatusChange(this)" class="sub-status hidden sm:block w-20 border rounded-lg h-9 px-1 text-[11px] bg-white">
-                    <option value="NORMAL">正常</option><option value="DQ">DQ</option><option value="DNS">DNS</option>
+                    ${subStatusOptions}
                   </select>
                   <input type="number" min="0" placeholder="分數" oninput="sanitizeDigit(this); calculateTotalScore();" class="sub-pts w-20 border rounded-lg h-9 bg-white font-bold text-center">
                 </div>
