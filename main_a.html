@@ -1587,7 +1587,7 @@
 
               <div class="flex items-center justify-between sm:justify-end gap-1 w-full sm:w-auto">
                 <div>
-                  ${hasWind ? `<input type="text" placeholder="風速 (例：+1.2 或 NWI)" oninput="calculateCombinedAverageWind()" class="sub-wind w-32 border rounded-lg h-9 text-center bg-white">` : ''}
+                  ${hasWind ? `<input type="text" placeholder="風速 (例：+1.2 或 NWI" oninput="calculateCombinedAverageWind()" class="sub-wind w-36 border rounded-lg h-9 px-1.5 text-center bg-white placeholder:text-[10px] xs:placeholder:text-xs">` : ''}
                 </div>
                 <div class="flex items-center gap-1">
                   <select onchange="onSubStatusChange(this)" class="sub-status hidden sm:block w-20 border rounded-lg h-9 px-1 text-[11px] bg-white">
@@ -1985,47 +1985,49 @@
                 <div class="space-y-1">
                   <div class="flex items-center gap-3">
                     ${getRankBadgeHtml(r.rank)}
-                    <h3 class="text-lg md:text-xl font-extrabold text-slate-800 flex items-center">${cleanName}${windBadgeHtml}</h3>
+                    <h3 class="text-lg md:text-xl font-black text-slate-900">${cleanName}</h3>
                   </div>
-                  <div class="pl-[52px] text-xs text-slate-400 font-medium">
-                    <span>${subInfoText || '賽事紀錄'}</span>
+                  <div class="text-xs font-medium text-slate-500 pl-13">
+                    ${subInfoText}
                   </div>
                 </div>
 
-                <div class="text-right flex flex-col items-end">
-                  <div class="flex items-baseline">
-                    ${resultDisplay}
-                  </div>
-                  <span class="text-xs text-slate-400 font-medium mt-1">${ageText}</span>
+                <div class="text-right flex items-baseline">
+                  ${resultDisplay}
                 </div>
               </div>
-            </div>
 
-            ${r.isCombined && r.subDetails?.length > 0 ? `
-              <div class="px-4 pb-3 border-t border-slate-100 pt-2 bg-slate-50/50">
-                <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-                  <span>查看全能單項細項 (${r.subDetails.length})</span>
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
-                ${combinedWindNotice}
-                <div id="sub-${r.id}" class="hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                  ${r.subDetails.map(sub => {
-                    const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
-                    const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
-                    const parsedWind = parseWindValue(sub.wind);
-                    const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
-                    return `
-                    <div class="bg-white p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center shadow-2xs">
-                      <span class="font-bold text-slate-700">${sub.name}</span>
-                      <div class="text-right flex flex-col items-end leading-tight">
-                        <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
-                        <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
+              <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs text-slate-400 font-medium">
+                <span>${ageText}</span>
+                ${!showCompInHeader ? `<span class="font-mono">${r.date.replace(/-/g, '/')}</span>` : ''}
+              </div>
+
+              ${r.isCombined && r.subDetails?.length > 0 ? `
+                <div class="pt-2">
+                  <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
+                    <span>查看全能單項細項 (${r.subDetails.length})</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </button>
+                  ${combinedWindNotice}
+                  <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
+                    ${r.subDetails.map(sub => {
+                      const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
+                      const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
+                      const parsedWind = parseWindValue(sub.wind);
+                      const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
+                      return `
+                      <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
+                        <span class="font-bold text-slate-700">${sub.name}</span>
+                        <div class="text-right flex flex-col items-end leading-tight">
+                          <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
+                          <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
+                        </div>
                       </div>
-                    </div>
-                  `}).join('')}
+                    `}).join('')}
+                  </div>
                 </div>
-              </div>
-            ` : ''}
+              ` : ''}
+            </div>
           </div>
         </div>
       `;
@@ -2038,8 +2040,11 @@
       container.innerHTML = '';
 
       if (records.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium border border-slate-200/80">
+            尚無比賽紀錄，請點擊「新增成績」開始建立！
+          </div>`;
         filterBar.classList.add('hidden');
-        container.innerHTML = `<div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">尚無成績紀錄</div>`;
         return;
       }
 
@@ -2048,29 +2053,29 @@
         records.forEach(r => {
           container.innerHTML += buildRecordCardHtml(r, true);
         });
+
       } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
         const groups = {};
         records.forEach(r => {
-          const key = `${r.date}___${r.competition}`;
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(r);
+          if (!groups[r.competition]) groups[r.competition] = [];
+          groups[r.competition].push(r);
         });
 
-        Object.keys(groups).forEach(key => {
-          const [date, compName] = key.split('___');
-          const groupRecords = groups[key];
+        Object.keys(groups).forEach(compName => {
+          const compRecords = groups[compName];
+          const latestDate = compRecords[0].date;
 
           let groupHtml = `
-            <div class="bg-slate-50/60 p-4 rounded-3xl border border-slate-200/80 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 px-1">
-                <span class="font-extrabold text-slate-800 text-base">${compName}</span>
-                <span class="text-xs font-bold text-slate-400 font-mono">${date.replace(/-/g, '/')}</span>
+            <div class="space-y-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-200/80">
+              <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
+                <h3 class="text-base font-bold text-slate-800">${compName}</h3>
+                <span class="text-xs font-mono text-slate-400 font-medium">${latestDate.replace(/-/g, '/')}</span>
               </div>
               <div class="space-y-3">
           `;
 
-          groupRecords.forEach(r => {
+          compRecords.forEach(r => {
             groupHtml += buildRecordCardHtml(r, false);
           });
 
@@ -2080,49 +2085,73 @@
           `;
           container.innerHTML += groupHtml;
         });
+
       } else if (currentGroupMode === 'event') {
         filterBar.classList.remove('hidden');
-        
-        const eventNamesSet = new Set();
-        records.forEach(r => {
-          const name = getCleanEventName(r);
-          if (name) eventNamesSet.add(name);
-        });
 
-        const eventNames = Array.from(eventNamesSet).sort((a, b) => {
+        const uniqueEvents = Array.from(new Set(records.map(r => getCleanEventName(r))));
+        uniqueEvents.sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        let filterBtnsHtml = `
-          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部 (${records.length})
+        let filterHtml = `
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            全部項目
           </button>
         `;
 
-        eventNames.forEach(evtName => {
-          const count = records.filter(r => getCleanEventName(r) === evtName).length;
-          const isActive = currentSelectedEventFilter === evtName;
-          filterBtnsHtml += `
-            <button onclick="filterEventGroup('${evtName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${isActive ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-              ${evtName} (${count})
+        uniqueEvents.forEach(eName => {
+          filterHtml += `
+            <button onclick="filterEventGroup('${eName}')" class="px-3 py-1 rounded-full text-xs font-bold transition ${currentSelectedEventFilter === eName ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+              ${eName}
             </button>
           `;
         });
-        filterBar.innerHTML = filterBtnsHtml;
+        filterBar.innerHTML = filterHtml;
 
-        const filteredRecords = currentSelectedEventFilter === 'all' 
-          ? records 
-          : records.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
+        const groups = {};
+        records.forEach(r => {
+          const cleanName = getCleanEventName(r);
+          if (currentSelectedEventFilter === 'all' || currentSelectedEventFilter === cleanName) {
+            if (!groups[cleanName]) groups[cleanName] = [];
+            groups[cleanName].push(r);
+          }
+        });
 
-        filteredRecords.forEach(r => {
-          container.innerHTML += buildRecordCardHtml(r, true);
+        const sortedGroupNames = Object.keys(groups).sort((a, b) => {
+          const orderA = EVENTS_ORDER[a] ?? 999;
+          const orderB = EVENTS_ORDER[b] ?? 999;
+          return orderA - orderB;
+        });
+
+        sortedGroupNames.forEach(eName => {
+          const eventRecords = groups[eName];
+
+          let groupHtml = `
+            <div class="space-y-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-200/80">
+              <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
+                <h3 class="text-base font-bold text-slate-800">${eName}</h3>
+                <span class="text-xs font-bold text-slate-400 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">${eventRecords.length} 筆紀錄</span>
+              </div>
+              <div class="space-y-3">
+          `;
+
+          eventRecords.forEach(r => {
+            groupHtml += buildRecordCardHtml(r, true);
+          });
+
+          groupHtml += `
+              </div>
+            </div>
+          `;
+          container.innerHTML += groupHtml;
         });
       }
     }
 
-    window.addEventListener('DOMContentLoaded', initMainPage);
+    initMainPage();
   </script>
 </body>
 </html>
