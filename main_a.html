@@ -1434,7 +1434,7 @@
         if (resultLabel) resultLabel.classList.add('hidden');
         if (timeGroup) timeGroup.classList.add('hidden');
         if (distGroup) distGroup.classList.add('hidden');
-        if (windContainer) windContainer.classList.hidden = true;
+        if (windContainer) windContainer.classList.add('hidden');
       } else {
         if (resultLabel) resultLabel.classList.remove('hidden');
 
@@ -1461,8 +1461,9 @@
       const currentIndex = allRows.indexOf(row);
       const val = selectEl.value;
 
+      const statusSelect = document.getElementById('status-select');
+
       if (val === 'DNS') {
-        const statusSelect = document.getElementById('status-select');
         statusSelect.value = 'DNF';
 
         allRows.forEach((r, idx) => {
@@ -1499,51 +1500,48 @@
         return;
       }
 
-      // 當切換為其他狀態（例如 NORMAL, DQ, DNF, NM）時
-      const hasAnyDNS = allRows.some(r => {
-        const sEl = r.querySelector('.sub-status:not(.hidden)') || r.querySelector('.sub-status');
-        return sEl && sEl.value === 'DNS';
-      });
+      // 當從 DNS 改回其他狀態時，若整個賽事狀態原本為 DNF/DNS/DQ，自動改回正常 (NORMAL)
+      if (statusSelect.value !== 'NORMAL') {
+        statusSelect.value = 'NORMAL';
+      }
 
-      if (!hasAnyDNS) {
-        const statusSelect = document.getElementById('status-select');
-        if (statusSelect.value === 'DNF') {
-          statusSelect.value = 'NORMAL';
+      // 檢查當前細項前是否仍有其他的 DNS 細項
+      let hasEarlierDNS = false;
+      for (let i = 0; i < currentIndex; i++) {
+        const earlierStatus = (allRows[i].querySelector('.sub-status:not(.hidden)') || allRows[i].querySelector('.sub-status'))?.value;
+        if (earlierStatus === 'DNS') {
+          hasEarlierDNS = true;
+          break;
         }
       }
 
-      let dnsFound = false;
-      allRows.forEach((r) => {
-        const rStatusSelects = r.querySelectorAll('.sub-status');
-        const rInputs = r.querySelectorAll('input');
-        const rStatusSelect = r.querySelector('.sub-status:not(.hidden)') || r.querySelector('.sub-status');
-        const currentVal = rStatusSelect ? rStatusSelect.value : 'NORMAL';
+      if (!hasEarlierDNS) {
+        // 如果前面沒有 DNS，解鎖並啟用包含當前項及後續的所有細項
+        allRows.forEach((r, idx) => {
+          if (idx >= currentIndex) {
+            const rStatusSelects = r.querySelectorAll('.sub-status');
+            rStatusSelects.forEach(s => {
+              s.disabled = false;
+            });
 
-        if (dnsFound) {
-          rStatusSelects.forEach(s => {
-            s.value = '';
-            s.disabled = true;
-          });
-          rInputs.forEach(i => {
-            i.value = '';
-            i.disabled = true;
-          });
-          autoCalcSubScore(r);
-        } else {
-          rStatusSelects.forEach(s => {
-            s.disabled = false;
-          });
-          rInputs.forEach(i => {
-            if (!i.classList.contains('sub-pts')) {
-              i.disabled = (currentVal !== 'NORMAL' && currentVal !== '');
-            }
-          });
-          if (currentVal === 'DNS') {
-            dnsFound = true;
+            const rStatusVal = (r.querySelector('.sub-status:not(.hidden)') || r.querySelector('.sub-status'))?.value || 'NORMAL';
+            const rInputs = r.querySelectorAll('input');
+            rInputs.forEach(i => {
+              if (!i.classList.contains('sub-pts')) {
+                i.disabled = (rStatusVal !== 'NORMAL' && rStatusVal !== '');
+              }
+            });
           }
+        });
+      }
+
+      const inputs = row.querySelectorAll('input');
+      inputs.forEach(i => {
+        if (!i.classList.contains('sub-pts')) {
+          i.disabled = (val !== 'NORMAL' && val !== '');
+          if (i.disabled) i.value = '';
         }
       });
-
       autoCalcSubScore(row);
       calculateTotalScore();
       calculateCombinedAverageWind();
@@ -2074,54 +2072,23 @@
         } else {
           const isLegal = r.wind <= 2.0;
           const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-          subInfoText += subInfoText ? ` · 風速 ${windStr} m/s` : `風速 ${windStr} m/s`;
+          subInfoText += subInfoText ? ` · 風速 ${windStr}` : `風速 ${windStr}`;
           windBadgeHtml = `
             <span class="text-[11px] px-2 py-0.5 rounded-full font-bold border ml-2 ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
-              ${isLegal ? '超風速: 否' : '超風速: 是'} (${windStr})
+              ${windStr} m/s
             </span>
           `;
         }
       }
 
-      let combinedWindNotice = '';
       let combinedSubDetailsHtml = '';
-
-      if (r.isCombined && r.subDetails?.length > 0) {
-        const hasNWI = r.subDetails.some(sub => parseWindValue(sub.wind) === 'NWI');
-        if (hasNWI) {
-          combinedWindNotice = `
-            <div class="mt-2 text-xs px-2.5 py-1 rounded-xl border flex items-center justify-between bg-orange-50 text-orange-800 border-orange-200">
-              <span class="font-bold">全能風速證明：含 NWI (記錄不予承認)</span>
-            </div>
-          `;
-        } else {
-          const windSubs = r.subDetails
-            .map(sub => parseWindValue(sub.wind))
-            .filter(v => v !== null && v !== 'NWI');
-
-          if (windSubs.length > 0) {
-            const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
-            const avgWind = totalWind / windSubs.length;
-            const maxWind = Math.max(...windSubs);
-            const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
-            const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
-            
-            combinedWindNotice = `
-              <div class="mt-2 text-xs px-2.5 py-1 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
-                <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
-                <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
-              </div>
-            `;
-          }
-        }
-
+      if (r.isCombined && r.subDetails && r.subDetails.length > 0) {
         combinedSubDetailsHtml = `
           <div class="mt-2 pt-2 border-t border-slate-100">
             <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-              <span>查看全能單項細項 (${r.subDetails.length})</span>
+              <span>全能單項細項 (${r.subDetails.length})</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            ${combinedWindNotice}
             <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
               ${r.subDetails.map(sub => {
                 const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
@@ -2143,44 +2110,38 @@
       }
 
       return `
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs hover:shadow-md transition duration-200">
-          <div id="card-content-${r.id}" class="p-4 transition-transform duration-200 ease-out bg-white relative z-10 flex flex-col gap-2" 
-               ontouchstart="handleCardTouchStart(event)" 
-               ontouchend="handleCardTouchEnd(event, '${r.id}')">
-            
-            <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-2">
-              <div class="flex items-center gap-3">
-                ${getRankBadgeHtml(r.rank)}
-                <div>
-                  <div class="flex items-center gap-1">
-                    <span class="font-black text-slate-900 text-base md:text-lg">${cleanName}</span>
-                    ${windBadgeHtml}
-                  </div>
-                  ${showCompInHeader ? `<p class="text-xs text-slate-500 font-medium">${r.competition}</p>` : ''}
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition group"
+             ontouchstart="handleCardTouchStart(event)"
+             ontouchend="handleCardTouchEnd(event, '${r.id}')">
+          <div id="card-content-${r.id}" class="p-4 transition-transform duration-200 ease-out flex items-center justify-between gap-3 bg-white">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              ${getRankBadgeHtml(r.rank)}
+              <div class="space-y-0.5 min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <h3 class="font-bold text-slate-900 text-base leading-snug">${cleanName}</h3>
+                  ${windBadgeHtml}
                 </div>
-              </div>
-
-              <div class="text-right flex items-baseline">
-                ${resultDisplay}
+                ${showCompInHeader ? `<p class="text-xs font-semibold text-slate-700 truncate">${r.competition}</p>` : ''}
+                <div class="flex items-center gap-2 text-xs text-slate-400 font-medium flex-wrap">
+                  <span>${r.date.replace(/-/g, '/')}</span>
+                  <span>•</span>
+                  <span>${subInfoText}</span>
+                  <span>•</span>
+                  <span>${ageText}</span>
+                </div>
+                ${combinedSubDetailsHtml}
               </div>
             </div>
 
-            <div class="flex justify-between items-center text-xs text-slate-400 font-medium pt-1">
-              <span>${r.date.replace(/-/g, '/')}</span>
-              <span>${subInfoText}</span>
-              <span>${ageText}</span>
+            <div class="text-right flex-shrink-0">
+              ${resultDisplay}
             </div>
-
-            ${combinedSubDetailsHtml}
           </div>
 
-          <div id="card-actions-${r.id}" class="absolute top-0 right-0 bottom-0 w-40 bg-slate-100 flex items-center justify-end px-3 gap-2 transition-transform duration-200 ease-out translate-x-full z-0">
-            <button onclick="editRecord('${r.id}')" class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow flex items-center justify-center cursor-pointer">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-            </button>
-            <button onclick="deleteRecord('${r.id}')" class="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-xl shadow flex items-center justify-center cursor-pointer">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
+          <!-- 側滑／懸停按鈕 -->
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 flex items-center translate-x-full group-hover:translate-x-0 transition-transform duration-200 ease-out bg-slate-50 border-l border-slate-100 px-2 gap-1">
+            <button onclick="editRecord('${r.id}')" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">編輯</button>
+            <button onclick="deleteRecord('${r.id}')" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">刪除</button>
           </div>
         </div>
       `;
@@ -2196,7 +2157,7 @@
         filterBar.classList.add('hidden');
         container.innerHTML = `
           <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
-            尚無歷史紀錄，請至「新增成績」頁面新增
+            尚無成績紀錄，請點選「新增成績」開始建立紀錄。
           </div>`;
         return;
       }
@@ -2206,8 +2167,7 @@
         records.forEach(r => {
           container.innerHTML += buildRecordCardHtml(r, true);
         });
-      } 
-      else if (currentGroupMode === 'comp') {
+      } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
         const comps = {};
         records.forEach(r => {
@@ -2217,91 +2177,81 @@
 
         Object.keys(comps).forEach(compName => {
           const compRecords = comps[compName];
-          const firstDate = compRecords[0]?.date ? compRecords[0].date.replace(/-/g, '/') : '';
+          const latestDate = compRecords[0].date.replace(/-/g, '/');
+          
+          let cardsHtml = compRecords.map(r => buildRecordCardHtml(r, false)).join('');
 
-          let compGroupHtml = `
-            <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200/80 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
-                <h3 class="font-bold text-slate-800 text-base md:text-lg">${compName}</h3>
-                <span class="text-xs font-mono text-slate-400">${firstDate}</span>
+          container.innerHTML += `
+            <div class="space-y-2">
+              <div class="flex justify-between items-baseline border-b border-slate-200/80 pb-1.5 px-1 pt-2">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>${compName}</span>
+                </h3>
+                <span class="text-xs font-mono text-slate-400 font-medium">${latestDate}</span>
               </div>
               <div class="space-y-3">
-          `;
-
-          compRecords.forEach(r => {
-            compGroupHtml += buildRecordCardHtml(r, false);
-          });
-
-          compGroupHtml += `
+                ${cardsHtml}
               </div>
             </div>
           `;
-
-          container.innerHTML += compGroupHtml;
         });
-      } 
-      else if (currentGroupMode === 'event') {
+      } else if (currentGroupMode === 'event') {
         filterBar.classList.remove('hidden');
 
-        const eventsMap = {};
+        const events = {};
         records.forEach(r => {
           const cleanName = getCleanEventName(r);
-          if (!eventsMap[cleanName]) eventsMap[cleanName] = [];
-          eventsMap[cleanName].push(r);
+          if (!events[cleanName]) events[cleanName] = [];
+          events[cleanName].push(r);
         });
 
-        const eventNames = Object.keys(eventsMap).sort((a, b) => {
-          const orderA = EVENTS_ORDER[a] ?? 999;
-          const orderB = EVENTS_ORDER[b] ?? 999;
-          return orderA - orderB;
-        });
+        const eventNames = Object.keys(events);
 
         filterBar.innerHTML = `
-          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部 (${records.length})
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            全部項目 (${records.length})
           </button>
         `;
 
-        eventNames.forEach(name => {
-          const count = eventsMap[name].length;
-          const isActive = currentSelectedEventFilter === name;
+        eventNames.forEach(ename => {
+          const isSelected = currentSelectedEventFilter === ename;
           filterBar.innerHTML += `
-            <button onclick="filterEventGroup('${name}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-              ${name} (${count})
+            <button onclick="filterEventGroup('${ename}')" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+              ${ename} (${events[ename].length})
             </button>
           `;
         });
 
-        const displayEvents = currentSelectedEventFilter === 'all' ? eventNames : [currentSelectedEventFilter];
+        const targetNames = currentSelectedEventFilter === 'all' ? eventNames : [currentSelectedEventFilter];
 
-        displayEvents.forEach(name => {
-          const eventRecords = eventsMap[name] || [];
-          if (eventRecords.length === 0) return;
+        targetNames.forEach(ename => {
+          const eventRecords = events[ename];
+          if (!eventRecords) return;
 
-          let eventGroupHtml = `
-            <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200/80 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
-                <h3 class="font-bold text-slate-800 text-base md:text-lg">${name}</h3>
-                <span class="text-xs font-bold text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full">${eventRecords.length} 筆紀錄</span>
+          let cardsHtml = eventRecords.map(r => buildRecordCardHtml(r, true)).join('');
+
+          container.innerHTML += `
+            <div class="space-y-2">
+              <div class="flex justify-between items-baseline border-b border-slate-200/80 pb-1.5 px-1 pt-2">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>${ename}</span>
+                </h3>
+                <span class="text-xs font-semibold text-slate-400">${eventRecords.length} 筆紀錄</span>
               </div>
               <div class="space-y-3">
-          `;
-
-          eventRecords.forEach(r => {
-            eventGroupHtml += buildRecordCardHtml(r, true);
-          });
-
-          eventGroupHtml += `
+                ${cardsHtml}
               </div>
             </div>
           `;
-
-          container.innerHTML += eventGroupHtml;
         });
       }
     }
 
-    document.addEventListener('DOMContentLoaded', initMainPage);
+    document.addEventListener('DOMContentLoaded', () => {
+      initMainPage();
+    });
   </script>
 </body>
 </html>
