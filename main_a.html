@@ -1499,7 +1499,7 @@
         return;
       }
 
-      // 當從 DNS 改回其他狀態（NORMAL, DQ, DNF, NM）時：
+      // 當切換為其他狀態（例如 NORMAL, DQ, DNF, NM）時
       const statusSelect = document.getElementById('status-select');
       if (statusSelect && statusSelect.value === 'DNF') {
         statusSelect.value = 'NORMAL';
@@ -1509,19 +1509,18 @@
         const rStatusSelects = r.querySelectorAll('.sub-status');
         const rInputs = r.querySelectorAll('input');
 
-        if (idx >= currentIndex) {
+        if (idx > currentIndex) {
           rStatusSelects.forEach(s => {
             s.disabled = false;
           });
+        }
+      });
 
-          const currentVal = (r.querySelector('.sub-status:not(.hidden)') || r.querySelector('.sub-status'))?.value || 'NORMAL';
-          rInputs.forEach(i => {
-            if (!i.classList.contains('sub-pts')) {
-              i.disabled = (currentVal !== 'NORMAL' && currentVal !== '');
-            } else {
-              i.disabled = false;
-            }
-          });
+      const inputs = row.querySelectorAll('input');
+      inputs.forEach(i => {
+        if (!i.classList.contains('sub-pts')) {
+          i.disabled = (val !== 'NORMAL' && val !== '');
+          if (i.disabled) i.value = '';
         }
       });
 
@@ -2064,12 +2063,12 @@
         }
       }
 
-      let combinedSubHtml = '';
-      if (r.isCombined && r.subDetails?.length > 0) {
-        combinedSubHtml = `
+      let subDetailsHtml = '';
+      if (r.isCombined && r.subDetails && r.subDetails.length > 0) {
+        subDetailsHtml = `
           <div class="mt-3 pt-3 border-t border-slate-100">
             <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-              <span>全能單項細項 (${r.subDetails.length})</span>
+              <span>查看單項細項 (${r.subDetails.length})</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
@@ -2093,40 +2092,44 @@
       }
 
       return `
-        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition group"
+        <div class="relative overflow-hidden rounded-3xl bg-white border border-slate-200/80 shadow-xs" 
              ontouchstart="handleCardTouchStart(event)" 
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
-             
-          <div id="card-content-${r.id}" class="p-4 flex items-center justify-between gap-3 transition-transform duration-300 bg-white relative z-10">
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-              ${getRankBadgeHtml(r.rank)}
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center flex-wrap">
-                  <h4 class="font-bold text-base text-slate-900 truncate">${cleanName}</h4>
-                  ${windBadgeHtml}
-                </div>
-                ${showCompInHeader ? `<p class="text-xs text-slate-500 font-medium truncate mt-0.5">${r.competition}</p>` : ''}
-                <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-1 font-mono">
-                  <span>${r.date.replace(/-/g, '/')}</span>
-                  <span>•</span>
-                  <span>${subInfoText}</span>
+          <div id="card-content-${r.id}" class="p-5 transition-transform duration-300 flex flex-col gap-2">
+            <div class="flex justify-between items-start gap-2">
+              <div class="space-y-1 flex-1">
+                ${showCompInHeader ? `<h3 class="font-bold text-slate-900 text-base leading-snug">${r.competition}</h3>` : `<h3 class="font-bold text-slate-900 text-base leading-snug">${cleanName}</h3>`}
+                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium flex-wrap">
+                  <span class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</span>
                   <span>•</span>
                   <span>${ageText}</span>
                 </div>
               </div>
+              ${getRankBadgeHtml(r.rank)}
             </div>
 
-            <div class="text-right flex-shrink-0">
-              ${resultDisplay}
+            <div class="flex justify-between items-end border-t border-slate-100 pt-3 mt-1">
+              <div>
+                <span class="text-xs font-bold text-slate-600">${showCompInHeader ? cleanName : r.competition}</span>
+                ${showCompInHeader ? windBadgeHtml : ''}
+                <p class="text-xs text-slate-400 font-medium mt-0.5">${subInfoText}</p>
+              </div>
+              <div class="text-right">
+                ${resultDisplay}
+              </div>
             </div>
+
+            ${subDetailsHtml}
           </div>
 
-          <div id="card-actions-${r.id}" class="absolute inset-y-0 right-0 flex items-center transform translate-x-full transition-transform duration-300 z-20">
-            <button onclick="editRecord('${r.id}')" class="h-full px-5 bg-blue-600 text-white font-bold text-xs flex items-center justify-center cursor-pointer hover:bg-blue-700 transition">
-              編輯
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex translate-x-full transition-transform duration-300">
+            <button onclick="editRecord('${r.id}')" class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold flex flex-col items-center justify-center gap-1 cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 012.828 0L20.5 5.586a2 2 0 010 2.828l-9.5 9.53-4 1 1-4 9.5-9.53z"></path></svg>
+              <span class="text-xs">編輯</span>
             </button>
-            <button onclick="deleteRecord('${r.id}')" class="h-full px-5 bg-red-600 text-white font-bold text-xs flex items-center justify-center cursor-pointer hover:bg-red-700 transition">
-              刪除
+            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold flex flex-col items-center justify-center gap-1 cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <span class="text-xs">刪除</span>
             </button>
           </div>
         </div>
@@ -2137,14 +2140,13 @@
       const container = document.getElementById('cards-container');
       const filterBar = document.getElementById('event-filter-bar');
       container.innerHTML = '';
-      filterBar.innerHTML = '';
 
       if (records.length === 0) {
-        filterBar.classList.add('hidden');
         container.innerHTML = `
-          <div class="bg-slate-50 p-8 rounded-3xl text-center text-slate-400 font-medium border border-dashed border-slate-200">
-            尚無紀錄，點擊上方「新增成績」開始建立您的田徑生涯檔案！
+          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
+            尚無任何紀錄，點擊上方「新增成績」開始新增吧！
           </div>`;
+        filterBar.classList.add('hidden');
         return;
       }
 
@@ -2155,29 +2157,26 @@
         });
       } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
-        const compGroups = {};
+        const comps = {};
         records.forEach(r => {
-          if (!compGroups[r.competition]) compGroups[r.competition] = [];
-          compGroups[r.competition].push(r);
+          if (!comps[r.competition]) comps[r.competition] = [];
+          comps[r.competition].push(r);
         });
 
-        Object.keys(compGroups).forEach(compName => {
-          const groupRecords = compGroups[compName];
-          const firstDate = groupRecords[0].date;
+        Object.keys(comps).forEach(cName => {
+          const compRecords = comps[cName];
+          const latestDate = compRecords[0].date;
 
           let groupHtml = `
-            <div class="space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-2">
-                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
-                  <span>${compName}</span>
-                </h3>
-                <span class="text-xs text-slate-400 font-mono">${firstDate.replace(/-/g, '/')}</span>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center bg-slate-100 px-4 py-2 rounded-2xl">
+                <span class="font-bold text-slate-800 text-sm">${cName}</span>
+                <span class="text-xs font-mono text-slate-500">${latestDate.replace(/-/g, '/')}</span>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-3 pl-2">
           `;
 
-          groupRecords.forEach(r => {
+          compRecords.forEach(r => {
             groupHtml += buildRecordCardHtml(r, false);
           });
 
@@ -2185,57 +2184,52 @@
           container.innerHTML += groupHtml;
         });
       } else if (currentGroupMode === 'event') {
-        filterBar.classList.remove('hidden');
-
-        const eventGroups = {};
+        const eventsMap = {};
         records.forEach(r => {
           const cleanName = getCleanEventName(r);
-          if (!eventGroups[cleanName]) eventGroups[cleanName] = [];
-          eventGroups[cleanName].push(r);
+          if (!eventsMap[cleanName]) eventsMap[cleanName] = [];
+          eventsMap[cleanName].push(r);
         });
 
-        const eventNames = Object.keys(eventGroups).sort((a, b) => {
+        const eventNames = Object.keys(eventsMap).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        let filterBarHtml = `
-          <button type="button" onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部細項 (${records.length})
+        filterBar.classList.remove('hidden');
+        filterBar.innerHTML = `
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            全部項目 (${records.length})
           </button>
         `;
 
         eventNames.forEach(eName => {
-          const count = eventGroups[eName].length;
+          const count = eventsMap[eName].length;
           const isSelected = currentSelectedEventFilter === eName;
-          filterBarHtml += `
-            <button type="button" onclick="filterEventGroup('${eName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+          filterBar.innerHTML += `
+            <button onclick="filterEventGroup('${eName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
               ${eName} (${count})
             </button>
           `;
         });
-        filterBar.innerHTML = filterBarHtml;
 
         const displayEvents = currentSelectedEventFilter === 'all' ? eventNames : [currentSelectedEventFilter];
 
         displayEvents.forEach(eName => {
-          if (!eventGroups[eName]) return;
-          const groupRecords = eventGroups[eName];
+          const itemRecords = eventsMap[eName];
+          if (!itemRecords) return;
 
           let groupHtml = `
-            <div class="space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-2">
-                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #1e3a8a);"></span>
-                  <span>${eName}</span>
-                </h3>
-                <span class="text-xs text-slate-400 font-semibold">${groupRecords.length} 筆紀錄</span>
+            <div class="space-y-3">
+              <div class="flex justify-between items-center bg-slate-100 px-4 py-2 rounded-2xl">
+                <span class="font-bold text-slate-800 text-sm">${eName}</span>
+                <span class="text-xs font-semibold text-slate-500">${itemRecords.length} 筆紀錄</span>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-3 pl-2">
           `;
 
-          groupRecords.forEach(r => {
+          itemRecords.forEach(r => {
             groupHtml += buildRecordCardHtml(r, true);
           });
 
