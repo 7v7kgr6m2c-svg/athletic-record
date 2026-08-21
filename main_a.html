@@ -1403,15 +1403,22 @@
       if (itemObj.subs) {
         const container = document.getElementById('sub-events-container');
         for (let div of container.children) {
-          const subSelect = div.querySelector('.sub-status');
+          const subSelects = div.querySelectorAll('.sub-status');
           const subInputs = div.querySelectorAll('input');
           if (status === 'DQ' || status === 'DNS') {
-            subSelect.value = '';
-            subSelect.disabled = true;
+            subSelects.forEach(s => {
+              s.value = '';
+              s.disabled = true;
+            });
             subInputs.forEach(i => { i.value = ''; i.disabled = true; });
           } else {
-            subSelect.disabled = false;
-            subInputs.forEach(i => i.disabled = false);
+            subSelects.forEach(s => s.disabled = false);
+            subInputs.forEach(i => {
+              const currentSubStatus = (div.querySelector('.sub-status:not(.hidden)') || div.querySelector('.sub-status'))?.value || 'NORMAL';
+              if (!i.classList.contains('sub-pts')) {
+                i.disabled = (currentSubStatus !== 'NORMAL' && currentSubStatus !== '');
+              }
+            });
           }
         }
         calculateCombinedAverageWind();
@@ -1449,22 +1456,66 @@
 
     window.onSubStatusChange = function(selectEl) {
       const row = selectEl.closest('.sub-item-row');
+      const container = document.getElementById('sub-events-container');
+      const allRows = Array.from(container.children);
+      const currentIndex = allRows.indexOf(row);
       const val = selectEl.value;
 
-      // 同步同一行的兩個 select (行動版與桌面版)
-      const selects = row.querySelectorAll('.sub-status');
-      selects.forEach(s => s.value = val);
+      if (val === 'DNS') {
+        const statusSelect = document.getElementById('status-select');
+        statusSelect.value = 'DNF';
 
-      const inputs = row.querySelectorAll('input');
-      const isNormal = (val === 'NORMAL' || val === '');
+        allRows.forEach((r, idx) => {
+          const rStatusSelects = r.querySelectorAll('.sub-status');
+          const rInputs = r.querySelectorAll('input');
 
-      inputs.forEach(i => {
-        if (!i.classList.contains('sub-pts')) {
-          i.disabled = !isNormal;
-          if (!isNormal) i.value = '';
+          if (idx < currentIndex) {
+            // 前面的細項保留原狀
+          } else if (idx === currentIndex) {
+            rStatusSelects.forEach(s => {
+              s.value = 'DNS';
+              s.disabled = false;
+            });
+            rInputs.forEach(i => {
+              i.value = '';
+              i.disabled = true;
+            });
+            autoCalcSubScore(r);
+          } else {
+            rStatusSelects.forEach(s => {
+              s.value = '';
+              s.disabled = true;
+            });
+            rInputs.forEach(i => {
+              i.value = '';
+              i.disabled = true;
+            });
+            autoCalcSubScore(r);
+          }
+        });
+
+        calculateTotalScore();
+        calculateCombinedAverageWind();
+        return;
+      }
+
+      // 當切換為其他狀態（例如 NORMAL, DQ, DNF, NM）時，修復無法修改問題
+      allRows.forEach((r, idx) => {
+        if (idx > currentIndex) {
+          const rStatusSelects = r.querySelectorAll('.sub-status');
+          rStatusSelects.forEach(s => {
+            s.disabled = false;
+          });
         }
       });
 
+      const inputs = row.querySelectorAll('input');
+      inputs.forEach(i => {
+        if (!i.classList.contains('sub-pts')) {
+          i.disabled = (val !== 'NORMAL' && val !== '');
+          if (i.disabled) i.value = '';
+        }
+      });
       autoCalcSubScore(row);
       calculateTotalScore();
       calculateCombinedAverageWind();
@@ -1777,47 +1828,62 @@
         document.getElementById('combined-rank-select').value = r.rank || '';
         if (r.subDetails && r.subDetails.length > 0) {
           const rows = document.querySelectorAll('.sub-item-row');
+          let dnsEncountered = false;
 
           r.subDetails.forEach((sub, idx) => {
             if (rows[idx]) {
               const statusSelects = rows[idx].querySelectorAll('.sub-status');
               const inputs = rows[idx].querySelectorAll('input');
-              const subStat = sub.status || 'NORMAL';
 
-              statusSelects.forEach(s => {
-                s.value = subStat;
-                s.disabled = false;
-              });
-
-              const isNormal = (subStat === 'NORMAL' || subStat === '');
-              inputs.forEach(i => {
-                if (!i.classList.contains('sub-pts')) {
-                  i.disabled = !isNormal;
-                } else {
-                  i.disabled = false;
+              if (dnsEncountered) {
+                statusSelects.forEach(s => {
+                  s.value = '';
+                  s.disabled = true;
+                });
+                inputs.forEach(i => {
+                  i.value = '';
+                  i.disabled = true;
+                });
+              } else if (sub.status === 'DNS') {
+                dnsEncountered = true;
+                statusSelects.forEach(s => {
+                  s.value = 'DNS';
+                  s.disabled = false;
+                });
+                inputs.forEach(i => {
+                  i.value = '';
+                  i.disabled = true;
+                });
+              } else {
+                statusSelects.forEach(s => {
+                  s.value = sub.status || 'NORMAL';
+                  s.disabled = false;
+                });
+                inputs.forEach(i => {
+                  if (!i.classList.contains('sub-pts')) {
+                    i.disabled = (sub.status && sub.status !== 'NORMAL');
+                  }
+                });
+                rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
+                const windInput = rows[idx].querySelector('.sub-wind');
+                if (windInput && sub.wind !== undefined && sub.wind !== null) {
+                  windInput.value = sub.wind === 'NWI' ? 'NWI' : (sub.wind > 0 ? `+${sub.wind}` : sub.wind);
                 }
-              });
-
-              rows[idx].querySelector('.sub-pts').value = sub.pts || 0;
-              const windInput = rows[idx].querySelector('.sub-wind');
-              if (windInput && sub.wind !== undefined && sub.wind !== null) {
-                windInput.value = sub.wind === 'NWI' ? 'NWI' : (sub.wind > 0 ? `+${sub.wind}` : sub.wind);
-              }
-
-              if (sub.type === 'time' && sub.val && sub.val.includes('.')) {
-                const parts = sub.val.split('.');
-                const minSec = parts[0].split(':');
-                if (minSec.length === 2) {
-                  rows[idx].querySelector('.sub-min').value = minSec[0];
-                  rows[idx].querySelector('.sub-sec').value = minSec[1];
-                } else {
-                  rows[idx].querySelector('.sub-sec').value = minSec[0];
+                if (sub.type === 'time' && sub.val && sub.val.includes('.')) {
+                  const parts = sub.val.split('.');
+                  const minSec = parts[0].split(':');
+                  if (minSec.length === 2) {
+                    rows[idx].querySelector('.sub-min').value = minSec[0];
+                    rows[idx].querySelector('.sub-sec').value = minSec[1];
+                  } else {
+                    rows[idx].querySelector('.sub-sec').value = minSec[0];
+                  }
+                  rows[idx].querySelector('.sub-ms').value = parts[1];
+                } else if (sub.type === 'distance' && sub.val && sub.val.includes('.')) {
+                  const parts = sub.val.split('.');
+                  rows[idx].querySelector('.sub-m').value = parts[0];
+                  rows[idx].querySelector('.sub-cm').value = parts[1];
                 }
-                rows[idx].querySelector('.sub-ms').value = parts[1];
-              } else if (sub.type === 'distance' && sub.val && sub.val.includes('.')) {
-                const parts = sub.val.split('.');
-                rows[idx].querySelector('.sub-m').value = parts[0];
-                rows[idx].querySelector('.sub-cm').value = parts[1];
               }
             }
           });
@@ -1990,8 +2056,6 @@
       }
 
       let combinedWindNotice = '';
-      let combinedSubDetailsHtml = '';
-
       if (r.isCombined && r.subDetails?.length > 0) {
         const hasNWI = r.subDetails.some(sub => parseWindValue(sub.wind) === 'NWI');
         if (hasNWI) {
@@ -2010,8 +2074,8 @@
             const avgWind = totalWind / windSubs.length;
             const maxWind = Math.max(...windSubs);
             const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
+            
             const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
-
             combinedWindNotice = `
               <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
                 <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
@@ -2020,78 +2084,82 @@
             `;
           }
         }
-
-        combinedSubDetailsHtml = `
-          <div class="mt-3 pt-3 border-t border-slate-100">
-            <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-              <span>查看全能單項細項 (${r.subDetails.length})</span>
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </button>
-            ${combinedWindNotice}
-            <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
-              ${r.subDetails.map(sub => {
-                const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
-                const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
-                const parsedWind = parseWindValue(sub.wind);
-                const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
-                return `
-                <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
-                  <span class="font-bold text-slate-700">${sub.name}</span>
-                  <div class="text-right flex flex-col items-end leading-tight">
-                    <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
-                    <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
-                  </div>
-                </div>
-              `}).join('')}
-            </div>
-          </div>
-        `;
       }
 
-      return `
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition duration-200"
-             ontouchstart="handleCardTouchStart(event)"
+      let cardHtml = `
+        <div class="relative overflow-hidden bg-white rounded-3xl border border-slate-200/80 shadow-xs"
+             ontouchstart="handleCardTouchStart(event)" 
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
-
-          <div id="card-content-${r.id}" class="p-4 transition-transform duration-300 ease-out bg-white relative z-10 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm font-black text-slate-800">${cleanName}</span>
-                  ${windBadgeHtml}
-                </div>
-                ${showCompInHeader ? `<span class="text-xs text-slate-500 font-medium truncate max-w-[150px] sm:max-w-xs">${r.competition}</span>` : ''}
-              </div>
-
-              <div class="flex justify-between items-center my-1">
-                <div class="flex items-center gap-3">
-                  ${getRankBadgeHtml(r.rank)}
-                  <div>
-                    <div>${resultDisplay}</div>
-                    <div class="text-xs text-slate-400 font-medium">${subInfoText}</div>
-                  </div>
-                </div>
-
-                <div class="text-right text-xs text-slate-400 space-y-0.5 font-medium">
-                  <div>${r.date.replace(/-/g, '/')}</div>
-                  <div>${ageText}</div>
-                </div>
-              </div>
-            </div>
-
-            ${combinedSubDetailsHtml}
-          </div>
-
-          <div id="card-actions-${r.id}" class="absolute inset-y-0 right-0 w-40 bg-slate-50 flex items-center justify-center gap-2 px-3 transition-transform duration-300 ease-out translate-x-full z-20 border-l border-slate-200">
-            <button onclick="editRecord('${r.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-xl shadow cursor-pointer transition">
+          
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-300 translate-x-full z-10 font-bold text-sm">
+            <button type="button" onclick="editRecord('${r.id}')" class="w-1/2 bg-blue-600 text-white flex items-center justify-center cursor-pointer">
               編輯
             </button>
-            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2 rounded-xl shadow cursor-pointer transition">
+            <button type="button" onclick="deleteRecord('${r.id}')" class="w-1/2 bg-red-600 text-white flex items-center justify-center cursor-pointer">
               刪除
             </button>
           </div>
+
+          <div id="card-content-${r.id}" class="transition-transform duration-300 bg-white">
+            ${showCompInHeader ? `
+              <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
+                <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
+                <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
+              </div>
+            ` : ''}
+
+            <div class="p-4 space-y-2">
+              <div class="flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-3">
+                    ${getRankBadgeHtml(r.rank)}
+                    <h3 class="text-lg md:text-xl font-black text-slate-900">${cleanName}</h3>
+                  </div>
+                  <div class="text-xs font-medium text-slate-500 pl-13">
+                    ${subInfoText}
+                  </div>
+                </div>
+
+                <div class="text-right flex items-baseline">
+                  ${resultDisplay}
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs text-slate-400 font-medium">
+                <span>${ageText}</span>
+                ${!showCompInHeader ? `<span class="font-mono">${r.date.replace(/-/g, '/')}</span>` : ''}
+              </div>
+
+              ${r.isCombined && r.subDetails?.length > 0 ? `
+                <div class="pt-2">
+                  <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
+                    <span>查看全能單項細項 (${r.subDetails.length})</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </button>
+                  ${combinedWindNotice}
+                  <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
+                    ${r.subDetails.map(sub => {
+                      const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
+                      const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
+                      const parsedWind = parseWindValue(sub.wind);
+                      const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
+                      return `
+                      <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
+                        <span class="font-bold text-slate-700">${sub.name}</span>
+                        <div class="text-right flex flex-col items-end leading-tight">
+                          <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
+                          <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
+                        </div>
+                      </div>
+                    `}).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
         </div>
       `;
+      return cardHtml;
     }
 
     function renderList() {
@@ -2100,11 +2168,11 @@
       container.innerHTML = '';
 
       if (records.length === 0) {
-        filterBar.classList.add('hidden');
         container.innerHTML = `
-          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
-            尚無任何比賽紀錄
+          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium border border-slate-200/80">
+            尚無比賽紀錄，請點擊「新增成績」開始建立！
           </div>`;
+        filterBar.classList.add('hidden');
         return;
       }
 
@@ -2115,28 +2183,42 @@
         });
       } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
-        const compGroups = {};
+        const groups = {};
         records.forEach(r => {
-          const key = `${r.competition}_${r.date}`;
-          if (!compGroups[key]) {
-            compGroups[key] = {
-              competition: r.competition,
-              date: r.date,
-              records: []
-            };
-          }
-          compGroups[key].records.push(r);
+          const key = `${r.date}__${r.competition}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(r);
         });
 
-        Object.values(compGroups).forEach(group => {
-          const groupHtml = `
-            <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200/80 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
-                <h3 class="font-black text-slate-800 text-base">${group.competition}</h3>
-                <span class="text-xs font-mono font-bold text-slate-500">${group.date.replace(/-/g, '/')}</span>
+        const sortedKeys = Object.keys(groups).sort((a, b) => {
+          const dateA = a.split('__')[0];
+          const dateB = b.split('__')[0];
+          return new Date(dateB) - new Date(dateA);
+        });
+
+        sortedKeys.forEach(key => {
+          const itemRecords = groups[key];
+          const first = itemRecords[0];
+          const compTitle = first.competition;
+          const compDate = first.date;
+
+          let groupHtml = `
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 space-y-3 shadow-xs">
+              <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">🏆</span>
+                  <h3 class="font-black text-slate-900 text-lg md:text-xl">${compTitle}</h3>
+                </div>
+                <span class="text-xs font-bold text-slate-400 font-mono">${compDate.replace(/-/g, '/')}</span>
               </div>
-              <div class="space-y-3">
-                ${group.records.map(r => buildRecordCardHtml(r, false)).join('')}
+              <div class="space-y-3 pt-1">
+          `;
+
+          itemRecords.forEach(r => {
+            groupHtml += buildRecordCardHtml(r, false);
+          });
+
+          groupHtml += `
               </div>
             </div>
           `;
@@ -2144,56 +2226,65 @@
         });
       } else if (currentGroupMode === 'event') {
         filterBar.classList.remove('hidden');
+        filterBar.innerHTML = '';
 
-        const activeEventNames = Array.from(new Set(records.map(r => getCleanEventName(r)))).sort((a, b) => {
+        const eventNames = Array.from(new Set(records.map(r => getCleanEventName(r)))).filter(Boolean);
+        eventNames.sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        let barHtml = `
-          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部項目 (${activeEventNames.length})
-          </button>
-        `;
+        let allBtnClass = currentSelectedEventFilter === 'all' 
+          ? 'px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs cursor-pointer'
+          : 'px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium cursor-pointer';
+        
+        filterBar.innerHTML += `<button onclick="filterEventGroup('all')" class="${allBtnClass}">全部項目 (${records.length})</button>`;
 
-        activeEventNames.forEach(name => {
-          const count = records.filter(r => getCleanEventName(r) === name).length;
-          barHtml += `
-            <button onclick="filterEventGroup('${name}')" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === name ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-              ${name} (${count})
-            </button>
-          `;
-        });
-        filterBar.innerHTML = barHtml;
-
-        const eventGroups = {};
-        records.forEach(r => {
-          const name = getCleanEventName(r);
-          if (currentSelectedEventFilter !== 'all' && name !== currentSelectedEventFilter) return;
-
-          if (!eventGroups[name]) {
-            eventGroups[name] = [];
-          }
-          eventGroups[name].push(r);
+        eventNames.forEach(ename => {
+          const count = records.filter(r => getCleanEventName(r) === ename).length;
+          let btnClass = currentSelectedEventFilter === ename 
+            ? 'px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs cursor-pointer'
+            : 'px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium cursor-pointer';
+          filterBar.innerHTML += `<button onclick="filterEventGroup('${ename}')" class="${btnClass}">${ename} (${count})</button>`;
         });
 
-        const sortedGroupNames = Object.keys(eventGroups).sort((a, b) => {
+        const filteredRecords = currentSelectedEventFilter === 'all' 
+          ? records 
+          : records.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
+
+        const groups = {};
+        filteredRecords.forEach(r => {
+          const ename = getCleanEventName(r);
+          if (!groups[ename]) groups[ename] = [];
+          groups[ename].push(r);
+        });
+
+        const sortedGroupNames = Object.keys(groups).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        sortedGroupNames.forEach(name => {
-          const groupRecords = eventGroups[name];
-          const groupHtml = `
-            <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200/80 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
-                <h3 class="font-black text-slate-800 text-base">${name}</h3>
-                <span class="text-xs font-bold text-slate-400">${groupRecords.length} 筆記錄</span>
+        sortedGroupNames.forEach(ename => {
+          const itemRecords = groups[ename];
+          let groupHtml = `
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 space-y-3 shadow-xs">
+              <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xl">🏃</span>
+                  <h3 class="font-black text-slate-900 text-lg md:text-xl">${ename}</h3>
+                </div>
+                <span class="text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-full">${itemRecords.length} 次紀錄</span>
               </div>
-              <div class="space-y-3">
-                ${groupRecords.map(r => buildRecordCardHtml(r, true)).join('')}
+              <div class="space-y-3 pt-1">
+          `;
+
+          itemRecords.forEach(r => {
+            groupHtml += buildRecordCardHtml(r, true);
+          });
+
+          groupHtml += `
               </div>
             </div>
           `;
@@ -2202,7 +2293,7 @@
       }
     }
 
-    initMainPage();
+    window.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
