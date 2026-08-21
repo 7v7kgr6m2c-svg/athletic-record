@@ -1538,8 +1538,6 @@
           rInputs.forEach(i => {
             if (!i.classList.contains('sub-pts')) {
               i.disabled = (currentSubStatus !== 'NORMAL');
-            } else {
-              i.disabled = false;
             }
           });
           autoCalcSubScore(r);
@@ -1558,8 +1556,6 @@
             rInputs.forEach(i => {
               if (!i.classList.contains('sub-pts')) {
                 i.disabled = (currentSubStatus !== 'NORMAL');
-              } else {
-                i.disabled = false;
               }
             });
           } else {
@@ -1639,23 +1635,6 @@
           avgInput.value = "0";
         }
       }
-    }
-
-    window.calculateTotalScore = function() {
-      const statusSelect = document.getElementById('status-select');
-      const totalScoreInput = document.getElementById('total-score');
-      
-      if (statusSelect && statusSelect.value === 'DNF') {
-        totalScoreInput.value = 'DNF';
-        return;
-      }
-
-      let total = 0;
-      document.querySelectorAll('.sub-pts').forEach(i => {
-        const v = parseFloat(i.value);
-        if (!isNaN(v) && !i.disabled) total += v;
-      });
-      totalScoreInput.value = total;
     }
 
     window.filterCategory = function(cat, btnEl) {
@@ -1763,6 +1742,23 @@
       onStageChange();
     }
 
+    window.calculateTotalScore = function() {
+      const statusSelect = document.getElementById('status-select');
+      const totalScoreInput = document.getElementById('total-score');
+      
+      if (statusSelect && statusSelect.value === 'DNF') {
+        totalScoreInput.value = 'DNF';
+        return;
+      }
+
+      let total = 0;
+      document.querySelectorAll('.sub-pts').forEach(i => {
+        const v = parseFloat(i.value);
+        if (!isNaN(v) && !i.disabled) total += v;
+      });
+      totalScoreInput.value = total;
+    }
+
     function formatTimeStr(min, sec, ms) {
       let s = parseInt(sec) || 0;
       let mStr = parseInt(min) ? `${parseInt(min)}:` : '';
@@ -1805,10 +1801,7 @@
 
       if (itemObj.subs) {
         let details = [];
-        let hasValidationError = false;
-
-        const subRows = document.querySelectorAll('.sub-item-row');
-        for (let div of subRows) {
+        document.querySelectorAll('.sub-item-row').forEach(div => {
           const name = div.dataset.subname;
           const pts = parseFloat(div.querySelector('.sub-pts').value) || 0;
           const subType = div.dataset.subtype;
@@ -1816,33 +1809,9 @@
           const subStatus = subStatusSelect ? subStatusSelect.value : 'NORMAL';
           const windInput = div.querySelector('.sub-wind');
           const wind = windInput ? parseWindValue(windInput.value) : null;
-
-          if (subStatus === 'NORMAL') {
-            if (subType === 'time') {
-              const sec = div.querySelector('.sub-sec').value.trim();
-              const ms = div.querySelector('.sub-ms').value.trim();
-              if (sec === '' || ms === '') {
-                showAlert(`請輸入完整的 ${name} 成績！`, '⚠️');
-                hasValidationError = true;
-                break;
-              }
-            } else {
-              const m = div.querySelector('.sub-m').value.trim();
-              const cm = div.querySelector('.sub-cm').value.trim();
-              if (m === '' || cm === '') {
-                showAlert(`請輸入完整的 ${name} 成績！`, '⚠️');
-                hasValidationError = true;
-                break;
-              }
-            }
-          }
-
           let valStr = subStatus === 'NORMAL' ? (subType === 'time' ? formatTimeStr(div.querySelector('.sub-min').value, div.querySelector('.sub-sec').value, div.querySelector('.sub-ms').value) : formatDistStr(div.querySelector('.sub-m').value, div.querySelector('.sub-cm').value)) : subStatus;
           details.push({ name, val: valStr, type: subType, pts, status: subStatus, wind });
-        }
-
-        if (hasValidationError) return;
-
+        });
         record.subDetails = details;
 
         if (status === 'NORMAL') {
@@ -2096,7 +2065,7 @@
         if (!contentEl || !actionsEl) return;
 
         if (diffX > 50) {
-          contentEl.style.transform = 'translateX(-120px)';
+          contentEl.style.transform = 'translateX(-160px)';
           actionsEl.style.transform = 'translateX(0)';
         } else if (diffX < -50) {
           contentEl.style.transform = 'translateX(0)';
@@ -2109,148 +2078,101 @@
       const container = document.getElementById('cards-container');
       const filterBar = document.getElementById('event-filter-bar');
       container.innerHTML = '';
-      filterBar.innerHTML = '';
-      filterBar.classList.add('hidden');
 
       if (records.length === 0) {
-        container.innerHTML = `<p class="text-center text-slate-400 py-8">目前尚無歷史紀錄</p>`;
+        filterBar.classList.add('hidden');
+        container.innerHTML = `
+          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
+            尚無任何歷史記錄
+          </div>`;
         return;
       }
 
-      if (currentGroupMode === 'all') {
-        records.forEach(r => container.appendChild(createRecordCardElement(r)));
-      } else if (currentGroupMode === 'comp') {
+      if (currentGroupMode === 'comp') {
+        filterBar.classList.add('hidden');
         const compGroups = {};
         records.forEach(r => {
           if (!compGroups[r.competition]) compGroups[r.competition] = [];
           compGroups[r.competition].push(r);
         });
 
-        const sortedComps = Object.keys(compGroups).sort((a, b) => {
-          const maxDateA = Math.max(...compGroups[a].map(r => new Date(r.date).getTime()));
-          const maxDateB = Math.max(...compGroups[b].map(r => new Date(r.date).getTime()));
-          return maxDateB - maxDateA;
-        });
-
-        sortedComps.forEach(compName => {
+        Object.keys(compGroups).forEach(compName => {
           const compRecords = compGroups[compName];
-          const dates = compRecords.map(r => r.date).sort();
-          const startDate = dates[0].replace(/-/g, '/');
-          const endDate = dates[dates.length - 1].replace(/-/g, '/');
-          const dateDisplay = (startDate === endDate) ? startDate : `${startDate} - ${endDate}`;
+          const latestDate = compRecords[0].date;
 
-          const section = document.createElement('div');
-          section.className = 'space-y-3 pt-2';
-          section.innerHTML = `
-            <div class="flex items-center justify-between border-b pb-2 px-1">
-              <h3 class="font-bold text-slate-800 text-base">${compName}</h3>
-              <span class="text-xs text-slate-400 font-mono">${dateDisplay}</span>
-            </div>
-            <div class="space-y-3"></div>
+          let groupHtml = `
+            <div class="bg-slate-50 p-4 md:p-5 rounded-3xl border border-slate-200/80 space-y-3">
+              <div class="flex justify-between items-center border-b border-slate-200 pb-2">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                  <span>🏆</span> ${compName}
+                </h3>
+                <span class="text-xs font-mono text-slate-500">${latestDate.replace(/-/g, '/')}</span>
+              </div>
+              <div class="space-y-3">
           `;
-          const subContainer = section.querySelector('.space-y-3');
-          compRecords.forEach(r => subContainer.appendChild(createRecordCardElement(r, false)));
-          container.appendChild(section);
-        });
-      } else if (currentGroupMode === 'event') {
-        const eventGroups = {};
-        records.forEach(r => {
-          const cleanName = getCleanEventName(r);
-          if (!eventGroups[cleanName]) eventGroups[cleanName] = [];
-          eventGroups[cleanName].push(r);
+
+          compRecords.forEach(r => {
+            groupHtml += renderSingleCardHtml(r, false);
+          });
+
+          groupHtml += `
+              </div>
+            </div>
+          `;
+          container.innerHTML += groupHtml;
         });
 
-        const sortedEventNames = Object.keys(eventGroups).sort((a, b) => {
-          const idA = eventGroups[a][0]?.eventId;
-          const idB = eventGroups[b][0]?.eventId;
-          const orderA = EVENTS_ORDER[idA] ?? EVENTS_ORDER[a] ?? 999;
-          const orderB = EVENTS_ORDER[idB] ?? EVENTS_ORDER[b] ?? 999;
-          return orderA - orderB;
+      } else if (currentGroupMode === 'event') {
+        const eventNames = Array.from(new Set(records.map(r => getCleanEventName(r)))).filter(Boolean);
+
+        filterBar.innerHTML = `
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-xl text-xs font-semibold ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition cursor-pointer">
+            全部項目
+          </button>
+        `;
+
+        eventNames.forEach(ename => {
+          filterBar.innerHTML += `
+            <button onclick="filterEventGroup('${ename}')" class="px-3 py-1 rounded-xl text-xs font-semibold ${currentSelectedEventFilter === ename ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition cursor-pointer">
+              ${ename}
+            </button>
+          `;
         });
 
         filterBar.classList.remove('hidden');
-        
-        const allBtn = document.createElement('button');
-        allBtn.type = 'button';
-        allBtn.onclick = () => filterEventGroup('all');
-        allBtn.className = `px-3 py-1 rounded-full text-xs font-bold border transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`;
-        allBtn.textContent = '全部';
-        filterBar.appendChild(allBtn);
 
-        sortedEventNames.forEach(eName => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.onclick = () => filterEventGroup(eName);
-          btn.className = `px-3 py-1 rounded-full text-xs font-bold border transition cursor-pointer ${currentSelectedEventFilter === eName ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`;
-          btn.textContent = `${eName} (${eventGroups[eName].length})`;
-          filterBar.appendChild(btn);
+        const filteredRecords = currentSelectedEventFilter === 'all' 
+          ? records 
+          : records.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
+
+        filteredRecords.forEach(r => {
+          container.innerHTML += renderSingleCardHtml(r, true);
         });
 
-        const targetNames = currentSelectedEventFilter === 'all' ? sortedEventNames : [currentSelectedEventFilter];
-
-        targetNames.forEach(eName => {
-          if (!eventGroups[eName]) return;
-          const eRecords = eventGroups[eName];
-
-          const section = document.createElement('div');
-          section.className = 'space-y-3 pt-2';
-          section.innerHTML = `
-            <div class="flex items-center justify-between border-b pb-2 px-1">
-              <h3 class="font-bold text-slate-800 text-base">${eName}</h3>
-              <span class="text-xs text-slate-400 font-bold bg-slate-100 px-2 py-0.5 rounded-full">${eRecords.length} 筆紀錄</span>
-            </div>
-            <div class="space-y-3"></div>
-          `;
-          const subContainer = section.querySelector('.space-y-3');
-          eRecords.forEach(r => subContainer.appendChild(createRecordCardElement(r, true, false)));
-          container.appendChild(section);
+      } else {
+        filterBar.classList.add('hidden');
+        records.forEach(r => {
+          container.innerHTML += renderSingleCardHtml(r, true);
         });
       }
     }
 
-    function createRecordCardElement(r, showComp = true, showEvent = true) {
-      const card = document.createElement('div');
-      card.className = 'relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xs group';
-      
+    function renderSingleCardHtml(r, showCompName = true) {
       const cleanName = getCleanEventName(r);
-      const itemObj = EVENTS_DB.find(e => e.id === r.eventId);
-      const unit = itemObj ? (itemObj.type === 'distance' ? '米' : (itemObj.type === 'points' ? '分' : '秒')) : '';
-      const isNormal = !r.status || r.status === 'NORMAL';
-      
-      let windBadge = '';
-      if (isNormal && r.wind !== null && r.wind !== undefined) {
-        if (r.wind === 'NWI') {
-          windBadge = `<span class="text-[11px] px-2 py-0.5 rounded-md font-bold bg-slate-100 text-slate-600 border border-slate-200">NWI</span>`;
-        } else {
-          const isLegal = r.wind <= 2.0;
-          const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
-          windBadge = `<span class="text-[11px] px-2 py-0.5 rounded-md font-bold ${isLegal ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">${windStr} m/s</span>`;
-        }
+      const isStatusError = r.status && r.status !== 'NORMAL';
+      const displayResult = isStatusError ? (STATUS_MAP[r.status] || r.status) : r.result;
+
+      let windText = '';
+      if (!isStatusError && r.wind !== null && r.wind !== undefined) {
+        windText = r.wind === 'NWI' ? ' [NWI]' : ` [${r.wind > 0 ? '+' : ''}${r.wind}m/s]`;
       }
 
-      let resultDisplayHtml = '';
-      if (isNormal) {
-        resultDisplayHtml = `
-          <div class="text-right flex items-baseline gap-1">
-            <span class="text-2xl font-black font-mono text-slate-900">${r.result}</span>
-            <span class="text-xs font-bold text-slate-500">${unit}</span>
-          </div>
-        `;
-      } else {
-        const statusText = STATUS_MAP[r.status] || r.status;
-        resultDisplayHtml = `
-          <div class="text-right">
-            <span class="text-lg font-black text-red-600 bg-red-50 px-2.5 py-1 rounded-xl border border-red-200">${statusText}</span>
-          </div>
-        `;
-      }
-
-      let combinedSubHtml = '';
-      if (r.isCombined && r.subDetails && r.subDetails.length > 0) {
-        combinedSubHtml = `
-          <div class="mt-3 pt-3 border-t border-slate-100">
+      let subDetailsHtml = '';
+      if (r.isCombined && r.subDetails?.length > 0) {
+        subDetailsHtml = `
+          <div class="mt-2 pt-2 border-t border-slate-100">
             <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-              <span>查看全能單項細項 (${r.subDetails.length})</span>
+              <span>查看單項細項 (${r.subDetails.length})</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
@@ -2260,7 +2182,7 @@
                 const parsedWind = parseWindValue(sub.wind);
                 const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
                 return `
-                <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
+                <div class="bg-slate-50 p-2 rounded-xl border border-slate-100 text-xs text-slate-600 flex justify-between items-center">
                   <span class="font-bold text-slate-700">${sub.name}</span>
                   <div class="text-right flex flex-col items-end leading-tight">
                     <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
@@ -2274,42 +2196,50 @@
       }
 
       const stageText = r.isCombined ? '決賽' : (r.stage || '初賽');
+      const rankBadge = getRankBadgeHtml(r.rank);
 
-      card.innerHTML = `
-        <div id="card-actions-${r.id}" class="absolute inset-y-0 right-0 w-[120px] bg-slate-100 flex items-center justify-end px-2 gap-1 transition-transform duration-200 translate-x-full z-10">
-          <button onclick="editRecord('${r.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-2.5 rounded-xl text-xs shadow cursor-pointer transition">編輯</button>
-          <button onclick="deleteRecord('${r.id}')" class="bg-red-600 hover:bg-red-700 text-white font-bold p-2.5 rounded-xl text-xs shadow cursor-pointer transition">刪除</button>
-        </div>
-
-        <div id="card-content-${r.id}" class="p-4 bg-white transition-transform duration-200 relative z-20" 
-             ontouchstart="handleCardTouchStart(event)" 
+      return `
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-xs group"
+             ontouchstart="handleCardTouchStart(event)"
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-3 min-w-0">
-              ${getRankBadgeHtml(r.rank)}
-              <div class="min-w-0">
-                ${showEvent ? `<h4 class="font-black text-slate-900 text-lg leading-tight truncate">${cleanName}</h4>` : ''}
-                ${showComp ? `<p class="text-xs font-bold text-slate-700 truncate ${showEvent ? 'mt-0.5' : 'text-base'}">${r.competition}</p>` : ''}
-                <div class="flex items-center gap-2 mt-1">
-                  <span class="text-xs font-mono text-slate-400">${r.date.replace(/-/g, '/')}</span>
-                  <span class="text-xs text-slate-400">•</span>
-                  <span class="text-xs text-slate-500 font-medium">${stageText}</span>
-                  ${windBadge}
+          
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-200 ease-out translate-x-full z-10">
+            <button onclick="editRecord('${r.id}')" class="flex-1 bg-amber-500 text-white font-bold flex flex-col items-center justify-center gap-1 hover:bg-amber-600 transition cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              <span class="text-xs">編輯</span>
+            </button>
+            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 text-white font-bold flex flex-col items-center justify-center gap-1 hover:bg-red-700 transition cursor-pointer">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <span class="text-xs">刪除</span>
+            </button>
+          </div>
+
+          <div id="card-content-${r.id}" class="p-4 transition-transform duration-200 ease-out bg-white flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                ${rankBadge}
+                <div>
+                  <h4 class="font-black text-slate-800 text-base leading-tight">${cleanName}</h4>
+                  ${showCompName ? `<div class="text-xs text-slate-500 font-medium leading-normal mt-0.5">${r.competition}</div>` : ''}
+                  <div class="text-xs text-slate-400 font-mono mt-0.5">${r.date.replace(/-/g, '/')} (${stageText})</div>
                 </div>
+              </div>
+
+              <div class="text-right flex-shrink-0">
+                <span class="text-xl md:text-2xl font-black font-mono ${isStatusError ? 'text-red-500' : 'text-slate-800'}">
+                  ${displayResult}${windText}
+                </span>
+                ${!isStatusError ? `<span class="text-xs font-bold text-slate-400 ml-1">${r.type === 'distance' ? '米' : (r.type === 'points' ? '分' : '秒')}</span>` : ''}
               </div>
             </div>
 
-            ${resultDisplayHtml}
+            ${subDetailsHtml}
           </div>
-
-          ${combinedSubHtml}
         </div>
       `;
-
-      return card;
     }
 
-    window.onload = initMainPage;
+    initMainPage();
   </script>
 </body>
 </html>
