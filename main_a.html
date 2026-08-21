@@ -1130,7 +1130,14 @@
       const countTag = document.getElementById('pb-count-tag');
       pbContainer.innerHTML = '';
 
-      const validRecords = records.filter(r => !r.status || r.status === 'NORMAL');
+      const validRecords = records.filter(r => {
+        if (r.status && r.status !== 'NORMAL') return false;
+        if (r.isCombined && r.subDetails?.length > 0) {
+          const hasNWI = r.subDetails.some(sub => parseWindValue(sub.wind) === 'NWI');
+          if (hasNWI) return false;
+        }
+        return true;
+      });
 
       if (validRecords.length === 0) {
         countTag.textContent = '0 個項目';
@@ -1232,23 +1239,32 @@
         let combinedSubDetailsHtml = '';
 
         if (r.isCombined && r.subDetails?.length > 0) {
-          const windSubs = r.subDetails
-            .map(sub => parseWindValue(sub.wind))
-            .filter(v => v !== null && v !== 'NWI');
-
-          if (windSubs.length > 0) {
-            const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
-            const avgWind = totalWind / windSubs.length;
-            const maxWind = Math.max(...windSubs);
-            const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
-            const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
-            
+          const hasNWI = r.subDetails.some(sub => parseWindValue(sub.wind) === 'NWI');
+          if (hasNWI) {
             combinedWindNotice = `
-              <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
-                <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
-                <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
+              <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between bg-orange-50 text-orange-800 border-orange-200">
+                <span class="font-bold">全能風速證明：含 NWI (記錄不予承認)</span>
               </div>
             `;
+          } else {
+            const windSubs = r.subDetails
+              .map(sub => parseWindValue(sub.wind))
+              .filter(v => v !== null && v !== 'NWI');
+
+            if (windSubs.length > 0) {
+              const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
+              const avgWind = totalWind / windSubs.length;
+              const maxWind = Math.max(...windSubs);
+              const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
+              const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
+              
+              combinedWindNotice = `
+                <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
+                  <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
+                  <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
+                </div>
+              `;
+            }
           }
 
           combinedSubDetailsHtml = `
@@ -1938,23 +1954,32 @@
 
       let combinedWindNotice = '';
       if (r.isCombined && r.subDetails?.length > 0) {
-        const windSubs = r.subDetails
-          .map(sub => parseWindValue(sub.wind))
-          .filter(v => v !== null && v !== 'NWI');
-
-        if (windSubs.length > 0) {
-          const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
-          const avgWind = totalWind / windSubs.length;
-          const maxWind = Math.max(...windSubs);
-          const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
-          
-          const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
+        const hasNWI = r.subDetails.some(sub => parseWindValue(sub.wind) === 'NWI');
+        if (hasNWI) {
           combinedWindNotice = `
-            <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
-              <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
-              <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
+            <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between bg-orange-50 text-orange-800 border-orange-200">
+              <span class="font-bold">全能風速證明：含 NWI (記錄不予承認)</span>
             </div>
           `;
+        } else {
+          const windSubs = r.subDetails
+            .map(sub => parseWindValue(sub.wind))
+            .filter(v => v !== null && v !== 'NWI');
+
+          if (windSubs.length > 0) {
+            const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
+            const avgWind = totalWind / windSubs.length;
+            const maxWind = Math.max(...windSubs);
+            const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
+            
+            const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
+            combinedWindNotice = `
+              <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
+                <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
+                <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
+              </div>
+            `;
+          }
         }
       }
 
@@ -2133,7 +2158,7 @@
             <div class="space-y-3 bg-slate-50/50 p-4 rounded-3xl border border-slate-200/80">
               <div class="flex justify-between items-center border-b border-slate-200 pb-2 px-1">
                 <h3 class="text-base font-bold text-slate-800">${eName}</h3>
-                <span class="text-xs font-bold text-slate-400 bg-white px-2.5 py-0.5 rounded-full border border-slate-200">${eventRecords.length} 筆紀錄</span>
+                <span class="text-xs text-slate-400 font-medium">共 ${eventRecords.length} 筆</span>
               </div>
               <div class="space-y-3">
           `;
@@ -2151,7 +2176,7 @@
       }
     }
 
-    initMainPage();
+    window.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
