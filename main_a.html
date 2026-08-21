@@ -1499,23 +1499,32 @@
         return;
       }
 
-      // 當切換為其他狀態（例如 NORMAL, DQ, DNF, NM）時，修復無法修改問題
+      // 當從 DNS 改回其他狀態（NORMAL, DQ, DNF, NM）時：
+      const statusSelect = document.getElementById('status-select');
+      if (statusSelect && statusSelect.value === 'DNF') {
+        statusSelect.value = 'NORMAL';
+      }
+
       allRows.forEach((r, idx) => {
-        if (idx > currentIndex) {
-          const rStatusSelects = r.querySelectorAll('.sub-status');
+        const rStatusSelects = r.querySelectorAll('.sub-status');
+        const rInputs = r.querySelectorAll('input');
+
+        if (idx >= currentIndex) {
           rStatusSelects.forEach(s => {
             s.disabled = false;
+          });
+
+          const currentVal = (r.querySelector('.sub-status:not(.hidden)') || r.querySelector('.sub-status'))?.value || 'NORMAL';
+          rInputs.forEach(i => {
+            if (!i.classList.contains('sub-pts')) {
+              i.disabled = (currentVal !== 'NORMAL' && currentVal !== '');
+            } else {
+              i.disabled = false;
+            }
           });
         }
       });
 
-      const inputs = row.querySelectorAll('input');
-      inputs.forEach(i => {
-        if (!i.classList.contains('sub-pts')) {
-          i.disabled = (val !== 'NORMAL' && val !== '');
-          if (i.disabled) i.value = '';
-        }
-      });
       autoCalcSubScore(row);
       calculateTotalScore();
       calculateCombinedAverageWind();
@@ -2044,135 +2053,98 @@
             </span>
           `;
         } else {
-          const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
           const isLegal = r.wind <= 2.0;
-          subInfoText += subInfoText ? ` · 風速 ${windStr} 米/秒` : `風速 ${windStr} 米/秒`;
+          const windStr = r.wind > 0 ? `+${r.wind}` : `${r.wind}`;
+          subInfoText += subInfoText ? ` · 風速 ${windStr}m/s` : `風速 ${windStr}m/s`;
           windBadgeHtml = `
             <span class="text-[11px] px-2 py-0.5 rounded-full font-bold border ml-2 ${isLegal ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
-              ${isLegal ? '合乎標準' : '超風速'}
+              ${windStr} m/s
             </span>
           `;
         }
       }
 
-      let combinedWindNotice = '';
+      let combinedSubHtml = '';
       if (r.isCombined && r.subDetails?.length > 0) {
-        const hasNWI = r.subDetails.some(sub => parseWindValue(sub.wind) === 'NWI');
-        if (hasNWI) {
-          combinedWindNotice = `
-            <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between bg-orange-50 text-orange-800 border-orange-200">
-              <span class="font-bold">全能風速證明：含 NWI (記錄不予承認)</span>
+        combinedSubHtml = `
+          <div class="mt-3 pt-3 border-t border-slate-100">
+            <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
+              <span>全能單項細項 (${r.subDetails.length})</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
+              ${r.subDetails.map(sub => {
+                const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
+                const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
+                const parsedWind = parseWindValue(sub.wind);
+                const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
+                return `
+                <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
+                  <span class="font-bold text-slate-700">${sub.name}</span>
+                  <div class="text-right flex flex-col items-end leading-tight">
+                    <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
+                    <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
+                  </div>
+                </div>
+              `}).join('')}
             </div>
-          `;
-        } else {
-          const windSubs = r.subDetails
-            .map(sub => parseWindValue(sub.wind))
-            .filter(v => v !== null && v !== 'NWI');
-
-          if (windSubs.length > 0) {
-            const totalWind = windSubs.reduce((sum, v) => sum + v, 0);
-            const avgWind = totalWind / windSubs.length;
-            const maxWind = Math.max(...windSubs);
-            const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
-            
-            const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
-            combinedWindNotice = `
-              <div class="mt-2 text-xs px-3 py-1.5 rounded-xl border flex items-center justify-between ${isLegalCombined ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-amber-50 text-amber-800 border-amber-200'}">
-                <span class="font-bold">全能風速證明：${isLegalCombined ? '合乎標準 (紀錄採認)' : '超風速 (不合標準)'}</span>
-                <span>平均 ${avgWindStr} m/s (最大 ${maxWind > 0 ? '+' : ''}${maxWind} m/s)</span>
-              </div>
-            `;
-          }
-        }
+          </div>
+        `;
       }
 
-      let cardHtml = `
-        <div class="relative overflow-hidden bg-white rounded-3xl border border-slate-200/80 shadow-xs"
+      return `
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-xs hover:shadow-md transition group"
              ontouchstart="handleCardTouchStart(event)" 
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
-          
-          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-300 translate-x-full z-10 font-bold text-sm">
-            <button type="button" onclick="editRecord('${r.id}')" class="w-1/2 bg-blue-600 text-white flex items-center justify-center cursor-pointer">
+             
+          <div id="card-content-${r.id}" class="p-4 flex items-center justify-between gap-3 transition-transform duration-300 bg-white relative z-10">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              ${getRankBadgeHtml(r.rank)}
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center flex-wrap">
+                  <h4 class="font-bold text-base text-slate-900 truncate">${cleanName}</h4>
+                  ${windBadgeHtml}
+                </div>
+                ${showCompInHeader ? `<p class="text-xs text-slate-500 font-medium truncate mt-0.5">${r.competition}</p>` : ''}
+                <div class="flex items-center gap-2 text-[11px] text-slate-400 mt-1 font-mono">
+                  <span>${r.date.replace(/-/g, '/')}</span>
+                  <span>•</span>
+                  <span>${subInfoText}</span>
+                  <span>•</span>
+                  <span>${ageText}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="text-right flex-shrink-0">
+              ${resultDisplay}
+            </div>
+          </div>
+
+          <div id="card-actions-${r.id}" class="absolute inset-y-0 right-0 flex items-center transform translate-x-full transition-transform duration-300 z-20">
+            <button onclick="editRecord('${r.id}')" class="h-full px-5 bg-blue-600 text-white font-bold text-xs flex items-center justify-center cursor-pointer hover:bg-blue-700 transition">
               編輯
             </button>
-            <button type="button" onclick="deleteRecord('${r.id}')" class="w-1/2 bg-red-600 text-white flex items-center justify-center cursor-pointer">
+            <button onclick="deleteRecord('${r.id}')" class="h-full px-5 bg-red-600 text-white font-bold text-xs flex items-center justify-center cursor-pointer hover:bg-red-700 transition">
               刪除
             </button>
           </div>
-
-          <div id="card-content-${r.id}" class="transition-transform duration-300 bg-white">
-            ${showCompInHeader ? `
-              <div class="bg-slate-50 px-4 py-2.5 flex justify-between items-center border-b border-slate-100">
-                <span class="font-bold text-slate-800 text-sm md:text-base">${r.competition}</span>
-                <span class="text-xs font-medium text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</span>
-              </div>
-            ` : ''}
-
-            <div class="p-4 space-y-2">
-              <div class="flex items-start justify-between gap-3">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-3">
-                    ${getRankBadgeHtml(r.rank)}
-                    <h3 class="text-lg md:text-xl font-black text-slate-900">${cleanName}</h3>
-                  </div>
-                  <div class="text-xs font-medium text-slate-500 pl-13">
-                    ${subInfoText}
-                  </div>
-                </div>
-
-                <div class="text-right flex items-baseline">
-                  ${resultDisplay}
-                </div>
-              </div>
-
-              <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs text-slate-400 font-medium">
-                <span>${ageText}</span>
-                ${!showCompInHeader ? `<span class="font-mono">${r.date.replace(/-/g, '/')}</span>` : ''}
-              </div>
-
-              ${r.isCombined && r.subDetails?.length > 0 ? `
-                <div class="pt-2">
-                  <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-                    <span>查看全能單項細項 (${r.subDetails.length})</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                  </button>
-                  ${combinedWindNotice}
-                  <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
-                    ${r.subDetails.map(sub => {
-                      const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
-                      const valDisplay = (sub.val && sub.status === 'NORMAL') ? `${sub.val} ${subUnit}` : sub.val;
-                      const parsedWind = parseWindValue(sub.wind);
-                      const windStr = parsedWind === 'NWI' ? ' [NWI]' : (parsedWind !== null ? ` [${parsedWind > 0 ? '+' : ''}${parsedWind}m/s]` : '');
-                      return `
-                      <div class="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex justify-between items-center">
-                        <span class="font-bold text-slate-700">${sub.name}</span>
-                        <div class="text-right flex flex-col items-end leading-tight">
-                          <span class="font-mono text-slate-800">${valDisplay}${windStr}</span>
-                          <span class="font-mono text-xs text-slate-400">(${sub.pts}分)</span>
-                        </div>
-                      </div>
-                    `}).join('')}
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          </div>
         </div>
       `;
-      return cardHtml;
     }
 
     function renderList() {
       const container = document.getElementById('cards-container');
       const filterBar = document.getElementById('event-filter-bar');
       container.innerHTML = '';
+      filterBar.innerHTML = '';
 
       if (records.length === 0) {
-        container.innerHTML = `
-          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium border border-slate-200/80">
-            尚無比賽紀錄，請點擊「新增成績」開始建立！
-          </div>`;
         filterBar.classList.add('hidden');
+        container.innerHTML = `
+          <div class="bg-slate-50 p-8 rounded-3xl text-center text-slate-400 font-medium border border-dashed border-slate-200">
+            尚無紀錄，點擊上方「新增成績」開始建立您的田徑生涯檔案！
+          </div>`;
         return;
       }
 
@@ -2183,111 +2155,91 @@
         });
       } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
-        const groups = {};
+        const compGroups = {};
         records.forEach(r => {
-          const key = `${r.date}__${r.competition}`;
-          if (!groups[key]) groups[key] = [];
-          groups[key].push(r);
+          if (!compGroups[r.competition]) compGroups[r.competition] = [];
+          compGroups[r.competition].push(r);
         });
 
-        const sortedKeys = Object.keys(groups).sort((a, b) => {
-          const dateA = a.split('__')[0];
-          const dateB = b.split('__')[0];
-          return new Date(dateB) - new Date(dateA);
-        });
-
-        sortedKeys.forEach(key => {
-          const itemRecords = groups[key];
-          const first = itemRecords[0];
-          const compTitle = first.competition;
-          const compDate = first.date;
+        Object.keys(compGroups).forEach(compName => {
+          const groupRecords = compGroups[compName];
+          const firstDate = groupRecords[0].date;
 
           let groupHtml = `
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 space-y-3 shadow-xs">
-              <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                  <span class="text-xl">🏆</span>
-                  <h3 class="font-black text-slate-900 text-lg md:text-xl">${compTitle}</h3>
-                </div>
-                <span class="text-xs font-bold text-slate-400 font-mono">${compDate.replace(/-/g, '/')}</span>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-2">
+                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                  <span>${compName}</span>
+                </h3>
+                <span class="text-xs text-slate-400 font-mono">${firstDate.replace(/-/g, '/')}</span>
               </div>
-              <div class="space-y-3 pt-1">
+              <div class="space-y-2">
           `;
 
-          itemRecords.forEach(r => {
+          groupRecords.forEach(r => {
             groupHtml += buildRecordCardHtml(r, false);
           });
 
-          groupHtml += `
-              </div>
-            </div>
-          `;
+          groupHtml += `</div></div>`;
           container.innerHTML += groupHtml;
         });
       } else if (currentGroupMode === 'event') {
         filterBar.classList.remove('hidden');
-        filterBar.innerHTML = '';
 
-        const eventNames = Array.from(new Set(records.map(r => getCleanEventName(r)))).filter(Boolean);
-        eventNames.sort((a, b) => {
+        const eventGroups = {};
+        records.forEach(r => {
+          const cleanName = getCleanEventName(r);
+          if (!eventGroups[cleanName]) eventGroups[cleanName] = [];
+          eventGroups[cleanName].push(r);
+        });
+
+        const eventNames = Object.keys(eventGroups).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        let allBtnClass = currentSelectedEventFilter === 'all' 
-          ? 'px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs cursor-pointer'
-          : 'px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium cursor-pointer';
-        
-        filterBar.innerHTML += `<button onclick="filterEventGroup('all')" class="${allBtnClass}">全部項目 (${records.length})</button>`;
+        let filterBarHtml = `
+          <button type="button" onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+            全部細項 (${records.length})
+          </button>
+        `;
 
-        eventNames.forEach(ename => {
-          const count = records.filter(r => getCleanEventName(r) === ename).length;
-          let btnClass = currentSelectedEventFilter === ename 
-            ? 'px-3 py-1 rounded-full bg-blue-600 text-white text-xs font-bold shadow-xs cursor-pointer'
-            : 'px-3 py-1 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-medium cursor-pointer';
-          filterBar.innerHTML += `<button onclick="filterEventGroup('${ename}')" class="${btnClass}">${ename} (${count})</button>`;
+        eventNames.forEach(eName => {
+          const count = eventGroups[eName].length;
+          const isSelected = currentSelectedEventFilter === eName;
+          filterBarHtml += `
+            <button type="button" onclick="filterEventGroup('${eName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+              ${eName} (${count})
+            </button>
+          `;
         });
+        filterBar.innerHTML = filterBarHtml;
 
-        const filteredRecords = currentSelectedEventFilter === 'all' 
-          ? records 
-          : records.filter(r => getCleanEventName(r) === currentSelectedEventFilter);
+        const displayEvents = currentSelectedEventFilter === 'all' ? eventNames : [currentSelectedEventFilter];
 
-        const groups = {};
-        filteredRecords.forEach(r => {
-          const ename = getCleanEventName(r);
-          if (!groups[ename]) groups[ename] = [];
-          groups[ename].push(r);
-        });
+        displayEvents.forEach(eName => {
+          if (!eventGroups[eName]) return;
+          const groupRecords = eventGroups[eName];
 
-        const sortedGroupNames = Object.keys(groups).sort((a, b) => {
-          const orderA = EVENTS_ORDER[a] ?? 999;
-          const orderB = EVENTS_ORDER[b] ?? 999;
-          return orderA - orderB;
-        });
-
-        sortedGroupNames.forEach(ename => {
-          const itemRecords = groups[ename];
           let groupHtml = `
-            <div class="bg-white rounded-3xl border border-slate-200/80 p-5 space-y-3 shadow-xs">
-              <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <div class="flex items-center gap-2">
-                  <span class="text-xl">🏃</span>
-                  <h3 class="font-black text-slate-900 text-lg md:text-xl">${ename}</h3>
-                </div>
-                <span class="text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-full">${itemRecords.length} 次紀錄</span>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2 pt-2">
+                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" style="background-color: var(--theme-color, #1e3a8a);"></span>
+                  <span>${eName}</span>
+                </h3>
+                <span class="text-xs text-slate-400 font-semibold">${groupRecords.length} 筆紀錄</span>
               </div>
-              <div class="space-y-3 pt-1">
+              <div class="space-y-2">
           `;
 
-          itemRecords.forEach(r => {
+          groupRecords.forEach(r => {
             groupHtml += buildRecordCardHtml(r, true);
           });
 
-          groupHtml += `
-              </div>
-            </div>
-          `;
+          groupHtml += `</div></div>`;
           container.innerHTML += groupHtml;
         });
       }
