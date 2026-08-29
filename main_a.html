@@ -1976,9 +1976,9 @@
       let subDetailsHtml = '';
       if (r.isCombined && r.subDetails && r.subDetails.length > 0) {
         subDetailsHtml = `
-          <div class="mt-3 pt-3 border-t border-slate-100">
+          <div class="mt-2 pt-2 border-t border-slate-100">
             <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
-              <span>查看全能單項細項 (${r.subDetails.length})</span>
+              <span>查看單項細項 (${r.subDetails.length})</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
             ${combinedWindNotice}
@@ -2002,57 +2002,52 @@
         `;
       }
 
+      const rankBadge = getRankBadgeHtml(r.rank);
+
       return `
-        <div class="relative overflow-hidden rounded-3xl border border-slate-200/80 shadow-xs bg-white" 
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 shadow-2xs transition hover:shadow-xs bg-white"
              ontouchstart="handleCardTouchStart(event)" 
              ontouchend="handleCardTouchEnd(event, '${r.id}')">
           
-          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-200 ease-out z-0 transform translate-x-full">
-            <button onclick="editRecord('${r.id}')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold flex flex-col items-center justify-center gap-1 text-xs transition cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          <div id="card-content-${r.id}" class="p-4 transition-transform duration-200 ease-out flex items-center justify-between gap-3 bg-white">
+            
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              ${rankBadge}
+              <div class="min-w-0 flex-1 space-y-0.5">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-base font-black text-slate-900 truncate">${showCompInHeader ? r.competition : cleanName}</span>
+                  ${subInfoText ? `<span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md whitespace-nowrap">${subInfoText}</span>` : ''}
+                </div>
+                <div class="text-xs text-slate-400 font-medium flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-slate-500">${r.date.replace(/-/g, '/')}</span>
+                  <span>•</span>
+                  <span>${ageText}</span>
+                  ${!showCompInHeader ? `<span>•</span><span class="text-slate-500 font-semibold truncate">${r.competition}</span>` : ''}
+                </div>
+              </div>
+            </div>
+
+            <div class="text-right flex-shrink-0 pl-2">
+              ${resultDisplay}
+            </div>
+
+          </div>
+
+          <div id="card-actions-${r.id}" class="absolute inset-y-0 right-0 flex translate-x-full transition-transform duration-200 ease-out z-10">
+            <button onclick="editRecord('${r.id}')" class="w-20 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
               <span>編輯</span>
             </button>
-            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold flex flex-col items-center justify-center gap-1 text-xs transition cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <button onclick="deleteRecord('${r.id}')" class="w-20 bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 transition cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               <span>刪除</span>
             </button>
           </div>
 
-          <div id="card-content-${r.id}" class="relative bg-white p-5 transition-transform duration-200 ease-out z-10 space-y-3">
-            <div class="flex justify-between items-start gap-2 border-b border-slate-100 pb-2.5">
-              <div class="space-y-0.5">
-                <div class="text-sm text-slate-900 font-bold">${showCompInHeader ? r.competition : cleanName}</div>
-                <div class="text-xs font-semibold text-slate-500 font-mono">${r.date.replace(/-/g, '/')} (${ageText})</div>
-              </div>
-              
-              <div class="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-                <button onclick="editRecord('${r.id}')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                </button>
-                <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition cursor-pointer">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
-              </div>
-            </div>
-
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                ${getRankBadgeHtml(r.rank)}
-                <div>
-                  <div class="text-lg font-black text-slate-900">${showCompInHeader ? cleanName : r.competition}</div>
-                  <div class="text-xs text-slate-500 font-medium">${subInfoText} ${r.rank ? `• ${r.rank}` : ''}</div>
-                </div>
-              </div>
-
-              <div class="text-right flex items-baseline">
-                ${resultDisplay}
-              </div>
-            </div>
-
+          <div class="px-4 pb-3">
             ${singleWindNotice}
             ${subDetailsHtml}
           </div>
-
         </div>
       `;
     }
@@ -2065,105 +2060,91 @@
 
       if (records.length === 0) {
         filterBar.classList.add('hidden');
-        container.innerHTML = `
-          <div class="text-center py-12 text-slate-400 space-y-2">
-            <p class="text-3xl">🏃‍♂️</p>
-            <p class="text-sm font-medium">尚無歷史紀錄，點擊「新增成績」開始記錄！</p>
-          </div>
-        `;
+        container.innerHTML = `<div class="text-center text-slate-400 py-12 font-medium">尚未有比賽紀錄</div>`;
         return;
       }
 
       if (currentGroupMode === 'all') {
         filterBar.classList.add('hidden');
-        records.forEach(r => {
+        const sorted = sortRecordsChronologically(records);
+        sorted.forEach(r => {
           container.innerHTML += buildRecordCardHtml(r, true);
         });
-      } 
-      else if (currentGroupMode === 'comp') {
+      } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
-        const grouped = {};
+        const compMap = {};
         records.forEach(r => {
-          if (!grouped[r.competition]) grouped[r.competition] = [];
-          grouped[r.competition].push(r);
+          if (!compMap[r.competition]) compMap[r.competition] = [];
+          compMap[r.competition].push(r);
         });
 
-        Object.keys(grouped).forEach(compName => {
-          const compRecords = grouped[compName];
-          const dates = [...new Set(compRecords.map(r => r.date))].sort((a,b) => new Date(b) - new Date(a));
-          const dateStr = dates.length > 1 ? `${dates[dates.length-1]} ~ ${dates[0]}` : dates[0];
+        const compList = Object.keys(compMap).map(compName => {
+          const recs = sortRecordsChronologically(compMap[compName]);
+          const latestDate = recs[0]?.date || '0000-00-00';
+          return { compName, recs, latestDate };
+        });
 
-          let groupHtml = `
-            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-4 md:p-5 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 px-1">
-                <h3 class="text-base font-black text-slate-900">${compName}</h3>
-                <span class="text-xs font-semibold text-slate-400 font-mono">${dateStr.replace(/-/g, '/')}</span>
-              </div>
-              <div class="space-y-3">
-          `;
+        compList.sort((a, b) => new Date(b.latestDate) - new Date(a.latestDate));
 
-          compRecords.forEach(r => {
-            groupHtml += buildRecordCardHtml(r, false);
+        compList.forEach(group => {
+          let cardsHtml = '';
+          group.recs.forEach(r => {
+            cardsHtml += buildRecordCardHtml(r, false);
           });
 
-          groupHtml += `
+          container.innerHTML += `
+            <div class="space-y-3">
+              <div class="flex items-center justify-between border-b pb-1.5 pt-2">
+                <h3 class="text-base font-black text-slate-900">${group.compName}</h3>
+                <span class="text-xs font-semibold text-slate-400 font-mono">${group.latestDate.replace(/-/g, '/')}</span>
               </div>
+              <div class="space-y-3">${cardsHtml}</div>
             </div>
           `;
-          container.innerHTML += groupHtml;
         });
-      } 
-      else if (currentGroupMode === 'event') {
+      } else if (currentGroupMode === 'event') {
         filterBar.classList.remove('hidden');
 
-        const activeEventNames = [...new Set(records.map(r => getCleanEventName(r)))].filter(Boolean);
+        const eventMap = {};
+        records.forEach(r => {
+          const cleanName = getCleanEventName(r);
+          if (cleanName) {
+            if (!eventMap[cleanName]) eventMap[cleanName] = [];
+            eventMap[cleanName].push(r);
+          }
+        });
 
-        activeEventNames.sort((a, b) => {
+        const availableEvents = Object.keys(eventMap).sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        filterBar.innerHTML += `
-          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-xl text-xs font-bold transition ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-            全部項目 (${records.length})
-          </button>
-        `;
+        let allBtnClass = currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+        filterBar.innerHTML = `<button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${allBtnClass}">全部項目</button>`;
 
-        activeEventNames.forEach(eName => {
-          const count = records.filter(r => getCleanEventName(r) === eName).length;
-          const isSelected = currentSelectedEventFilter === eName;
-          filterBar.innerHTML += `
-            <button onclick="filterEventGroup('${eName}')" class="px-3 py-1 rounded-xl text-xs font-bold transition ${isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-              ${eName} (${count})
-            </button>
-          `;
+        availableEvents.forEach(evtName => {
+          let activeClass = currentSelectedEventFilter === evtName ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+          filterBar.innerHTML += `<button onclick="filterEventGroup('${evtName}')" class="px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer ${activeClass}">${evtName}</button>`;
         });
 
-        const targetNames = currentSelectedEventFilter === 'all' ? activeEventNames : [currentSelectedEventFilter];
+        availableEvents.forEach(evtName => {
+          if (currentSelectedEventFilter !== 'all' && currentSelectedEventFilter !== evtName) return;
 
-        targetNames.forEach(eName => {
-          const itemRecords = records.filter(r => getCleanEventName(r) === eName);
-          if (itemRecords.length === 0) return;
-
-          let groupHtml = `
-            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-4 md:p-5 space-y-3">
-              <div class="flex justify-between items-center border-b border-slate-200/60 pb-2 px-1">
-                <h3 class="text-base font-black text-slate-900">${eName}</h3>
-                <span class="text-xs font-semibold text-slate-400">${itemRecords.length} 筆紀錄</span>
-              </div>
-              <div class="space-y-3">
-          `;
-
-          itemRecords.forEach(r => {
-            groupHtml += buildRecordCardHtml(r, true);
+          const recs = sortRecordsChronologically(eventMap[evtName]);
+          let cardsHtml = '';
+          recs.forEach(r => {
+            cardsHtml += buildRecordCardHtml(r, true);
           });
 
-          groupHtml += `
+          container.innerHTML += `
+            <div class="space-y-3">
+              <div class="border-b pb-1.5 pt-2">
+                <h3 class="text-base font-black text-slate-900">${evtName}</h3>
               </div>
+              <div class="space-y-3">${cardsHtml}</div>
             </div>
           `;
-          container.innerHTML += groupHtml;
         });
       }
     }
