@@ -1,4 +1,4 @@
-[source: 13]<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
@@ -1940,8 +1940,6 @@
       }
 
       let combinedWindNotice = '';
-      let combinedSubDetailsHtml = '';
-
       if (r.isCombined && r.subDetails?.length > 0) {
         const hasNWI = r.subDetails.some(sub => sub.wind === 'NWI' || parseWindValue(sub.wind) === 'NWI');
 
@@ -1962,6 +1960,7 @@
             const avgWind = totalWind / windSubs.length;
             const maxWind = Math.max(...windSubs);
             const isLegalCombined = (avgWind <= 2.0) && (maxWind <= 4.0);
+            
             const avgWindStr = avgWind > 0 ? `+${avgWind.toFixed(2)}` : avgWind.toFixed(2);
             
             combinedWindNotice = `
@@ -1972,14 +1971,16 @@
             `;
           }
         }
+      }
 
+      let combinedSubDetailsHtml = '';
+      if (r.isCombined && r.subDetails?.length > 0) {
         combinedSubDetailsHtml = `
           <div class="mt-3 pt-3 border-t border-slate-100">
             <button onclick="toggleSubDetails('${r.id}')" class="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer">
               <span>查看全能單項細項 (${r.subDetails.length})</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            ${combinedWindNotice}
             <div id="sub-${r.id}" class="hidden grid grid-cols-2 gap-2 mt-2">
               ${r.subDetails.map(sub => {
                 const subUnit = sub.type === 'distance' ? '米' : (sub.type === 'time' ? '秒' : '分');
@@ -2001,34 +2002,40 @@
       }
 
       return `
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xs"
-             ontouchstart="handleCardTouchStart(event)" 
-             ontouchend="handleCardTouchEnd(event, '${r.id}')">
-          
-          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 w-40 flex transition-transform duration-300 translate-x-full z-10">
-            <button onclick="editRecord('${r.id}')" class="flex-1 bg-amber-500 text-white font-bold flex items-center justify-center text-sm cursor-pointer hover:bg-amber-600 transition">編輯</button>
-            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 text-white font-bold flex items-center justify-center text-sm cursor-pointer hover:bg-red-700 transition">刪除</button>
+        <div class="relative overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-xs transition hover:shadow-sm">
+          <!-- 側滑操作選單 -->
+          <div id="card-actions-${r.id}" class="absolute right-0 top-0 bottom-0 flex w-40 transform translate-x-full transition-transform duration-200 ease-out z-10">
+            <button onclick="editRecord('${r.id}')" class="flex-1 bg-blue-600 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              <span>編輯</span>
+            </button>
+            <button onclick="deleteRecord('${r.id}')" class="flex-1 bg-red-600 text-white font-bold text-xs flex flex-col items-center justify-center gap-1 cursor-pointer">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+              <span>刪除</span>
+            </button>
           </div>
 
-          <div id="card-content-${r.id}" class="p-4 md:p-5 transition-transform duration-300 bg-white">
-            <div class="flex items-start justify-between gap-3">
-              <div class="space-y-1 flex-1 min-w-0">
-                <h3 class="${showCompInHeader ? 'text-base font-bold text-slate-900' : 'text-lg font-bold text-slate-900'} truncate">
-                  ${showCompInHeader ? r.competition : cleanName}
-                </h3>
-                <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-                  <span class="font-mono text-slate-400">${r.date.replace(/-/g, '/')}</span>
-                  <span>•</span>
-                  <span>${ageText}</span>
-                </div>
+          <!-- 主要卡片內容區 -->
+          <div id="card-content-${r.id}" 
+               ontouchstart="handleCardTouchStart(event)" 
+               ontouchend="handleCardTouchEnd(event, '${r.id}')"
+               class="p-4 bg-white transition-transform duration-200 ease-out relative z-0">
+            
+            <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2.5 mb-2.5">
+              <div class="space-y-0.5">
+                <span class="text-xs font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 inline-block mb-1">${cleanName}</span>
+                ${showCompInHeader ? `<h3 class="text-slate-900 font-bold text-sm md:text-base leading-snug">${r.competition}</h3>` : ''}
               </div>
-              ${getRankBadgeHtml(r.rank)}
+              <div class="flex items-center gap-2">
+                ${getRankBadgeHtml(r.rank)}
+              </div>
             </div>
 
-            <div class="mt-3 flex items-baseline justify-between border-t border-slate-100 pt-3">
-              <div class="text-xs font-semibold text-slate-600">
-                <span>${showCompInHeader ? cleanName : r.competition}</span>
-                <span class="text-slate-400 font-normal ml-1">(${subInfoText})</span>
+            <div class="flex items-end justify-between">
+              <div class="space-y-0.5">
+                <div class="text-xs text-slate-400 font-mono">${r.date.replace(/-/g, '/')}</div>
+                <div class="text-xs text-slate-500 font-medium">${subInfoText}</div>
+                <div class="text-xs text-slate-400">${ageText}</div>
               </div>
               <div class="text-right">
                 ${resultDisplay}
@@ -2036,6 +2043,7 @@
             </div>
 
             ${singleWindNotice}
+            ${combinedWindNotice}
             ${combinedSubDetailsHtml}
           </div>
         </div>
@@ -2050,10 +2058,7 @@
 
       if (records.length === 0) {
         filterBar.classList.add('hidden');
-        container.innerHTML = `
-          <div class="bg-white p-8 rounded-3xl text-center text-slate-400 font-medium">
-            尚無任何比賽成績紀錄，點擊「新增成績」開始記錄！
-          </div>`;
+        container.innerHTML = `<div class="bg-slate-50 p-8 rounded-3xl text-center text-slate-400 font-medium">尚無歷史成績記錄，請先點擊「新增成績」！</div>`;
         return;
       }
 
@@ -2064,41 +2069,32 @@
         });
       } else if (currentGroupMode === 'comp') {
         filterBar.classList.add('hidden');
-        const groups = {};
+        const compGroups = {};
         records.forEach(r => {
-          if (!groups[r.competition]) groups[r.competition] = [];
-          groups[r.competition].push(r);
+          if (!compGroups[r.competition]) compGroups[r.competition] = [];
+          compGroups[r.competition].push(r);
         });
 
-        const sortedComps = Object.keys(groups).sort((a, b) => {
-          const dateA = new Date(groups[a][0].date);
-          const dateB = new Date(groups[b][0].date);
+        const sortedComps = Object.keys(compGroups).sort((a, b) => {
+          const dateA = new Date(compGroups[a][0].date);
+          const dateB = new Date(compGroups[b][0].date);
           return dateB - dateA;
         });
 
         sortedComps.forEach(compName => {
-          const itemRecords = groups[compName];
-          const firstRec = itemRecords[0];
-          const ageNum = getAgeAtDate(athleteProfile.dob, firstRec.date);
-          const ageText = ageNum !== null ? `參賽年齡 ${ageNum} 歲` : '參賽年齡 -';
+          const items = compGroups[compName];
+          const latestDate = items[0].date.replace(/-/g, '/');
 
           let groupHtml = `
-            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-4 md:p-5 space-y-3">
-              <div class="border-b border-slate-200/80 pb-3 flex justify-between items-start">
-                <div>
-                  <h3 class="text-base font-bold text-slate-900">${compName}</h3>
-                  <div class="flex items-center gap-2 text-xs text-slate-500 font-medium mt-0.5">
-                    <span class="font-mono text-slate-400">${firstRec.date.replace(/-/g, '/')}</span>
-                    <span>•</span>
-                    <span>${ageText}</span>
-                  </div>
-                </div>
-                <span class="text-xs font-semibold bg-white text-slate-600 px-2.5 py-1 rounded-full border border-slate-200 flex-shrink-0">${itemRecords.length} 項賽事</span>
+            <div class="space-y-3 pt-2">
+              <div class="flex justify-between items-baseline border-b-2 border-slate-200 pb-1.5 px-1">
+                <h3 class="font-bold text-slate-800 text-base">${compName}</h3>
+                <span class="text-xs font-mono text-slate-400 font-semibold">${latestDate}</span>
               </div>
               <div class="space-y-3">
           `;
 
-          itemRecords.forEach(r => {
+          items.forEach(r => {
             groupHtml += buildRecordCardHtml(r, false);
           });
 
@@ -2111,64 +2107,46 @@
       } else if (currentGroupMode === 'event') {
         filterBar.classList.remove('hidden');
 
-        const activeEventMap = {};
-        records.forEach(r => {
-          const cleanName = getCleanEventName(r);
-          if (!activeEventMap[cleanName]) {
-            activeEventMap[cleanName] = r.eventId;
-          }
-        });
+        const uniqueEvents = Array.from(new Set(records.map(r => getCleanEventName(r)))).filter(Boolean);
 
-        const activeEventNames = Object.keys(activeEventMap).sort((a, b) => {
+        uniqueEvents.sort((a, b) => {
           const orderA = EVENTS_ORDER[a] ?? 999;
           const orderB = EVENTS_ORDER[b] ?? 999;
           return orderA - orderB;
         });
 
-        let barBtnsHtml = `
-          <button type="button" onclick="filterEventGroup('all')" class="px-3 py-1 rounded-xl text-xs font-semibold ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition cursor-pointer">
-            全部 (${records.length})
-          </button>
+        let filterBtnsHtml = `
+          <button onclick="filterEventGroup('all')" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${currentSelectedEventFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">全部項目 (${records.length})</button>
         `;
 
-        activeEventNames.forEach(evtName => {
-          const count = records.filter(r => getCleanEventName(r) === evtName).length;
-          barBtnsHtml += `
-            <button type="button" onclick="filterEventGroup('${evtName}')" class="px-3 py-1 rounded-xl text-xs font-semibold ${currentSelectedEventFilter === evtName ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} transition cursor-pointer">
-              ${evtName} (${count})
-            </button>
+        uniqueEvents.forEach(evtName => {
+          const evtCount = records.filter(r => getCleanEventName(r) === evtName).length;
+          const isActive = currentSelectedEventFilter === evtName;
+          filterBtnsHtml += `
+            <button onclick="filterEventGroup('${evtName}')" class="px-3 py-1 rounded-xl text-xs font-bold transition cursor-pointer ${isActive ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">${evtName} (${evtCount})</button>
           `;
         });
-        filterBar.innerHTML = barBtnsHtml;
+        filterBar.innerHTML = filterBtnsHtml;
 
-        const groups = {};
-        records.forEach(r => {
-          const cleanName = getCleanEventName(r);
-          if (currentSelectedEventFilter === 'all' || currentSelectedEventFilter === cleanName) {
-            if (!groups[cleanName]) groups[cleanName] = [];
-            groups[cleanName].push(r);
-          }
-        });
+        let displayEvents = uniqueEvents;
+        if (currentSelectedEventFilter !== 'all') {
+          displayEvents = uniqueEvents.filter(e => e === currentSelectedEventFilter);
+        }
 
-        const sortedEventKeys = Object.keys(groups).sort((a, b) => {
-          const orderA = EVENTS_ORDER[a] ?? 999;
-          const orderB = EVENTS_ORDER[b] ?? 999;
-          return orderA - orderB;
-        });
-
-        sortedEventKeys.forEach(evtName => {
-          const itemRecords = groups[evtName];
+        displayEvents.forEach(evtName => {
+          const items = records.filter(r => getCleanEventName(r) === evtName);
+          if (items.length === 0) return;
 
           let groupHtml = `
-            <div class="bg-slate-50 border border-slate-200/80 rounded-3xl p-4 md:p-5 space-y-3">
-              <div class="border-b border-slate-200/80 pb-3 flex justify-between items-center">
-                <h3 class="text-base font-bold text-slate-900">${evtName}</h3>
-                <span class="text-xs font-semibold bg-white text-slate-600 px-2.5 py-1 rounded-full border border-slate-200">${itemRecords.length} 筆紀錄</span>
+            <div class="space-y-3 pt-2">
+              <div class="flex justify-between items-baseline border-b-2 border-slate-200 pb-1.5 px-1">
+                <h3 class="font-bold text-slate-800 text-base">${evtName}</h3>
+                <span class="text-xs font-bold text-blue-600">${items.length} 筆紀錄</span>
               </div>
               <div class="space-y-3">
           `;
 
-          itemRecords.forEach(r => {
+          items.forEach(r => {
             groupHtml += buildRecordCardHtml(r, true);
           });
 
@@ -2181,13 +2159,7 @@
       }
     }
 
-    window.initMainPage = initMainPage;
-  </script>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.initMainPage) window.initMainPage();
-    });
+    window.addEventListener('DOMContentLoaded', initMainPage);
   </script>
 </body>
 </html>
